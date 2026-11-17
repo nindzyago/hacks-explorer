@@ -50,3 +50,28 @@ describe('theme.set', () => {
     },
   );
 });
+
+describe('player clock (M0.4)', () => {
+  it('has a player clock of its own, moved by the clock commands', () => {
+    const app = createApp();
+    const other = createApp();
+    expect(app.registry.list().map((command) => command.id)).toEqual(
+      expect.arrayContaining(['clock.set', 'clock.tick']),
+    );
+    expect(app.registry.run('clock.tick', { ms: 30 })).toEqual({ ok: true });
+    expect(app.clock.now()).toBe(30);
+    expect(other.clock.now()).toBe(0);
+    // The clock is not part of the stored state: a step does not wake the store's subscribers.
+    expect(app.store.get()).toEqual({ theme: 'light' });
+  });
+
+  it('tells the caller before every manual move of the clock', () => {
+    const moves: number[] = [];
+    const app = createApp({ onManualClock: () => moves.push(app.clock.now()) });
+    app.registry.run('clock.tick', { ms: 10 });
+    app.registry.run('clock.set', { ms: 500 });
+    app.registry.run('clock.tick', { ms: -1 });
+    app.registry.run('theme.set', { theme: 'dark' });
+    expect(moves).toEqual([0, 10]);
+  });
+});

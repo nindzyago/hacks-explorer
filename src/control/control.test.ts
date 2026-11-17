@@ -5,6 +5,7 @@ import { createApp } from '../commands/app';
 import { createControl, installControl, type AppControl } from './control';
 
 const viaJson = (value: unknown): unknown => JSON.parse(JSON.stringify(value));
+const CLOCK_AT_ZERO = { timeMs: 0, pendingMs: 0, stepMs: 10 };
 
 describe('createControl', () => {
   it('lists commands as plain data that survives JSON', () => {
@@ -16,9 +17,9 @@ describe('createControl', () => {
 
   it('runs a command by id and shows the change in the state', () => {
     const control = createControl(createApp());
-    expect(control.state.get()).toEqual({ theme: 'light' });
+    expect(control.state.get()).toEqual({ theme: 'light', clock: CLOCK_AT_ZERO });
     expect(control.commands.run('theme.set', { theme: 'dark' })).toEqual({ ok: true });
-    expect(control.state.get()).toEqual({ theme: 'dark' });
+    expect(control.state.get()).toEqual({ theme: 'dark', clock: CLOCK_AT_ZERO });
     expect(viaJson(control.state.get())).toEqual(control.state.get());
   });
 
@@ -28,7 +29,7 @@ describe('createControl', () => {
     const state: { theme: string } = control.state.get();
     state.theme = 'broken';
     expect(app.store.get()).toEqual({ theme: 'light' });
-    expect(control.state.get()).toEqual({ theme: 'light' });
+    expect(control.state.get()).toEqual({ theme: 'light', clock: CLOCK_AT_ZERO });
 
     const list = control.commands.list();
     const count = list.length;
@@ -82,6 +83,65 @@ describe('createControl', () => {
     expect(Object.isFrozen(control)).toBe(true);
     expect(Object.isFrozen(control.commands)).toBe(true);
     expect(Object.isFrozen(control.state)).toBe(true);
+    expect(Object.isFrozen(control.clock)).toBe(true);
+  });
+
+  // M0.4: the clock part of the channel (architecture §4).
+  it('moves the player clock and shows it in the state', () => {
+    const app = createApp();
+    const control = createControl(app);
+    expect(control.clock.tick(25)).toEqual({ ok: true });
+    expect(control.state.get().clock).toEqual({ timeMs: 20, pendingMs: 5, stepMs: 10 });
+    expect(control.clock.set(1234)).toEqual({ ok: true });
+    expect(control.state.get()).toEqual({
+      theme: 'light',
+      clock: { timeMs: 1230, pendingMs: 4, stepMs: 10 },
+    });
+    expect(app.clock.now()).toBe(1230);
+    expect(viaJson(control.state.get())).toEqual(control.state.get());
+    // The same thing as the commands, so one move stops the real-time driver either way.
+    expect(control.commands.run('clock.tick', { ms: 6 })).toEqual({ ok: true });
+    expect(control.state.get().clock.timeMs).toBe(1240);
+  });
+
+  it('the clock in the state is a copy', () => {
+    const control = createControl(createApp());
+    const state: { clock: { timeMs: number } } = control.state.get();
+    state.clock.timeMs = 999;
+    expect(control.state.get().clock.timeMs).toBe(0);
+  });
+
+  it('clock calls with hostile values return an error as data', () => {
+    const app = createApp();
+    const control = createControl(app);
+    const throwing = {
+      valueOf(): number {
+        throw new Error('boom');
+      },
+    };
+    const hostile: unknown[] = [
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      -1,
+      0.5,
+      1e300,
+      '10',
+      null,
+      undefined,
+      {},
+      [1],
+      throwing,
+      () => 1,
+      Symbol('ms'),
+    ];
+    for (const ms of hostile) {
+      for (const result of [control.clock.tick(ms), control.clock.set(ms)]) {
+        expect(result).toMatchObject({ ok: false, error: { code: 'invalid-params' } });
+        expect(viaJson(result)).toEqual(result);
+      }
+    }
+    expect(control.clock.tick(10_001)).toMatchObject({ ok: false });
+    expect(app.clock.snapshot()).toEqual(CLOCK_AT_ZERO);
   });
 });
 
@@ -91,7 +151,7 @@ describe('installControl', () => {
     const control = installControl(target, createApp());
     expect(target.__app).toBe(control);
     expect(target.__app?.commands.run('theme.set', { theme: 'dark' })).toEqual({ ok: true });
-    expect(target.__app?.state.get()).toEqual({ theme: 'dark' });
+    expect(target.__app?.state.get()).toEqual({ theme: 'dark', clock: CLOCK_AT_ZERO });
   });
 
   it('cannot be replaced by a page script', () => {
