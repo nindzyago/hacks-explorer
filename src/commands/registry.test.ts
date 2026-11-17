@@ -371,3 +371,174 @@ describe('command registry: errors are typed results, not crashes', () => {
     expect(calls).toBe(0);
   });
 });
+
+/** Throws any value, the way hostile or careless code can. */
+function raise(value: unknown): never {
+  (function* empty() {})().throw(value);
+  throw new Error('unreachable');
+}
+
+const unprintable: [string, () => unknown][] = [
+  ['an object without a prototype', (): unknown => Object.create(null)],
+  [
+    'an object whose toString throws',
+    () => ({
+      toString() {
+        throw new Error('y');
+      },
+    }),
+  ],
+  ['an Error whose message is an object', () => Object.assign(new Error('x'), { message: {} })],
+  [
+    'an Error whose message getter throws',
+    () =>
+      Object.defineProperty(new Error('x'), 'message', {
+        get() {
+          throw new Error('y');
+        },
+      }),
+  ],
+];
+
+describe('command registry: run() never throws, whatever a command throws (F1)', () => {
+  it.each(unprintable)('run throws %s', (_label, make) => {
+    const { registry } = setup();
+    registry.register({
+      id: 'test.throws',
+      titleKey: 't',
+      params: {},
+      run: () => raise(make()),
+    });
+    const result = registry.run('test.throws');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('failed');
+      expect(typeof result.error.message).toBe('string');
+      expect(result.error.message.startsWith('command "test.throws" failed: ')).toBe(true);
+      expect(result.error.message.length).toBeLessThan(300);
+    }
+  });
+
+  it.each(unprintable)('enabled throws %s', (_label, make) => {
+    const { registry } = setup();
+    let calls = 0;
+    registry.register({
+      id: 'test.broken',
+      titleKey: 't',
+      params: {},
+      enabled: () => raise(make()),
+      run: () => {
+        calls += 1;
+      },
+    });
+    const result = registry.run('test.broken');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.code).toBe('failed');
+      expect(typeof result.error.message).toBe('string');
+    }
+    expect(calls).toBe(0);
+    expect(registry.list()).toEqual([
+      { id: 'test.broken', titleKey: 't', params: {}, enabled: false },
+    ]);
+  });
+
+  it('names the fallback when the thrown value cannot be printed', () => {
+    const { registry } = setup();
+    registry.register({
+      id: 'test.throws',
+      titleKey: 't',
+      params: {},
+      run: () => raise(Object.create(null)),
+    });
+    expect(registry.run('test.throws')).toEqual({
+      ok: false,
+      error: {
+        code: 'failed',
+        commandId: 'test.throws',
+        message: 'command "test.throws" failed: unprintable error',
+      },
+    });
+  });
+
+  it('prints thrown values that are not errors', () => {
+    const { registry } = setup();
+    registry.register({ id: 'test.throws', titleKey: 't', params: {}, run: () => raise('plain') });
+    const result = registry.run('test.throws');
+    expect(result.ok ? '' : result.error.message).toBe('command "test.throws" failed: plain');
+  });
+});
+
+describe('command registry: enabled is an exact boolean (N4)', () => {
+  it('a truthy non-boolean from enabled() counts as disabled, in list() and in run()', () => {
+    const { registry } = setup();
+    let calls = 0;
+    registry.register({
+      id: 'test.truthy',
+      titleKey: 't',
+      params: {},
+      // A deliberately wrong cast: what careless code does with unchecked data.
+      enabled: () => JSON.parse('"yes"') as boolean,
+      run: () => {
+        calls += 1;
+      },
+    });
+    expect(registry.list().map((c) => c.enabled)).toEqual([false]);
+    const result = registry.run('test.truthy');
+    expect(result.ok ? '' : result.error.code).toBe('disabled');
+    expect(calls).toBe(0);
+  });
+});
+
+describe('command registry: the parameter description is frozen (N2a)', () => {
+  it('cannot be changed after registration', () => {
+    const { registry } = setup();
+    const values = ['plain', 'defence'];
+    const mode = { kind: 'enum' as const, values };
+    const params = { mode };
+    registry.register({ id: 'test.frozen', titleKey: 't', params, run: () => {} });
+
+    expect(Object.isFrozen(params)).toBe(true);
+    expect(Object.isFrozen(mode)).toBe(true);
+    expect(Object.isFrozen(values)).toBe(true);
+    expect(() => values.push('attack')).toThrow(TypeError);
+
+    const result = registry.run('test.frozen', { mode: 'attack' });
+    expect(result.ok ? '' : result.error.code).toBe('invalid-params');
+    expect(registry.list()[0]?.params).toEqual({
+      mode: { kind: 'enum', values: ['plain', 'defence'] },
+    });
+  });
+});
+
+describe('command registry: parameter names that Object.prototype also has (N1)', () => {
+  it('an absent optional parameter is undefined, not an inherited function', () => {
+    const { registry } = setup();
+    const seen: unknown[] = [];
+    registry.register({
+      id: 'test.names',
+      titleKey: 't',
+      params: {
+        constructor: { kind: 'string', optional: true },
+        toString: { kind: 'string', optional: true },
+        valueOf: { kind: 'integer', optional: true },
+        hasOwnProperty: { kind: 'boolean', optional: true },
+      },
+      run: (params) => {
+        seen.push(params.constructor, params.toString, params.valueOf, params.hasOwnProperty);
+      },
+    });
+    expect(registry.run('test.names', {})).toEqual({ ok: true });
+    expect(registry.run('test.names', { constructor: 'c' })).toEqual({ ok: true });
+    expect(seen).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'c',
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+});

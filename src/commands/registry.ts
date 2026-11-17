@@ -83,8 +83,17 @@ function cut(text: string, max: number): string {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 }
 
+/** Total: a thrown value can be anything, including something that throws when printed. */
 function causeOf(error: unknown): string {
-  return cut(error instanceof Error ? error.message : String(error), MAX_CAUSE_LENGTH);
+  try {
+    if (error instanceof Error) {
+      const message: unknown = error.message;
+      if (typeof message === 'string') return cut(message, MAX_CAUSE_LENGTH);
+    }
+    return cut(String(error), MAX_CAUSE_LENGTH);
+  } catch {
+    return 'unprintable error';
+  }
 }
 
 function freezeSpec(spec: ParamsSpec): void {
@@ -135,7 +144,11 @@ export function createRegistry<State>(getState: () => State): CommandRegistry<St
           ? { code, commandId: id, message }
           : { code, commandId: id, message, problems: found },
     });
-    const isEnabled = () => enabled === undefined || enabled(getState());
+    const isEnabled = () => {
+      if (enabled === undefined) return true;
+      const answer: unknown = enabled(getState());
+      return answer === true;
+    };
 
     entries.set(id, {
       id,
