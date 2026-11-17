@@ -1,6 +1,6 @@
 # Выкладка на Cloudflare
 
-Решения: K10, K12, K13. Сайт — Cloudflare Workers со статикой. Cloudflare сам собирает
+Решения: K10, K12, K14. Сайт — Cloudflare Workers со статикой. Cloudflare сам собирает
 репозиторий по событиям GitHub (Workers Builds через приложение Cloudflare в GitHub). В GitHub
 нет ни одного секрета Cloudflare; GitHub Actions только проверяет (`gate`).
 
@@ -10,7 +10,7 @@
 |---|---|---|
 | push в `main` | `npm run build`, затем `npx wrangler deploy` | черновой: `https://hacks-explorer.<поддомен>.workers.dev` |
 | push в любую другую ветку, pull request | `npm run build`, затем `npx wrangler preview` | предпросмотр: `https://<ветка>-hacks-explorer.<поддомен>.workers.dev`, ссылка приходит комментарием в pull request |
-| pull request из форка | ничего: Cloudflare форки не собирает | нет; `gate` в GitHub Actions при этом работает |
+| pull request из форка | скорее всего ничего (не проверено, см. ниже) | нет; `gate` в GitHub Actions при этом работает |
 
 `<поддомен>` — поддомен `workers.dev` учётной записи (Workers & Pages → справа Subdomain).
 
@@ -34,7 +34,7 @@ configuration, build branches, GitHub integration; custom domains). Сама п�
    |---|---|
    | Git account | `nindzyago` |
    | Git repository | `nindzyago/hacks-explorer` |
-   | Project name (имя Worker) | `hacks-explorer` — ровно как `name` в `wrangler.jsonc`, иначе сборка падает |
+   | Имя Worker (как называется поле, в документации не сказано; возможно, Project name) | `hacks-explorer` — ровно как `name` в `wrangler.jsonc`, иначе сборка падает |
    | Git branch (основная ветка) | `main` |
    | Build command | `npm run build` |
    | Deploy command | `npx wrangler deploy` (значение по умолчанию) |
@@ -66,6 +66,14 @@ M4.7.
 
 ## Что нужно знать
 
+- **Не проверено: pull request из форков.** В документации Workers Builds про форки ничего нет.
+  Для Cloudflare Pages написано прямо, что предпросмотр для форков не создаётся; про Workers
+  Builds то же сообщают пользователи, но не Cloudflare. Проверить на первом внешнем pull request.
+- **Wrangler не входит в зависимости проекта.** Сборка Cloudflare запускает `npx wrangler`, и
+  без записи в `package.json` берётся последняя версия; предпросмотрам нужна 4.135.0 или новее.
+  Закрепить версию в `devDependencies` нельзя без решения владельца: `wrangler` 4.164.0
+  (MIT OR Apache-2.0) тянет через `miniflare` → `sharp` пакеты `@img/sharp-libvips-*` под
+  LGPL-3.0-or-later и `@speed-highlight/core` под CC0-1.0, а их нет в списке L1.
 - Черновой адрес и предпросмотры открыты всем, кто знает ссылку, хотя репозиторий закрыт.
   Поисковикам они запрещены заголовком. Закрыть входом можно через Cloudflare Access — решает
   владелец.

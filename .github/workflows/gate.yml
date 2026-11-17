@@ -1,5 +1,5 @@
 # Runs the one gate on every pull request and every push to main.
-# No secrets: Cloudflare builds and deploys by itself through its GitHub app (K12, K13).
+# No secrets: Cloudflare builds and deploys by itself through its GitHub app (K12, K14).
 name: gate
 on:
   pull_request:

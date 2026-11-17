@@ -1,4 +1,4 @@
-# Response headers for every file Cloudflare serves (Workers static assets, K13).
+# Response headers for every file Cloudflare serves (Workers static assets, K14).
 # Vite copies this file to dist/; Cloudflare reads it there and does not serve it.
 # The site talks to no other server (L6), so the policy allows only this origin.
 # img-src data: is for small images that Vite inlines into CSS and JS.
