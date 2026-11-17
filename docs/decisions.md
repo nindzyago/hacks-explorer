@@ -1,5 +1,31 @@
 # Decisions
 
+## K16 · 2026-11-17: Playwright в gate, состояние приложения и первая команда (M0.3)
+
+By: agent · Area: стек · Status: active · Reviewed: no
+Source: during M0.3
+
+`@playwright/test` (Apache-2.0), только Chromium без окна, 1280×720. `npm run gate`
+заканчивается `npm run e2e` (он же собирает `dist/` и `dist-e2e/`). Сайт в тестах отдаёт свой
+сервер `scripts/serve-static.mjs` без зависимостей: заголовки из `_headers`, возврат
+`index.html` на неизвестный адрес. Любая ошибка в консоли страницы, исключение или неудачный
+запрос валит тест — так нарушение CSP делает gate красным. Состояние приложения — `AppState`
+в `src/core/state.ts`, хранилище `src/core/store.ts`, сборка приложения `createApp()` в
+`src/commands/app.ts`. Первая команда `theme.set` меняет только `state.theme` и атрибут
+`data-theme`, без запоминания и без токенов (это M2.6).
+
+## K15 · 2026-11-17: канал управления и отдельная сборка для тестов (M0.3)
+
+By: agent · Area: стек · Status: active · Reviewed: no
+Source: during M0.3
+
+`window.__app` включается условием в `src/main.ts`: `import.meta.env.DEV` или режим `e2e`.
+Тесты идут на отдельной сборке `vite build --mode e2e --outDir dist-e2e`, которая отличается
+от рабочей только этим флагом. Папка отдельная, чтобы сборка с каналом не могла попасть в
+выкладку из `dist/`. Отсутствие канала в рабочей сборке проверяет e2e-проект `production`:
+нет строки `__app` в файлах `dist/`, нет `window.__app` в браузере. Канал отдаёт копии,
+заморожен, `commands.run` не бросает исключений.
+
 ## K14 · 2026-11-17: Cloudflare Workers со статикой и Workers Builds, а не Pages (M0.5)
 
 By: agent · Area: стек · Status: active · Reviewed: no
