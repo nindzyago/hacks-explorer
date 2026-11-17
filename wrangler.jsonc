@@ -1,0 +1,19 @@
+// Cloudflare Workers with static assets (K14). Cloudflare builds the repository itself
+// (Workers Builds, connected through the GitHub app): `npm run build`, then
+// `npx wrangler deploy` on the production branch and `npx wrangler preview` on the others.
+// Guarded by scripts/deploy-config.test.mjs. Dashboard steps: docs/deploy.md.
+{
+  // Must equal the name of the Worker in the Cloudflare dashboard.
+  "name": "hacks-explorer",
+  "compatibility_date": "2026-11-17",
+  // Static files only: there is no `main`, so no code of ours runs on Cloudflare.
+  "assets": {
+    "directory": "./dist",
+    // Lesson addresses such as /ru/lesson/B1 are routes inside the page, not files.
+    "not_found_handling": "single-page-application"
+  },
+  // The draft address (main) and pull request previews live on workers.dev.
+  "workers_dev": true,
+  // `wrangler preview` needs this block; a static site has nothing to put in it.
+  "previews": {}
+}
