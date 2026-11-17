@@ -3,8 +3,8 @@
 > Updated: 2026-11-17 by Claude (craftspec orchestrate)
 
 **Current milestone:** M1 — Один урок насквозь: SQL-инъекция
-**Next task:** дизайны M1.1 (формат урока в YAML) и M1.2 (сцена) — нужны утверждённые дизайны в `plan/designs/` до начала работ
-**Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev (Cloudflare Workers, сборка по событиям GitHub). Решения владельца без срока: G13 (версия wrangler), закрывать ли черновой адрес входом
+**Next task:** после утверждения дизайнов — M1.1a (формат и валидатор на уроке B1), затем M1.2a
+**Blockers (need a human):** design M1.1 awaiting approval; design M1.2 awaiting approval. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev. Решения владельца без срока: G13 (версия wrangler), закрывать ли черновой адрес входом
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
 ## Milestones
@@ -20,9 +20,23 @@
 
 ## Designs
 
-Пока нет. Нужны перед M1.1, M1.2, M2.1, M2.3.
+| Task | Revision | Status | Link | sha256 of the md |
+|---|---|---|---|---|
+| M1.1 Формат урока в YAML | r1 | awaiting-approval (2026-11-18) | https://claude.ai/artifact/Pert7Z6UKR1yd73v9vQukp · `plan/designs/M1.1.md` | a1ef725aae65… |
+| M1.2 Сцена | r1 | awaiting-approval (2026-11-18) | https://claude.ai/artifact/2TTAMfjL1v9Y3CLMrKXc7Q · `plan/designs/M1.2.md` | 341621f878df… |
+
+Ещё нужны перед M2.1 и M2.3.
 
 ## Checklist (current milestone)
+
+- [ ] M1.1 Формат урока в YAML [design r1 — ждёт ответа]
+- [ ] M1.2 Сцена [design r1 — ждёт ответа]
+- [ ] M1.3 Плеер
+- [ ] M1.4 Панель объяснения
+- [ ] M1.5 Переключатель защиты и лента событий
+- [ ] M1.6 Урок B1 на русском
+
+## Done: M0
 
 - [x] M0.1 Каркас репозитория и одна команда `npm run gate`
 - [x] M0.2 Реестр команд
