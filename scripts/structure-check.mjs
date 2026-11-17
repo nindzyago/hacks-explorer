@@ -2,7 +2,7 @@
 // Structure check, part of `npm run gate`.
 //
 // Rules (AGENTS.md, "Инварианты архитектуры" and L6):
-//   layers            core < services < commands < adapters (ui, scene, control) < entry;
+//   layers            core < services < commands < adapters (ui, scene, control, time) < entry;
 //                     a file may import its own layer or a lower one.
 //   content-is-data   nothing executable under content/.
 //   no-external-urls  site code never points at another server.
@@ -18,6 +18,7 @@ const DIR_LAYER = {
   ui: 'adapters',
   scene: 'adapters',
   control: 'adapters',
+  time: 'adapters',
 };
 const CODE = /\.(ts|js|mjs|cjs|svelte)$/;
 const SITE = /\.(ts|js|svelte|css|html)$/;
