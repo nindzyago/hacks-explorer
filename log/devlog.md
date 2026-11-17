@@ -8,3 +8,9 @@ Landed: владелец сказал «делаем» (K8, имя Hacks Explore
 Numbers: 75 уроков в 12 разделах, 36 в первом выпуске; 56 задач в M0–M5 (посчитано скриптом по файлам плана).
 Not measured on real data: оценки часов не откалиброваны.
 Still open: дашборд проекта описывает план до K7–K10; G10, G11, G12.
+
+## 2026-11-17 17:45 — M0.1 Каркас репозитория и `npm run gate` (agent: Claude)
+Landed: Vite 8 + Svelte 5 + TypeScript 6; `npm run gate` (prettier, eslint, svelte-check, vitest, structure-check, сборка); `scripts/structure-check.mjs` со слоями, запретом кода в `content/` и запретом чужих серверов; пустая страница с именем проекта; CI-файл `.github/workflows/gate.yml` (не запускался: удалённого репозитория нет).
+Numbers: gate зелёный, 9 тестов в 2 файлах; сборка 10.9 КБ JS в gzip (вывод vite build). Подложенные нарушение слоёв, `!`, `any` и код в `content/` дают красный gate (проверено вручную, файлы удалены).
+Not measured on real data: CI на GitHub не запускался; на Linux gate не проверялся.
+Still open: `npx` на этой машине падает с MODULE_NOT_FOUND, инструменты запускаются через `npm run` и `node_modules/.bin`; LICENSE и ATTRIBUTION.md появятся в M4.4.

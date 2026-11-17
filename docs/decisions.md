@@ -1,5 +1,18 @@
 # Decisions
 
+## K11 · 2026-11-17: состав gate в M0.1 (next)
+
+By: agent · Area: стек · Status: active · Reviewed: no
+Source: during M0.1
+
+`npm run gate` = prettier, eslint (strictTypeChecked, запрет `!` и `any`), svelte-check, vitest,
+`scripts/structure-check.mjs`, сборка. Проверка слоёв написана своим скриптом на 130 строк
+вместо dependency-cruiser: правил три, зависимость не нужна; тот же скрипт проверяет, что в
+`content/` нет кода и что код сайта не ссылается на чужие серверы (L6). Prettier не трогает
+`*.md` (в плане рукописные таблицы) и `prototype/`. Playwright входит в gate с M0.3, проверка
+лицензий зависимостей — с M4.4. Версии инструментов — последние на дату установки
+(TypeScript 6, Vite 8, ESLint 10, Vitest 5), закреплены в `package-lock.json`.
+
 ## K10 · 2026-11-17: уроки и переводы в YAML, выпуски через GitHub, сайт на Cloudflare (chat)
 
 By: owner · Area: стек · Status: active · Reviewed: yes
