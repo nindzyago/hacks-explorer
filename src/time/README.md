@@ -1,7 +1,7 @@
 # src/time — драйвер реального времени
 
 Слой L3 (адаптер). `real-time-driver.ts` — единственный файл сайта, которому можно читать
-системное время и заказывать кадры (решение K16). Он раз в кадр подаёт прошедшие миллисекунды
+системное время и заказывать кадры (решение K17). Он раз в кадр подаёт прошедшие миллисекунды
 в часы плеера (`src/core/clock.ts`). Всё остальное берёт время у часов.
 
 ```ts
@@ -15,6 +15,9 @@ driver.running; // boolean
 
 ## Поведение
 
+- Сайт запускает драйвер в `src/main.ts` сразу после создания приложения. Первая же принятая
+  команда `clock.set` или `clock.tick` (тест, канал управления) останавливает его насовсем:
+  дальше часы двигает только тот, кто их остановил. Отклонённая команда драйвер не трогает.
 - Пока не вызван `start`, драйвер ничего не делает и кадров не заказывает. `start` и `stop`
   можно вызывать повторно.
 - Время, прошедшее на паузе, не доигрывается: отсчёт начинается с момента `start`.
@@ -27,16 +30,46 @@ driver.running; // boolean
 
 ## Запрет в остальном коде
 
-В `src/**` вне этого файла и тестов ESLint запрещает `Date`, `performance`, `setTimeout`,
-`setInterval`, `setImmediate`, `requestAnimationFrame`, `cancelAnimationFrame`,
-`requestIdleCallback` (в том числе через `window.`, `globalThis.`, `self.`), `Math.random`,
-`crypto.getRandomValues`, `crypto.randomUUID` и импорт `svelte/motion`, `svelte/transition`,
-`svelte/animate`. Правила лежат в `scripts/timing-rules.mjs`, тест — `scripts/timing-lint.test.mjs`.
+Правила ESLint лежат в `scripts/timing-rules.mjs`, тест — `scripts/timing-lint.test.mjs`.
+Действуют на весь код сайта: `src/**` с расширениями `.ts`, `.js`, `.mjs`, `.cjs`, `.svelte`
+(значит, и `.svelte.ts`, `.svelte.js`), кроме файла драйвера и тестов `*.test.*`. Запрещено:
+
+- `Date`, `performance`, `setTimeout`, `setInterval`, `setImmediate`, `requestAnimationFrame`,
+  `cancelAnimationFrame`, `requestIdleCallback`, `Animation`, `KeyframeEffect`,
+  `DocumentTimeline` — и напрямую, и через `window.`, `globalThis.`, `self.`;
+- `Math.random`, `crypto.getRandomValues`, `crypto.randomUUID`, а также `window.Math`,
+  `window.crypto` и то же через `globalThis.` и `self.`;
+- `.animate(…)` и `.getAnimations()` у любого объекта, `document.timeline`;
+- импорт `svelte/motion`, `svelte/transition`, `svelte/animate` и `SvelteDate` из
+  `svelte/reactivity`; динамический `import()` этих четырёх модулей.
+
+Комментарием `eslint-disable` в коде сайта правило не выключить (`noInlineConfig`): сам
+комментарий становится ошибкой gate. Исключение делается в `eslint.config.js` или в
+`scripts/timing-rules.mjs`, где его видно при просмотре. В тестах комментарии разрешены, но
+лишний `eslint-disable`, который ничего не выключает, — ошибка во всём проекте.
+
+### Чего линтер не видит
+
+Это проверка от случайной ошибки, а не от умысла. Мимо неё проходит:
+
+- глобальный объект под другим именем: `const w = window; w.setTimeout(…)`,
+  `const { setTimeout } = window`, `Reflect.get(globalThis, 'Date')`, `window['Date']` с
+  вычисляемым ключом, `eval` и `new Function`;
+- `import()` с вычисляемым адресом модуля;
+- время из других источников: `Intl.DateTimeFormat().format()` без аргумента, `event.timeStamp`,
+  `document.lastModified`, заголовки ответа сети, `AudioContext.currentTime`, время видео;
+- анимации в CSS (`transition`, `animation`, `@keyframes`) и директивы Svelte `transition:`,
+  `in:`, `out:`, `animate:` с собственной функцией — они идут от системного времени;
+- случайность из других источников: порядок ответов сети, `crypto.subtle.generateKey`;
+- код зависимостей в `node_modules`.
+
+Для сцены (M1.2) анимации в CSS использовать нельзя; проверка стилей появится вместе со сценой.
+Снимки в тестах делаются с `animations: 'disabled'`.
 
 ## Ограничения
 
-- Драйвер пока никем не запускается: плеера нет (M1.3). `src/main.ts` его не импортирует.
+- Драйвер работает и в рабочей сборке, хотя до плеера (M1.3) часы там никто не слушает: один
+  пустой вызов на кадр. Пуск и паузу плеера нужно будет связать с `start` и `stop`.
+- После остановки командой драйвер сам не запускается; команды «вернуть реальное время» нет.
 - Источник кадров (`FrameSource`) подменяется вторым аргументом; в тестах он ручной.
 - Скорости воспроизведения нет: появится в M1.3.
-- Анимации в CSS (`transition`, `animation`) линтер не видит: они идут от системного времени.
-  Для сцены их использовать нельзя; проверка появится вместе со сценой (M1.2).
