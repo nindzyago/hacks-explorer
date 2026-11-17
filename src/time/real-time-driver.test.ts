@@ -23,6 +23,10 @@ function fakeFrames() {
   return {
     frames,
     pending,
+    /** Moves wall time to `at` without firing anything. */
+    at(value: number) {
+      time = value;
+    },
     /** Moves wall time to `at` and fires every frame that was requested. */
     frame(at: number) {
       time = at;
@@ -71,6 +75,34 @@ describe('real-time driver', () => {
     driver.start();
     fake.frame(520);
     expect(clock.now()).toBe(20);
+  });
+
+  it('a second start while running changes nothing', () => {
+    const clock = createClock();
+    const fake = fakeFrames();
+    const driver = createRealTimeDriver(clock, fake.frames);
+    fake.at(1000);
+    driver.start();
+    fake.at(1030);
+    driver.start();
+    expect(fake.pending.size).toBe(1);
+    fake.frame(1050);
+    // 50 ms since the first start; a start that began again at 1030 would give 20.
+    expect(clock.now()).toBe(50);
+    expect(fake.pending.size).toBe(1);
+  });
+
+  it('a new start does not inherit the fraction of a millisecond', () => {
+    const clock = createClock();
+    const fake = fakeFrames();
+    const driver = createRealTimeDriver(clock, fake.frames);
+    driver.start();
+    fake.frame(0.9);
+    driver.stop();
+    driver.start();
+    fake.frame(1.1);
+    // 0.2 ms since the second start; with the old 0.9 carried over it would be a whole 1.
+    expect(clock.snapshot()).toMatchObject({ timeMs: 0, pendingMs: 0 });
   });
 
   it('a long pause (hidden tab) counts as one capped frame', () => {
@@ -127,6 +159,20 @@ describe('real-time driver', () => {
     fake.frame(50);
     expect(driver.running).toBe(false);
     expect(fake.pending.size).toBe(0);
+  });
+
+  it('a subscriber that restarts the driver inside a step leaves one frame requested', () => {
+    const clock = createClock();
+    const fake = fakeFrames();
+    const driver = createRealTimeDriver(clock, fake.frames);
+    clock.subscribe(() => {
+      driver.stop();
+      driver.start();
+    });
+    driver.start();
+    fake.frame(10);
+    expect(driver.running).toBe(true);
+    expect(fake.pending.size).toBe(1);
   });
 
   it('stops by itself when the clock reaches its end', () => {
