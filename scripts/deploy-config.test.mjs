@@ -1,5 +1,5 @@
 // Acceptance for M0.5 (repository side): the files Cloudflare and GitHub read to build and
-// serve the site say what K13 decided, and the security headers allow no other server (L6).
+// serve the site say what K14 decided, and the security headers allow no other server (L6).
 // Oracle level A: exact values.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -194,5 +194,92 @@ describe('checkCi', () => {
     ['', 'pull_request'],
   ])('rejects a workflow that drifts (%#)', (text, word) => {
     expect(checkCi(text).join('\n')).toContain(word);
+  });
+});
+
+// Holes found by the verifier: each of these passed the first version of the checks.
+describe('guard holes', () => {
+  it.each([
+    ['a second /* block that detaches the policy', '/*\n  ! Content-Security-Policy'],
+    ['a second /* block with another policy', '/*\n  Content-Security-Policy: default-src *'],
+    ['a host rule that detaches the policy', 'https://example.com/*\n  ! Content-Security-Policy'],
+    ['a second /* block that changes nosniff', '/*\n  X-Content-Type-Options: sniff'],
+  ])('headers: rejects %s', (_, extra) => {
+    expect(checkHeaders(headers(GOOD_CSP, extra))).not.toEqual([]);
+  });
+
+  it('headers: rejects a second policy line inside the same block', () => {
+    const twice = headers(GOOD_CSP, '  Content-Security-Policy: default-src *');
+    expect(checkHeaders(twice).join('\n')).toContain('another server');
+  });
+
+  it.each([null, undefined, 42, {}])('headers: reports %j instead of throwing', (input) => {
+    expect(checkHeaders(input)).toEqual(['_headers must be text']);
+  });
+
+  it.each([
+    ["secrets['X'] form", `${CI}\n        env:\n          T: \${{ secrets['X'] }}`, 'secrets'],
+    ['secrets with spaces', `${CI}\n        env:\n          T: \${{ secrets [ 'X' ] }}`, 'secrets'],
+    [
+      'job-level write permission',
+      CI.replace('  gate:\n', '  gate:\n    permissions:\n      contents: write\n'),
+      'permissions',
+    ],
+    [
+      'job-level write-all',
+      CI.replace('  gate:\n', '  gate:\n    permissions: write-all\n'),
+      'permissions',
+    ],
+    [
+      'a wrangler step',
+      `${CI}\n      - run: ./node_modules/.bin/wrangler versions upload`,
+      'deploy',
+    ],
+    ['a deploy script', `${CI}\n      - run: npm run deploy`, 'deploy'],
+    ['a Cloudflare action', `${CI}\n      - uses: cloudflare/wrangler-action@v3`, 'deploy'],
+  ])('workflow: rejects %s', (_, text, word) => {
+    expect(checkCi(text).join('\n')).toContain(word);
+  });
+
+  it('workflow: allows read-only job permissions and comments about deploys', () => {
+    const job = CI.replace('  gate:\n', '  gate:\n    permissions:\n      contents: read\n');
+    expect(checkCi(`# Cloudflare deploys by itself\n${job}`)).toEqual([]);
+  });
+
+  it.each([
+    [{ routes: [{ pattern: 'hacks.antipic.com', custom_domain: true }] }, 'routes'],
+    [{ route: 'hacks.antipic.com/*' }, 'route'],
+    [{ env: { staging: {} } }, 'env'],
+    [{ previews: [] }, 'previews'],
+    [{ previews: 'yes' }, 'previews'],
+    [{ vars: { A: '1' } }, 'vars'],
+    [{ triggers: { crons: ['* * * * *'] } }, 'triggers'],
+    [
+      {
+        assets: {
+          directory: './dist',
+          not_found_handling: 'single-page-application',
+          run_worker_first: true,
+        },
+      },
+      'run_worker_first',
+    ],
+  ])('wrangler: rejects %j', (patch, word) => {
+    expect(checkWrangler(wrangler(patch)).join('\n')).toContain(word);
+  });
+
+  it.each([
+    '<script src="https://cdn.example.com/x.js"></script>',
+    '<script src="//cdn.example.com/x.js"></script>',
+    '<link rel="stylesheet" href="https://fonts.example.com/css" />',
+    "<link rel=preconnect href='http://example.com'>",
+    '<img src=https://example.com/a.png>',
+  ])('page: rejects %s', (html) => {
+    expect(checkIndexHtml(html).join('\n')).toContain('another server');
+  });
+
+  it('page: allows files of this site', () => {
+    expect(checkIndexHtml('<link rel="icon" href="/favicon.svg" />')).toEqual([]);
+    expect(checkIndexHtml('<script type="module" src="./src/main.ts"></script>')).toEqual([]);
   });
 });

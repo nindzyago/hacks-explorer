@@ -1,4 +1,4 @@
-// Cloudflare Workers with static assets (K13). Cloudflare builds the repository itself
+// Cloudflare Workers with static assets (K14). Cloudflare builds the repository itself
 // (Workers Builds, connected through the GitHub app): `npm run build`, then
 // `npx wrangler deploy` on the production branch and `npx wrangler preview` on the others.
 // Guarded by scripts/deploy-config.test.mjs. Dashboard steps: docs/deploy.md.
