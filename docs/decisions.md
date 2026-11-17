@@ -22,6 +22,7 @@ Source: during M0.2
 - Название команды — ключ текста (`titleKey`), сами тексты появятся с i18n (M2).
 - Сужение типа проверенных параметров сделано функцией-предикатом, которая заново проверяет
   объект; `as` и `!` в `src/commands` нет.
+
 ## K12 · 2026-11-17: адрес hacks.antipic.com; Cloudflare подключается приложением в GitHub (chat)
 
 By: owner · Area: стек · Status: active · Reviewed: yes
