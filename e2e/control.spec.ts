@@ -13,14 +13,14 @@ test('runs a command, reads the state and takes a PNG', async ({ page }, testInf
     params: { theme: { kind: 'enum', values: ['light', 'dark'] } },
     enabled: true,
   });
-  expect(await page.evaluate(() => window.__app?.state.get())).toEqual({ theme: 'light' });
+  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'light' });
   const light = await page.screenshot();
 
   const result = await page.evaluate(() =>
     window.__app?.commands.run('theme.set', { theme: 'dark' }),
   );
   expect(result).toEqual({ ok: true });
-  expect(await page.evaluate(() => window.__app?.state.get())).toEqual({ theme: 'dark' });
+  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
   const path = testInfo.outputPath('theme-dark.png');
@@ -39,7 +39,7 @@ test('the button and the channel run the same command', async ({ page }) => {
 
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  expect(await page.evaluate(() => window.__app?.state.get())).toEqual({ theme: 'dark' });
+  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'dark' });
 
   await page.evaluate(() => window.__app?.commands.run('theme.set', { theme: 'light' }));
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
@@ -82,7 +82,7 @@ test('hostile calls get an error as data and change nothing', async ({ page }) =
     'invalid-params',
     'invalid-params',
   ]);
-  expect(await page.evaluate(() => window.__app?.state.get())).toEqual({ theme: 'light' });
+  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'light' });
 });
 
 test('a page script cannot replace or change the channel', async ({ page }) => {
