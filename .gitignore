@@ -1,0 +1,11 @@
+# CraftSpec: reference material never leaves this machine
+reference/
+.claude/worktrees/
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+.DS_Store
+.env
+*.local
