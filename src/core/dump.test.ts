@@ -40,6 +40,61 @@ describe('stableDump', () => {
     );
   });
 
+  it('orders keys by UTF-16 code units, not by the rules of a language', () => {
+    const value = { a: 1, B: 2, ä: 3, Z: 4, _: 5, я: 6, Я: 7, '': 8 };
+    const keys = Array.from(textOf(value).matchAll(/"([^"]*)":/g), (match) => match[1]);
+    expect(keys).toEqual(['', 'B', 'Z', '_', 'a', 'ä', 'Я', 'я']);
+  });
+
+  it('never calls toJSON: a function is not data', () => {
+    let calls = 0;
+    const withToJson = {
+      n: 1,
+      toJSON() {
+        calls += 1;
+        return 'replaced';
+      },
+    };
+    expect(codeOf(withToJson)).toBe('unsupported@$.toJSON');
+    expect(codeOf({ a: [withToJson] })).toBe('unsupported@$.a[0].toJSON');
+    class Money {
+      amount = 5;
+      toJSON() {
+        calls += 1;
+        return 5;
+      }
+    }
+    expect(codeOf(new Money())).toBe('unsupported@$');
+    expect(codeOf({ price: new Money() })).toBe('unsupported@$.price');
+    expect(calls).toBe(0);
+  });
+
+  it('rejects values that only look like plain arrays and objects', () => {
+    class List extends Array<number> {}
+    expect(codeOf(List.from([1, 2]))).toBe('unsupported@$');
+    expect(codeOf({ list: Object.assign([1, 2], { note: 'extra' }) })).toBe('unsupported@$.list');
+    const disguised = (value: object): unknown => {
+      Object.setPrototypeOf(value, Object.prototype);
+      return value;
+    };
+    expect(codeOf({ m: disguised(new Map([['k', 1]])) })).toBe('unsupported@$.m');
+    expect(codeOf(disguised(new Set([1])))).toBe('unsupported@$');
+    expect(codeOf(disguised(new WeakMap()))).toBe('unsupported@$');
+    expect(codeOf(disguised(new WeakSet()))).toBe('unsupported@$');
+    expect(codeOf(disguised(new Date(0)))).toBe('unsupported@$');
+    expect(codeOf(disguised(/x/))).toBe('unsupported@$');
+    expect(codeOf(disguised(new Error('x')))).toBe('unsupported@$');
+    expect(codeOf(disguised(new Uint8Array(2)))).toBe('unsupported@$');
+    expect(codeOf(disguised(new String('boxed')))).toBe('unsupported@$');
+    expect(codeOf({ [Symbol.toStringTag]: 'Custom', a: 1 })).toBe('unsupported@$');
+    for (const length of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, '2']) {
+      const liar: unknown = new Proxy([1, 2], {
+        get: (target, key): unknown => (key === 'length' ? length : Reflect.get(target, key)),
+      });
+      expect(codeOf([liar])).toBe('unreadable@$[0]');
+    }
+  });
+
   it('is valid JSON that reads back as the same data', () => {
     const value: unknown = JSON.parse(
       '{"text":"кавычки \\" и \\\\ и \\n перевод строки \\u2028","numbers":[0,1.5,-3,1e21,9007199254740991],' +
@@ -139,6 +194,16 @@ describe('stableDump', () => {
     expect(codeOf(Array.from({ length: 100_001 }, () => 0))).toMatch(/^too-large@/);
     expect(codeOf(Array.from({ length: 50_000 }, () => 0))).toBe('ok');
     expect(codeOf({ length: 4_000_000_000 })).toBe('ok');
+    // The count runs over the whole dump, not per container.
+    const wide = Object.fromEntries(
+      Array.from({ length: 100_000 }, (_, i) => [`k${String(i)}`, 0]),
+    );
+    expect(codeOf(wide)).toMatch(/^too-large@/);
+    delete wide['k0'];
+    expect(codeOf(wide)).toBe('ok');
+    const shared = Array.from({ length: 1000 }, () => 0);
+    expect(codeOf(Array.from({ length: 99 }, () => shared))).toBe('ok');
+    expect(codeOf(Array.from({ length: 100 }, () => shared))).toMatch(/^too-large@\$\[99\]/);
     const huge: unknown[] = [];
     huge.length = 4_000_000_000;
     expect(codeOf(huge)).toMatch(/^too-large@/);

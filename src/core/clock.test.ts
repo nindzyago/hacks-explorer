@@ -233,6 +233,30 @@ describe('clock', () => {
     expect(order).toEqual(['a', 'a', 'late', 'a', 'late']);
   });
 
+  it('a subscriber added during an event is first called on the next event', () => {
+    const clock = createClock();
+    const order: string[] = [];
+    let added = false;
+    clock.subscribe((event) => {
+      order.push(`first@${String(event.timeMs)}`);
+      if (added) return;
+      added = true;
+      clock.subscribe((later) => order.push(`added@${String(later.timeMs)}`));
+    });
+    clock.subscribe((event) => order.push(`second@${String(event.timeMs)}`));
+    clock.tick(20);
+    expect(order).toEqual(['first@10', 'second@10', 'first@20', 'second@20', 'added@20']);
+  });
+
+  it('both kinds of event are frozen', () => {
+    const clock = createClock();
+    const frozen: string[] = [];
+    clock.subscribe((event) => frozen.push(`${event.type}:${String(Object.isFrozen(event))}`));
+    clock.set(50);
+    clock.tick(10);
+    expect(frozen).toEqual(['set:true', 'step:true']);
+  });
+
   it('the same function subscribed twice is two subscriptions', () => {
     const clock = createClock();
     let calls = 0;

@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import svelte from 'eslint-plugin-svelte';
 import globals from 'globals';
 import ts from 'typescript-eslint';
-import { REAL_TIME_DRIVER, timingRules } from './scripts/timing-rules.mjs';
+import { timingConfig } from './scripts/timing-rules.mjs';
 import svelteConfig from './svelte.config.js';
 
 export default ts.config(
@@ -11,6 +11,7 @@ export default ts.config(
   ...ts.configs.strictTypeChecked,
   ...svelte.configs.recommended,
   {
+    linterOptions: { reportUnusedDisableDirectives: 'error' },
     languageOptions: {
       globals: { ...globals.browser },
       parserOptions: {
@@ -29,13 +30,8 @@ export default ts.config(
     files: ['**/*.svelte', '**/*.svelte.ts'],
     languageOptions: { parserOptions: { parser: ts.parser, svelteConfig } },
   },
-  {
-    // Time is replaceable: site code runs from the player clock, not from system time.
-    // Tests are not site code: they may build a Date as hostile input.
-    files: ['src/**/*.ts', 'src/**/*.svelte'],
-    ignores: [REAL_TIME_DRIVER, 'src/**/*.test.ts'],
-    rules: timingRules,
-  },
+  // Time is replaceable (K17): site code runs from the player clock, not from system time.
+  timingConfig,
   {
     // Tooling scripts and configs are plain JavaScript run by Node.
     files: ['**/*.js', '**/*.mjs'],
