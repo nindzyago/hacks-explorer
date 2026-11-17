@@ -2,8 +2,8 @@
 
 > Updated: 2026-11-17 by Claude (craftspec orchestrate)
 
-**Current milestone:** M0 — Каркас, gate, наблюдаемость
-**Next task:** M0.5 — закрыть: предпросмотр pull request на Cloudflare отдаёт 404 на неизвестные адреса и не оставляет комментарий со ссылкой
+**Current milestone:** M1 — Один урок насквозь: SQL-инъекция
+**Next task:** дизайны M1.1 (формат урока в YAML) и M1.2 (сцена) — нужны утверждённые дизайны в `plan/designs/` до начала работ
 **Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev (Cloudflare Workers, сборка по событиям GitHub). Решения владельца без срока: G13 (версия wrangler), закрывать ли черновой адрес входом
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -11,7 +11,7 @@
 
 | Id | Milestone | State | Done / total |
 |---|---|---|---|
-| M0 | Каркас, gate, наблюдаемость | in progress | 4 / 5 |
+| M0 | Каркас, gate, наблюдаемость | done | 5 / 5 |
 | M1 | Один урок насквозь: SQL-инъекция | not started | 0 / 6 |
 | M2 | Оболочка: панель уроков, языки, глубина, телефон | not started | 0 / 8 |
 | M3 | Первый выпуск: по три урока в каждом разделе (36) | not started | 0 / 13 |
@@ -28,4 +28,4 @@
 - [x] M0.2 Реестр команд
 - [x] M0.3 Канал управления
 - [x] M0.4 Детерминизм
-- [ ] M0.5 CI и выкладка на Cloudflare
+- [x] M0.5 CI и выкладка на Cloudflare
