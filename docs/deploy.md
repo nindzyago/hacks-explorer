@@ -8,11 +8,15 @@
 
 | Событие | Что делает Cloudflare | Адрес |
 |---|---|---|
-| push в `main` | `npm run build`, затем `npx wrangler deploy` | черновой: `https://hacks-explorer.<поддомен>.workers.dev` |
-| push в любую другую ветку, pull request | `npm run build`, затем `npx wrangler preview` | предпросмотр: `https://<ветка>-hacks-explorer.<поддомен>.workers.dev`, ссылка приходит комментарием в pull request |
+| push в `main` | `npm run build`, затем `npx wrangler deploy` | черновой: `https://hacks-explorer.mike-antipiev.workers.dev` |
+| push в любую другую ветку, pull request | `npm run build`, затем `npx wrangler preview` | предпросмотр: `https://<ветка>-hacks-explorer.mike-antipiev.workers.dev`; комментарий Cloudflare со ссылкой в pull request пока не приходит (см. ниже) |
 | pull request из форка | скорее всего ничего (не проверено, см. ниже) | нет; `gate` в GitHub Actions при этом работает |
 
-`<поддомен>` — поддомен `workers.dev` учётной записи (Workers & Pages → справа Subdomain).
+`<ветка>` — имя ветки строчными буквами, где точки и другие знаки заменены дефисом: ветка
+`m0.5-test-pr` получила адрес `https://m0-5-test-pr-hacks-explorer.mike-antipiev.workers.dev`
+(проверено на pull request #1; точное правило замены в документации не описано). Адрес можно
+составить самому, не дожидаясь комментария. `mike-antipiev` — поддомен `workers.dev` учётной
+записи.
 
 Файлы в репозитории: `wrangler.jsonc` (имя Worker, папка `dist`, отдача `index.html` на
 неизвестные адреса), `public/_headers` (заголовки безопасности), `.node-version` (Node 22 для
@@ -59,13 +63,29 @@ M4.7.
 1. Открыть черновой адрес: страница «Hacks Explorer»; адрес вида `/ru/lesson/B1` открывает ту же
    страницу, а не 404.
 2. Завести ветку в этом же репозитории, открыть pull request: проверка `gate` зелёная, проверка
-   Workers Builds зелёная, в комментарии Cloudflare есть Preview URL, и он открывается.
+   «Workers Builds: hacks-explorer» зелёная, адрес предпросмотра (составить по правилу выше)
+   открывается в браузере, в том числе по адресу вида `/ru/lesson/B1`.
 3. В инструментах разработчика → Network → документ: в ответе есть `content-security-policy`,
    `x-content-type-options: nosniff`, `x-robots-tag: noindex`; в консоли нет ошибок CSP.
 4. Журнал сборок: Worker → **Deployments** → внизу **View build history**.
 
 ## Что нужно знать
 
+- **Предпросмотр и адреса внутри страницы.** На адресе предпросмотра `/ru/lesson/B1` открывается
+  только в браузере. Запрос без заголовка `Sec-Fetch-Mode: navigate` (`curl`, `fetch`,
+  предпросмотр ссылок в мессенджерах) получает 404 `Not found` без заголовков безопасности; на
+  черновом адресе (`wrangler deploy`) того же нет. Проверено 2026-11-17:
+  `curl -H 'Sec-Fetch-Mode: navigate' <адрес предпросмотра>/ru/lesson/B1` даёт 200 и страницу,
+  без заголовка — 404. Это открытая ошибка Cloudflare в Worker Previews (бета):
+  `github.com/cloudflare/developer-platform/issues/118`; настройкой в `wrangler.jsonc` она не
+  лечится (`assets` для предпросмотров задаётся только на верхнем уровне). Проверять предпросмотр
+  браузером или `curl` с этим заголовком.
+- **Комментарий Cloudflare в pull request не пришёл** (pull request #1), хотя по документации он
+  ставится сам, без настройки, «если коммит входит в pull request». Причина не установлена.
+  Что проверить: (1) отправить ещё один коммит в ветку уже открытого pull request — первая
+  сборка могла пройти до его открытия; (2) GitHub → Settings → Applications → Installed GitHub
+  Apps → Cloudflare Workers & Pages → Configure: нет ли запроса на новые права и есть ли доступ
+  на запись к Pull requests. Ссылка на предпросмотр от комментария не зависит.
 - **Не проверено: pull request из форков.** В документации Workers Builds про форки ничего нет.
   Для Cloudflare Pages написано прямо, что предпросмотр для форков не создаётся; про Workers
   Builds то же сообщают пользователи, но не Cloudflare. Проверить на первом внешнем pull request.
@@ -85,6 +105,8 @@ M4.7.
   не дольше 20 минут.
 - В комментарии «No Preview URL» при зелёной сборке — проверить шаг 6 и что Preview command
   равна `npx wrangler preview`.
+- `workers_dev` и `preview_urls` записаны в `wrangler.jsonc` явно: без `preview_urls` сборка
+  предупреждает, что берёт значение по умолчанию.
 - Сборка упала на `npm ci` с рассинхроном — указать точную версию в `packageManager` в
   `package.json` (образ Cloudflare использует npm 10.9.2).
 
@@ -93,7 +115,7 @@ M4.7.
 - **M4.6, выпуск по тегу:** появляется ветка `release`; в **Settings** → **Build** →
   **Branch control** основная ветка меняется на `release`. После этого `main` становится обычным
   предпросмотром, и черновой адрес меняется на
-  `https://main-hacks-explorer.<поддомен>.workers.dev`.
+  `https://main-hacks-explorer.mike-antipiev.workers.dev`.
 - **M4.7, публикация:** **Settings** → **Domains & Routes** → **Add** → **Custom Domain** →
   `hacks.antipic.com` → **Add Custom Domain**. Cloudflare сам создаёт запись DNS и сертификат; у
   имени не должно быть записи CNAME.
