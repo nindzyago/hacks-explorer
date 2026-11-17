@@ -1,6 +1,6 @@
 # Decisions
 
-## K12 · 2026-11-17: устройство реестра команд (next)
+## K13 · 2026-11-17: устройство реестра команд (next)
 
 By: agent · Area: архитектура · Status: active · Reviewed: no
 Source: during M0.2
@@ -22,6 +22,16 @@ Source: during M0.2
 - Название команды — ключ текста (`titleKey`), сами тексты появятся с i18n (M2).
 - Сужение типа проверенных параметров сделано функцией-предикатом, которая заново проверяет
   объект; `as` и `!` в `src/commands` нет.
+## K12 · 2026-11-17: адрес hacks.antipic.com; Cloudflare подключается приложением в GitHub (chat)
+
+By: owner · Area: стек · Status: active · Reviewed: yes
+Source: chat
+
+Владелец выбрал адрес сайта `hacks.antipic.com` и подключение репозитория к Cloudflare через
+приложение Cloudflare в GitHub, без API-токена в секретах репозитория. Следствия: сборку и
+выкладку делает Cloudflare по событию из GitHub; предпросмотр pull request даёт Cloudflare;
+выпуск по тегу (M4.6) делается веткой `release`, которую двигает workflow, а не прямой
+выкладкой из GitHub Actions. Уточняет K10. Закрывает G3 в части адреса.
 
 ## K11 · 2026-11-17: состав gate в M0.1 (next)
 
