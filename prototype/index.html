@@ -1,0 +1,1021 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Прототип Атласа атак</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+  /* Layout: one screen, no page scroll. Top bar; below it a grid: scene (left, large) + explanation (right), event table across the bottom.
+     Lessons and glossary live in a slide-in drawer. On a phone the panels stack and the page scrolls. */
+  :root {
+    --bg: #F3F5F7; --panel: #FFFFFF; --ink: #15212C; --muted: #5E6C7A; --line: #C7D0D9;
+    --attack: #D8432B; --safe: #0B8A78; --legit: #2B67D6; --code: #EDF0F3; --row: #EEF2F6;
+    --sans: "Onest", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0F151C; --panel: #17202A; --ink: #E7EDF3; --muted: #93A1AF; --line: #2C3947; --attack: #FF6F55; --safe: #3CCBB3; --legit: #73A5FF; --code: #0F151C; --row: #1F2B37; color-scheme: dark } }
+  :root[data-theme="dark"] { --bg: #0F151C; --panel: #17202A; --ink: #E7EDF3; --muted: #93A1AF; --line: #2C3947; --attack: #FF6F55; --safe: #3CCBB3; --legit: #73A5FF; --code: #0F151C; --row: #1F2B37; color-scheme: dark }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 14px; line-height: 1.45; }
+  [hidden] { display: none !important; }
+  .app { box-sizing: border-box; height: 100dvh; min-height: 34rem; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: .6rem; padding-block: .6rem; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .top { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .9rem; }
+  .brand { font-weight: 700; letter-spacing: .12em; font-size: .95rem; }
+  .top .note { margin-left: auto; color: var(--muted); font-size: .82rem; }
+  button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: .35rem .7rem; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  button:disabled { opacity: .45; cursor: default; }
+  button[aria-pressed="true"], button[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+  .work { display: grid; grid-template-columns: minmax(0, 1fr) 23rem; grid-template-rows: minmax(0, 1.3fr) minmax(0, 1fr); gap: .6rem; min-height: 0; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .p-log { grid-column: 1 / -1; }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; padding: .4rem .7rem; border-bottom: 1px solid var(--line); background: var(--panel); }
+  .bar .sp { flex: 1; }
+  h1 { font-size: 1.1rem; line-height: 1.2; margin: 0; }
+  h2 { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0; font-weight: 400; }
+  h3 { font-size: 1rem; line-height: 1.3; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  .sub { color: var(--muted); font-size: .82rem; flex: 1 1 12rem; min-width: 0; }
+  .stage { flex: 1; min-height: 0; background: #EDF0F3; }
+  .stage svg { display: block; width: 100%; height: 100%; }
+  .seg { display: flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--panel); }
+  .seg button { border: none; border-radius: 999px; background: transparent; padding: .25rem .8rem; }
+  .seg button[aria-pressed="true"][data-mode="attack"] { background: var(--attack); color: #fff; }
+  .seg button[aria-pressed="true"][data-mode="defence"] { background: var(--safe); color: #fff; }
+  .depth { display: flex; border-bottom: 1px solid var(--line); }
+  .depth button { flex: 1; border: none; border-radius: 0; background: transparent; padding: .55rem .4rem; color: var(--muted); border-bottom: 2px solid transparent; }
+  .depth button[aria-selected="true"] { background: transparent; color: var(--ink); border-bottom-color: var(--ink); }
+  .scroll { flex: 1; min-height: 0; overflow: auto; }
+  .pad { padding: .8rem .9rem; display: flex; flex-direction: column; gap: .6rem; }
+  .badge { align-self: flex-start; font-size: .78rem; padding: .1rem .55rem; border-radius: 999px; border: 1px solid var(--safe); color: var(--safe); }
+  pre { margin: 0; padding: .6rem .75rem; background: var(--code); border-radius: 8px; font-family: var(--mono); font-size: .78rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+  pre mark { background: transparent; color: var(--attack); font-weight: 700; }
+  dl { margin: 0; display: grid; grid-template-columns: 6.5rem 1fr; font-size: .84rem; }
+  dt, dd { margin: 0; padding: .3rem 0; border-top: 1px solid var(--line); }
+  dt { color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .chips button { font-size: .8rem; padding: .2rem .6rem; border-radius: 999px; }
+  .legend { display: flex; flex-wrap: wrap; gap: .2rem .8rem; font-size: .78rem; color: var(--muted); }
+  .legend i { display: inline-block; width: .6rem; height: .6rem; border-radius: 50%; margin-right: .3rem; }
+  .ctl { display: flex; gap: .3rem; }
+  #play { min-width: 5rem; background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: .3rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  thead th { position: sticky; top: 0; background: var(--panel); color: var(--muted); font-family: var(--mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 400; }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--row); }
+  tr.now { background: var(--row); font-weight: 700; }
+  tr.future { color: var(--muted); }
+  tr.future .num { opacity: .45; }
+  td.what { font-family: var(--mono); font-size: .78rem; }
+  button.num { width: 1.5rem; height: 1.5rem; padding: 0; border: 0; border-radius: 50%; color: #fff; font-family: var(--mono); font-size: .75rem; font-weight: 700; }
+  .k-attack { color: var(--attack); font-weight: 700; } .k-safe { color: var(--safe); font-weight: 700; }
+  button.link { background: none; border: 0; padding: 0; border-radius: 2px; color: var(--legit); text-decoration: underline; text-underline-offset: 2px; text-align: left; }
+  button.term { background: none; border: 0; padding: 0; border-radius: 2px; color: inherit; font: inherit; text-decoration: underline dotted; text-decoration-thickness: 1.5px; text-underline-offset: 3px; cursor: help; }
+  button.term:hover { color: var(--legit); }
+  .tag { font-family: var(--mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .where { font-size: .8rem; color: var(--muted); }
+  .hint { color: var(--muted); font-size: .78rem; }
+  /* Drawer */
+  .scrim { position: fixed; inset: 0; z-index: 20; background: rgba(15, 21, 28, .45); }
+  .drawer { box-sizing: border-box; position: fixed; top: 0; bottom: 0; left: 0; z-index: 21; width: min(27rem, 100vw); background: var(--panel); border-right: 1px solid var(--ink); display: flex; flex-direction: column; }
+  .drawer .tabs { display: flex; gap: .3rem; }
+  .drawer .tabs button { flex: 1; }
+  .drawer .tools { padding: .5rem .7rem; display: flex; flex-direction: column; gap: .5rem; border-bottom: 1px solid var(--line); }
+  input[type="search"] { box-sizing: border-box; width: 100%; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .65rem; }
+  input[type="search"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  button.x { border: 0; background: none; padding: 0 .3rem; font-size: 1.3rem; line-height: 1; color: var(--muted); }
+  .dsec { position: sticky; top: 0; z-index: 1; background: var(--panel); padding: .5rem .8rem .25rem; font-family: var(--mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: .5rem; }
+  .ditem { box-sizing: border-box; display: flex; gap: .6rem; width: 100%; text-align: left; border: 0; border-radius: 0; background: none; padding: .35rem .8rem; font-size: .84rem; line-height: 1.35; }
+  .ditem .id { flex: none; width: 1.8rem; font-family: var(--mono); font-size: .72rem; padding-top: .15rem; color: var(--muted); }
+  .ditem .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .ditem .tx span { color: var(--muted); font-size: .8rem; }
+  .ditem .st { flex: none; font-family: var(--mono); font-size: .68rem; color: var(--muted); padding-top: .2rem; }
+  div.ditem b { font-weight: 500; color: var(--muted); }
+  button.ditem:hover { background: var(--row); }
+  button.ditem .st { color: var(--safe); font-weight: 700; }
+  button.ditem[aria-current="true"] { background: var(--row); box-shadow: inset 3px 0 0 var(--attack); }
+  .gitem { padding: .55rem .8rem; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: .2rem; font-size: .86rem; }
+  .gitem .hd { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+  .empty { padding: .8rem; color: var(--muted); }
+  /* Term popover */
+  .pop { box-sizing: border-box; position: absolute; z-index: 30; width: min(22rem, calc(100vw - 24px)); background: var(--panel); border: 1px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 rgba(21, 33, 44, .3); padding: .8rem .9rem; display: flex; flex-direction: column; gap: .5rem; font-size: .88rem; }
+  .pop:focus { outline: none; }
+  .pop-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+  .pop-head strong { font-size: 1.05rem; line-height: 1.3; }
+  .hit { cursor: help; fill: transparent; }
+  .hit:hover { fill: rgba(31, 42, 68, .06); }
+  .hit:focus-visible, .zlabel:focus-visible { outline: 2px solid #1F2A44; outline-offset: 2px; }
+  .zlabel { cursor: help; }
+  @keyframes pulse { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: .9; } }
+  @media (prefers-reduced-motion: no-preference) { #ring.pulse { animation: pulse .6s ease-out; } }
+  @media (max-width: 860px) {
+    .app { height: auto; min-height: 0; }
+    .work { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; }
+    .panel { overflow: visible; }
+    .stage { overflow-x: auto; border-radius: 0 0 12px 12px; }
+    .stage svg { min-width: 34rem; height: auto; }
+    .scroll { overflow-x: auto; }
+    .top .note { display: none; }
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <image id="shA" href="assets/sheet-a.jpg" width="1024" height="434"/>
+    <image id="shB" href="assets/sheet-b.jpg" width="1024" height="434"/>
+    <image id="shC" href="assets/sheet-c.jpg" width="1024" height="434"/>
+    <symbol id="ic-attacker" viewBox="60 78 310 275"><use href="#shA"/></symbol>
+    <symbol id="ic-server" viewBox="370 78 310 275"><use href="#shA"/></symbol>
+    <symbol id="ic-db" viewBox="677 78 310 275"><use href="#shA"/></symbol>
+    <symbol id="ic-user" viewBox="67 78 310 275"><use href="#shB"/></symbol>
+    <symbol id="ic-mail" viewBox="380 64 310 275"><use href="#shB"/></symbol>
+    <symbol id="ic-router" viewBox="41 82 310 275"><use href="#shC"/></symbol>
+    <symbol id="ic-browser" viewBox="350 78 310 275"><use href="#shC"/></symbol>
+    <symbol id="ic-bank" viewBox="675 78 310 275"><use href="#shC"/></symbol>
+    <linearGradient id="fL" x1="0" x2="1" y1="0" y2="0"><stop offset="0" stop-color="#EDF0F3"/><stop offset="1" stop-color="#EDF0F3" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fR" x1="1" x2="0" y1="0" y2="0"><stop offset="0" stop-color="#EDF0F3"/><stop offset="1" stop-color="#EDF0F3" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fT" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#EDF0F3"/><stop offset="1" stop-color="#EDF0F3" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fB" x1="0" x2="0" y1="1" y2="0"><stop offset="0" stop-color="#EDF0F3"/><stop offset="1" stop-color="#EDF0F3" stop-opacity="0"/></linearGradient>
+    <symbol id="feather" viewBox="0 0 150 133">
+      <rect x="0" y="0" width="10" height="133" fill="url(#fL)"/><rect x="140" y="0" width="10" height="133" fill="url(#fR)"/>
+      <rect x="0" y="0" width="150" height="10" fill="url(#fT)"/><rect x="0" y="123" width="150" height="10" fill="url(#fB)"/>
+    </symbol>
+    <clipPath id="token"><circle cx="0" cy="0" r="21"/></clipPath>
+  </defs>
+</svg>
+
+<div class="app">
+  <div class="top">
+    <button type="button" id="open-lessons" aria-haspopup="dialog">☰ Уроки</button>
+    <span class="brand">АТЛАС АТАК</span>
+    <span class="note" id="note"></span>
+    <button type="button" id="open-glossary" aria-haspopup="dialog">Словарь</button>
+  </div>
+
+  <div class="work">
+    <section class="panel" aria-label="Схема">
+      <div class="bar">
+        <h1 id="lesson-title"></h1>
+        <span class="sub" id="lesson-sub"></span>
+        <div class="seg" role="group" aria-label="Режим">
+          <button type="button" data-mode="attack" id="m-attack">Без защиты</button>
+          <button type="button" data-mode="defence" id="m-defence">С защитой</button>
+        </div>
+      </div>
+      <div class="stage" id="stage"></div>
+    </section>
+
+    <section class="panel" aria-label="Объяснение">
+      <div class="depth" id="depth" role="tablist" aria-label="Глубина объяснения">
+        <button type="button" role="tab" data-depth="simple">Просто</button>
+        <button type="button" role="tab" data-depth="steps">По шагам</button>
+        <button type="button" role="tab" data-depth="deep">Глубже</button>
+      </div>
+      <div class="scroll">
+        <div class="pad" id="explain"></div>
+        <div class="pad">
+          <h2>Паспорт</h2>
+          <dl id="passport"></dl>
+          <h2>Слова из этого урока</h2>
+          <div class="chips" id="lesson-terms"></div>
+          <p class="hint">Пунктирные слова, значки на схеме и названия зон можно нажать: откроется объяснение. Клавиши: пробел — пуск, стрелки — шаги, D — защита.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel p-log" aria-label="Ход атаки">
+      <div class="bar">
+        <h2>Ход атаки</h2>
+        <div class="legend"><span><i style="background:#2B67D6"></i>обычный запрос</span><span><i style="background:#E8523A"></i>атака</span><span><i style="background:#17907E"></i>защита</span></div>
+        <span class="sp"></span>
+        <div class="ctl">
+          <button id="speed" type="button" aria-label="Скорость">1×</button>
+          <button id="prev" type="button" aria-label="Шаг назад">‹</button>
+          <button id="play" type="button">Пуск</button>
+          <button id="next" type="button">Шаг</button>
+          <button id="again" type="button" aria-label="Сначала">↺</button>
+        </div>
+      </div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>№</th><th>Шаг</th><th>Кто</th><th>Кому</th><th>Что отправлено</th><th>Итог</th></tr></thead>
+          <tbody id="log"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-label="Уроки и словарь" hidden>
+  <div class="bar">
+    <h2 id="drawer-title">Уроки</h2>
+    <span class="sp"></span>
+    <button type="button" class="x" id="drawer-x" aria-label="Закрыть">×</button>
+  </div>
+  <div class="tools">
+    <div class="tabs">
+      <button type="button" id="tab-lessons">Уроки</button>
+      <button type="button" id="tab-glossary">Словарь</button>
+    </div>
+    <input type="search" id="drawer-q" aria-label="Поиск">
+  </div>
+  <div class="scroll" id="drawer-body"></div>
+</aside>
+<div class="pop" id="pop" role="dialog" aria-label="Объяснение слова" tabindex="-1" hidden></div>
+
+<script>
+  const KIND = {
+    legit: { color: '#2B67D6', mark: '', cls: 'k-legit' },
+    attack: { color: '#E8523A', mark: '! ', cls: 'k-attack' },
+    safe: { color: '#17907E', mark: '✓ ', cls: 'k-safe' },
+  };
+
+  // ---------- Lesson data: a lesson is data, the player knows nothing about a particular lesson ----------
+  const sql1 = { title: 'Форма входа', from: 'attacker', to: 'server', kind: 'legit', label: 'GET /login', result: 'страница входа',
+    simple: 'Атакующий открывает обычную страницу входа в интернет-магазин. Пока ничего плохого: так делает любой посетитель.',
+    steps: 'Браузер запрашивает страницу /login. Сервер отдаёт форму с полями «Логин» и «Пароль».',
+    deep: 'Форма отправит запрос POST /login с параметрами login и password. Сервер подставит их в SQL-запрос к таблице users.',
+    code: 'POST /login\nlogin=...&password=...' };
+  const sql2 = { title: 'Хитрый логин', from: 'attacker', to: 'server', kind: 'attack', label: "admin' --", what: "POST /login   login=admin' --", result: 'принято как текст',
+    simple: 'Вместо логина он вводит admin и приписывает кавычку с двумя дефисами. Для человека это мусор, а для базы данных — служебные знаки.',
+    steps: 'В поле «Логин» уходит строка admin\' --, пароль любой. Сервер принимает её как обычный текст.',
+    deep: 'Кавычка в SQL закрывает строку, а два дефиса начинают комментарий до конца строки. Сервер не проверяет ввод и не отделяет его от кода запроса.',
+    code: "POST /login\nlogin=⟦admin' --⟧&password=123" };
+
+  const ph1 = { title: 'Письмо-приманка', from: 'attacker', to: 'user', kind: 'attack', label: 'письмо', icon: 'mail', what: 'письмо «Ваш счёт заблокирован»', result: 'доставлено',
+    simple: 'Сотруднику приходит письмо будто бы от банка: счёт заблокирован, срочно подтвердите данные. Срочность нужна, чтобы человек не успел подумать.',
+    steps: 'Атакующий рассылает письмо с логотипом банка и ссылкой. Имя отправителя выглядит как у банка, адрес — нет.',
+    deep: 'Отображаемое имя отправителя задаётся произвольно. Подделку самого адреса ограничивают SPF, DKIM и DMARC, поэтому чаще берут похожий домен.',
+    code: 'От: Банк <support@⟦bank-login.example⟧>\nТема: Ваш счёт заблокирован' };
+  const ph2 = { title: 'Переход по ссылке', from: 'user', to: 'fake', kind: 'legit', label: 'открыть ссылку', what: 'GET https://bank-login.example/', result: 'страница открыта',
+    simple: 'Сотрудник нажимает на ссылку. Открывается страница, как две капли воды похожая на вход в банк.',
+    steps: 'Браузер открывает сайт атакующего. Замок в адресной строке есть: он говорит только о шифровании, а не о том, чей это сайт.',
+    deep: 'Сертификат для своего домена может получить кто угодно, в том числе атакующий. Отличие только в адресе.',
+    code: 'настоящий:   https://⟦bank.example⟧/login\nподдельный:  https://⟦bank-login.example⟧/' };
+
+  const mi1 = { title: '«Роутер — это я»', from: 'attacker', to: 'user', kind: 'attack', label: 'ARP-ответ', what: 'ARP: адрес 192.0.2.1 находится у меня', result: 'ноутбук поверил',
+    simple: 'В общей сети кафе атакующий объявляет ноутбуку жертвы: «роутер — это я». Ноутбук верит на слово: в локальной сети так принято.',
+    steps: 'Атакующий шлёт поддельные ARP-ответы. Ноутбук записывает, что адрес роутера соответствует сетевой карте атакующего.',
+    deep: 'ARP (RFC 826) не проверяет подлинность ответов: пришедший ответ просто перезаписывает таблицу соответствий. Этот приём называется ARP spoofing.',
+    code: '192.0.2.1  →  ⟦aa:bb:cc:00:00:66⟧   (карта атакующего)' };
+
+  const LESSONS = [
+    {
+      id: 'sql', cat: 'B1', title: 'SQL-инъекция', defenceName: 'параметризованный запрос',
+      passport: [['Класс', 'CWE-89, SQL-инъекция'], ['OWASP', 'A03:2021 «Инъекции»'], ['Тяжесть', 'обычно критическая'], ['Что получает', 'вход под чужой учётной записью, чтение и изменение базы'], ['Источники', 'OWASP SQL Injection Prevention Cheat Sheet, MITRE CWE']],
+      nodes: [
+        { id: 'attacker', icon: 'attacker', name: 'Атакующий', sub: '203.0.113.66' },
+        { id: 'server', icon: 'server', name: 'Веб-сервер', sub: '198.51.100.10' },
+        { id: 'db', icon: 'db', name: 'База данных', sub: 'таблица users' },
+      ],
+      zones: [{ label: 'ИНТЕРНЕТ', from: 0, to: 0 }, { label: 'САЙТ SHOP.EXAMPLE', from: 1, to: 2 }],
+      modes: {
+        attack: [sql1, sql2,
+          { title: 'Сервер склеивает запрос', from: 'server', to: 'db', kind: 'attack', label: 'SELECT ...', what: "SELECT ... WHERE login = 'admin' --'", result: 'атака',
+            simple: 'Сервер берёт то, что ввёл посетитель, и вклеивает прямо в вопрос к базе. Кавычка обрывает логин раньше времени, а дефисы вычёркивают проверку пароля.',
+            steps: 'Сервер собирает запрос склейкой строк и отправляет базе. Часть про пароль превратилась в комментарий.',
+            deep: 'Ошибка в склейке строк: данные пользователя стали частью кода запроса. Третья строка запроса теперь закомментирована.',
+            code: "SELECT * FROM users\nWHERE login = '⟦admin' --⟧'\n  AND password = '123'" },
+          { title: 'База отвечает', from: 'db', to: 'server', kind: 'attack', label: 'запись admin', what: 'строка пользователя admin', result: 'найдена без пароля',
+            simple: 'База честно выполняет то, что ей прислали: найти пользователя admin. Про пароль её никто не спросил.',
+            steps: 'База возвращает запись пользователя admin. Отличить задуманный запрос от испорченного она не может.',
+            deep: "После комментария запрос равен SELECT * FROM users WHERE login = 'admin'. Родственные приёмы: ' OR '1'='1 возвращает всех пользователей, UNION SELECT вытаскивает другие таблицы, слепая инъекция узнаёт данные по косвенным признакам ответа." },
+          { title: 'Вход без пароля', from: 'server', to: 'attacker', kind: 'attack', label: 'Привет, admin', what: 'личный кабинет admin', result: 'вход выполнен',
+            simple: 'Сервер видит, что база нашла пользователя, и пускает атакующего как администратора. Пароль он так и не узнал: он не понадобился.',
+            steps: 'Сервер создаёт сессию для admin и отдаёт личный кабинет.',
+            deep: 'Итог — обход входа. Та же ошибка в других местах сайта позволяет читать и менять любые таблицы. Класс ошибки CWE-89, в OWASP Top 10:2021 это пункт A03 «Инъекции».' },
+        ],
+        defence: [sql1, sql2,
+          { title: 'Запрос с параметром', from: 'server', to: 'db', kind: 'safe', label: 'login = ?', what: 'SELECT ... WHERE login = ?  + параметр', result: 'ввод остался данными',
+            simple: 'Теперь сервер отправляет базе вопрос и ответ посетителя отдельно, как бланк и то, что в него вписано. Кавычка внутри вписанного — просто буква.',
+            steps: 'Сервер отправляет шаблон запроса с местами для значений и отдельно сами значения. База не разбирает значения как код.',
+            deep: 'Это подготовленный запрос (prepared statement): структура запроса фиксируется до подстановки данных, поэтому изменить её вводом нельзя.',
+            code: "SELECT * FROM users\nWHERE login = ? AND password_hash = ?\n\nпараметр 1: ⟦admin' --⟧" },
+          { title: 'Такого пользователя нет', from: 'db', to: 'server', kind: 'safe', label: '0 строк', what: 'пустой результат', result: 'ничего не найдено',
+            simple: 'База ищет пользователя с дословным именем admin\' -- и, конечно, не находит.',
+            steps: 'База возвращает пустой результат.',
+            deep: 'Дополнительные слои: проверка ввода по белому списку и учётная запись базы с минимальными правами. Ручное экранирование кавычек — ненадёжная замена параметрам.' },
+          { title: 'Отказ', from: 'server', to: 'attacker', kind: 'safe', label: 'Неверный вход', what: '«Неверный логин или пароль»', result: 'остановлено',
+            simple: 'Сервер отвечает: неверный логин или пароль. Атака не удалась.',
+            steps: 'Сервер возвращает обычную ошибку входа, не раскрывая подробностей.',
+            deep: 'Сообщение одинаково для неверного логина и неверного пароля, а текст ошибки базы наружу не показывается: он подсказал бы атакующему устройство запроса.' },
+        ],
+      },
+    },
+    {
+      id: 'phishing', cat: 'I1', title: 'Фишинг', defenceName: 'менеджер паролей и второй фактор',
+      passport: [['Класс', 'социальная инженерия'], ['ATT&CK', 'T1566 Phishing'], ['Тяжесть', 'зависит от того, какой доступ украден'], ['Что получает', 'логин и пароль жертвы'], ['Источники', 'MITRE ATT&CK, NIST SP 800-63B']],
+      nodes: [
+        { id: 'attacker', icon: 'attacker', name: 'Атакующий', sub: '203.0.113.66' },
+        { id: 'user', icon: 'user', name: 'Сотрудник', sub: '192.0.2.24' },
+        { id: 'fake', icon: 'browser', name: 'Поддельная страница', sub: 'bank-login.example' },
+        { id: 'bank', icon: 'bank', name: 'Банк', sub: 'bank.example' },
+      ],
+      zones: [{ label: 'ИНТЕРНЕТ', from: 0, to: 0 }, { label: 'ОФИС', from: 1, to: 1 }, { label: 'ПОДДЕЛКА', from: 2, to: 2, danger: true }, { label: 'БАНК', from: 3, to: 3 }],
+      modes: {
+        attack: [ph1, ph2,
+          { title: 'Ввод пароля', from: 'user', to: 'fake', kind: 'attack', label: 'логин и пароль', what: 'POST /login  логин и пароль', result: 'пароль введён',
+            simple: 'Он вводит логин и пароль, как обычно. Только страница не банковская.',
+            steps: 'Форма отправляет логин и пароль на сервер атакующего.',
+            deep: 'Страница может тут же переслать введённое в настоящий банк и показать настоящий ответ. Такой прокси-фишинг жертва не замечает вовсе.' },
+          { title: 'Пароль у атакующего', from: 'fake', to: 'attacker', kind: 'attack', label: 'пароль', what: 'логин и пароль жертвы', result: 'украдено',
+            simple: 'Поддельная страница передаёт пароль своему хозяину, а сотруднику показывает «ошибка, попробуйте позже».',
+            steps: 'Сервер атакующего сохраняет пару логин-пароль.',
+            deep: 'Украденные пары проверяют и на других сайтах: люди часто повторяют пароли. Этот приём называется credential stuffing.' },
+          { title: 'Вход в настоящий банк', from: 'attacker', to: 'bank', kind: 'attack', label: 'вход', what: 'вход с чужим паролем', result: 'вход выполнен',
+            simple: 'Атакующий заходит в настоящий банк с настоящим паролем. Для банка он выглядит как сам клиент.',
+            steps: 'Банк проверяет логин и пароль, они верны, сессия открыта.',
+            deep: 'В MITRE ATT&CK это техника T1566. Пароль — секрет, который можно пересказать, поэтому его достаточно выманить один раз.' },
+        ],
+        defence: [ph1, ph2,
+          { title: 'Менеджер паролей молчит', from: 'user', to: 'user', kind: 'safe', label: 'пароль не подставлен', what: 'домен страницы не совпал с сохранённым', result: 'остановлено',
+            simple: 'Менеджер паролей помнит, что пароль от банка относится к адресу bank.example. На чужом адресе он его просто не предлагает, и это повод насторожиться.',
+            steps: 'Менеджер сравнивает домен страницы с сохранённым. Совпадения нет, автозаполнение не срабатывает.',
+            deep: 'Сравнивается точный домен, сходство на глаз не учитывается. По тому же принципу работают passkeys (WebAuthn): ключ привязан к домену и на другом не применится.',
+            code: 'сохранено для:  ⟦bank.example⟧\nстраница:       ⟦bank-login.example⟧' },
+          { title: 'Пароль утёк в другом месте', from: 'attacker', to: 'bank', kind: 'attack', label: 'чужой пароль', what: 'вход с паролем из старой утечки', result: 'пароль верный',
+            simple: 'Допустим, пароль всё-таки утёк, например из старой базы. Атакующий пробует войти в банк.',
+            steps: 'Атакующий отправляет верные логин и пароль.',
+            deep: 'Поэтому одной меры мало: слои защиты закрывают разные пути к одной цели.' },
+          { title: 'Второй фактор', from: 'bank', to: 'attacker', kind: 'safe', label: 'нужен код', what: 'запрос второго фактора', result: 'остановлено',
+            simple: 'Банк просит подтверждение со второго устройства. У атакующего его нет.',
+            steps: 'Без второго фактора сессия не открывается.',
+            deep: 'Код из СМС и push-подтверждение можно выманить тем же фишингом или взять измором. Устойчивы к фишингу ключи FIDO2 и passkeys; NIST SP 800-63B описывает требования к таким средствам.' },
+        ],
+      },
+    },
+    {
+      id: 'mitm', cat: 'G1', title: 'Человек посередине', defenceName: 'HTTPS',
+      passport: [['Класс', 'перехват в сети'], ['ATT&CK', 'T1557 Adversary-in-the-Middle'], ['Тяжесть', 'высокая для сайтов без HTTPS'], ['Что получает', 'всё, что передаётся открытым текстом'], ['Источники', 'MITRE ATT&CK, RFC 826, RFC 6797']],
+      nodes: [
+        { id: 'user', icon: 'user', name: 'Пользователь', sub: '192.0.2.24' },
+        { id: 'attacker', icon: 'attacker', name: 'Атакующий', sub: '192.0.2.66' },
+        { id: 'router', icon: 'router', name: 'Роутер', sub: '192.0.2.1' },
+        { id: 'bank', icon: 'bank', name: 'Сайт', sub: 'bank.example' },
+      ],
+      zones: [{ label: 'КАФЕ, ОБЩИЙ WI-FI', from: 0, to: 2 }, { label: 'ИНТЕРНЕТ', from: 3, to: 3 }],
+      modes: {
+        attack: [mi1,
+          { title: 'Запрос идёт не туда', from: 'user', to: 'attacker', kind: 'attack', label: 'пароль', what: 'POST http://bank.example/login', result: 'перехвачено',
+            simple: 'Теперь всё, что ноутбук отправляет в интернет, сначала попадает к атакующему. Сайт открыт по незащищённому HTTP, так что пароль едет открытым текстом.',
+            steps: 'Ноутбук отправляет запрос «роутеру», то есть атакующему.',
+            deep: 'HTTP ничего не шифрует: заголовки, куки и тело запроса видны каждому узлу на пути.',
+            code: 'POST /login HTTP/1.1\nHost: bank.example\n\nlogin=anna&password=⟦Sun2024!⟧' },
+          { title: 'Чтение', from: 'attacker', to: 'attacker', kind: 'attack', label: 'читает пароль', what: 'разбор перехваченного запроса', result: 'пароль прочитан',
+            simple: 'Атакующий читает запрос, как открытку: логин, пароль, всё на виду.',
+            steps: 'Программа атакующего вытаскивает из потока логины, пароли и куки сессий.',
+            deep: 'Кроме чтения возможна подмена: вставить свой скрипт в страницу или заменить скачиваемый файл.' },
+          { title: 'Пересылка дальше', from: 'attacker', to: 'bank', kind: 'legit', label: 'тот же запрос', what: 'запрос пересылается через роутер', result: 'доставлено',
+            simple: 'Чтобы никто ничего не заметил, он пересылает запрос настоящему роутеру, а тот — сайту.',
+            steps: 'Атакующий работает как прозрачный посредник: трафик идёт через него в обе стороны.',
+            deep: 'Отсюда название «человек посередине»; в MITRE ATT&CK это Adversary-in-the-Middle, T1557.' },
+          { title: 'Ответ через посредника', from: 'bank', to: 'user', kind: 'legit', label: 'страница', what: 'ответ сайта', result: 'жертва ничего не заметила',
+            simple: 'Сайт отвечает, страница открывается как обычно. Никаких признаков жертва не видит.',
+            steps: 'Ответ возвращается тем же путём, через атакующего.',
+            deep: 'Задержка составляет миллисекунды. Заметить атаку можно по изменившейся ARP-таблице; в управляемых сетях её пресекает проверка ARP на коммутаторе (Dynamic ARP Inspection).' },
+        ],
+        defence: [mi1,
+          { title: 'Зашифрованный запрос', from: 'user', to: 'attacker', kind: 'safe', label: 'a9f3…e21c', what: 'TLS: зашифрованные данные', result: 'перехвачено, но не прочитано',
+            simple: 'Сайт работает по HTTPS. Запрос всё так же попадает к атакующему, но это запечатанный конверт.',
+            steps: 'Браузер и сайт договорились о ключе шифрования, которого у посредника нет.',
+            deep: 'В TLS 1.3 общий ключ вырабатывается обменом Диффи — Хеллмана, а сайт доказывает, что он bank.example, сертификатом и подписью.' },
+          { title: 'Набор байтов', from: 'attacker', to: 'attacker', kind: 'safe', label: 'не читается', what: 'попытка разобрать запрос', result: 'остановлено',
+            simple: 'Атакующий видит только бессмысленный набор байтов. Ни логина, ни пароля.',
+            steps: 'Без ключа расшифровать данные нельзя. Видно лишь, с каким сайтом идёт обмен и сколько передано.',
+            deep: 'Открытыми остаются IP-адрес и обычно имя сайта (поле SNI), но не содержимое.' },
+          { title: 'Подмена сертификата', from: 'attacker', to: 'user', kind: 'attack', label: 'чужой сертификат', what: 'сертификат не от bank.example', result: 'браузер предупреждает',
+            simple: 'Он может попробовать выдать себя за сайт. Но удостоверения банка у него нет, и браузер показывает большое предупреждение.',
+            steps: 'Атакующий подставляет свой сертификат. Браузер не находит для него доверенной цепочки и останавливает загрузку.',
+            deep: 'Попытку откатить соединение на HTTP (SSL stripping) закрывает HSTS (RFC 6797): браузер заранее знает, что этот сайт открывается только по HTTPS.' },
+          { title: 'Запрос доходит целым', from: 'user', to: 'bank', kind: 'safe', label: 'a9f3…e21c', what: 'TLS: зашифрованные данные', result: 'доставлено без чтения',
+            simple: 'Запечатанный конверт доходит до сайта нетронутым. Посредник в сети остался, но бесполезен.',
+            steps: 'Сайт расшифровывает запрос своим ключом и отвечает так же зашифрованно.',
+            deep: 'В чужих сетях важны замок и отсутствие предупреждений. VPN добавляет ещё один слой: шифрует весь трафик до своего сервера.' },
+        ],
+      },
+    },
+  ];
+
+  // ---------- Catalog: every planned lesson, grouped by section; a lesson is "ready" when LESSONS has its cat id ----------
+  const SECTIONS = [
+    { k: 'A', name: 'Основы', about: 'Слова и понятия, без которых не понять остальное.', items: [
+      ['Уязвимость, эксплойт, патч', 'Жизнь одной ошибки: находка, эксплойт, номер CVE, патч и те, кто не обновился.'],
+      ['CVE: паспорт уязвимости', 'Карточка известной уязвимости разбирается по полям.'],
+      ['CVSS: как считают тяжесть', 'Меняешь условия атаки, и оценка едет от 3 до 10.'],
+      ['RCE: чужой код на твоём сервере', 'Сервер принимает присланные данные за команду и выполняет её.'],
+      ['Что защищаем: тайна, целостность, доступность', 'Один сервис и три разных удара: прочитали, подменили, уронили.'],
+      ['Классы ошибок: CWE и OWASP Top 10', 'Один класс ошибки и тысячи конкретных уязвимостей под ним.'],
+      ['Поверхность атаки и границы доверия', 'Что у компании торчит в интернет и где проходят границы.'],
+      ['Этапы атаки: от разведки до цели', 'Цепочка из семи шагов и места, где её можно оборвать.'] ] },
+    { k: 'B', name: 'Веб: инъекции', about: 'Сервер принимает присланные данные за команду.', items: [
+      ['SQL-инъекция', 'Строка из формы входа склеивается с запросом, и база отдаёт чужие данные.'],
+      ['Внедрение команд ОС', 'К адресу дописана вторая команда, сервер выполняет обе.'],
+      ['Обход каталогов', 'Запрос с ../../ достаёт файл выше разрешённой папки.'],
+      ['Опасная загрузка файлов', 'Вместо аватарки загружается скрипт, и сервер его исполняет.'],
+      ['Небезопасная десериализация', 'Сервер «оживляет» присланный объект, а тот запускает чужой код.'],
+      ['Инъекция в шаблоны (SSTI)', 'Имя пользователя попадает в шаблон письма и вычисляется как выражение.'],
+      ['XXE: внешние сущности XML', 'XML-документ просит подставить содержимое локального файла.'],
+      ['NoSQL-инъекция', 'В поле пароля приходит не строка, а условие.'] ] },
+    { k: 'C', name: 'Веб: браузер', about: 'Атаки, которые срабатывают в браузере посетителя.', items: [
+      ['Отражённый XSS', 'Скрипт из ссылки возвращается в страницу и исполняется в браузере жертвы.'],
+      ['Хранимый XSS', 'Комментарий со скриптом срабатывает у каждого посетителя.'],
+      ['DOM XSS', 'Скрипт страницы сам вставляет кусок адреса в документ.'],
+      ['CSRF: запрос от чужого имени', 'Чужая страница отправляет перевод от имени того, кто вошёл в банк.'],
+      ['Clickjacking', 'Над невидимой рамкой с настоящим сайтом лежит кнопка «Получить приз».'],
+      ['Ошибки CORS', 'Сайт разрешает чужому источнику читать ответы с куками пользователя.'],
+      ['Открытые редиректы', 'Ссылка на доверенный сайт перебрасывает на поддельный.'] ] },
+    { k: 'D', name: 'Веб: доступ и сессии', about: 'Кто вы и что вам разрешено: ошибки в проверках.', items: [
+      ['Чужие данные по номеру (IDOR)', 'В адресе заказ 1001 меняется на 1002, и сервер отдаёт чужой.'],
+      ['Повышение привилегий', 'Обычный пользователь открывает забытый адрес админ-панели.'],
+      ['Кража и фиксация сессии', 'Кука сессии утекает, атакующий входит без пароля.'],
+      ['Атаки на JWT', 'Токен со слабой подписью переписывается на роль admin.'],
+      ['Ошибки OAuth', 'Код авторизации уезжает на адрес атакующего.'],
+      ['Перечисление пользователей', 'Разные ответы на неверный логин и неверный пароль выдают список аккаунтов.'],
+      ['Mass assignment', 'В профиль дописано поле isAdmin, сервер послушно сохраняет.'],
+      ['SSRF: сервер ходит куда не надо', 'Сервис «загрузить по ссылке» идёт во внутреннюю сеть и приносит секреты.'] ] },
+    { k: 'E', name: 'Веб: инфраструктура', about: 'Ошибки на стыке прокси, кэша и приложения.', items: [
+      ['HTTP request smuggling', 'Прокси и сервер по-разному видят границу запроса.'],
+      ['Отравление веб-кэша', 'Вредный ответ попадает в кэш и раздаётся всем.'],
+      ['Атаки через заголовок Host', 'Ссылка сброса пароля ведёт к атакующему.'],
+      ['Гонки: два запроса сразу', 'Два одновременных запроса тратят один промокод дважды.'],
+      ['Prototype pollution', 'Одно поле в JSON меняет поведение всех объектов приложения.'] ] },
+    { k: 'F', name: 'Пароли и криптография', about: 'Как хранят секреты и чем подтверждают вход.', items: [
+      ['Хеш и соль: как хранят пароли', 'База утекла: открытые пароли читаются сразу, хеши нет.'],
+      ['Перебор и credential stuffing', 'Утёкшие пароли с одного сайта проверяются на другом.'],
+      ['Радужные таблицы', 'Готовая таблица превращает хеш в пароль за секунды, соль её ломает.'],
+      ['Шифрование: один ключ и пара ключей', 'Общий ключ у обоих, открытый у всех, закрытый у одного.'],
+      ['Подпись и сертификаты', 'Цепочка доверия от сайта до корневого центра.'],
+      ['Второй фактор и как его обходят', 'Второй фактор останавливает украденный пароль, но и его выманивают.'],
+      ['Passkeys: вход без пароля', 'Ключ привязан к домену и на поддельном сайте не сработает.'] ] },
+    { k: 'G', name: 'Сеть', about: 'Что происходит с данными по дороге.', items: [
+      ['Человек посередине', 'В общей сети атакующий выдаёт себя за роутер.'],
+      ['Отравление DNS', 'Резолвер запоминает подложный ответ и ведёт всех на чужой адрес.'],
+      ['SSL stripping и понижение версии', 'Посредник держит с жертвой HTTP, а с сайтом HTTPS.'],
+      ['DDoS: SYN flood и усиление', 'Тысячи полуоткрытых соединений забивают очередь сервера.'],
+      ['Сканирование портов', 'Атакующий стучится во все двери и составляет карту сервисов.'],
+      ['Злой двойник Wi-Fi', 'Точка с тем же именем и сильным сигналом.'],
+      ['Перехват маршрутов BGP', 'Чужая сеть объявляет «этот адрес у меня».'] ] },
+    { k: 'H', name: 'Вредоносное ПО и память', about: 'Программы, которые работают против владельца.', items: [
+      ['Переполнение буфера', 'Слишком длинные данные затирают адрес возврата.'],
+      ['Шифровальщик', 'От письма до записки с выкупом; резервные копии как спасение.'],
+      ['Троян и канал управления', 'Заражённый компьютер сам звонит наружу и ждёт команд.'],
+      ['Червь', 'Одна заражённая машина сама находит и заражает соседей.'],
+      ['Атака на цепочку поставок', 'Взломан поставщик: закладку приносит подписанное обновление.'],
+      ['Опасные зависимости и typosquatting', 'Имя пакета отличается от настоящего на одну букву.'] ] },
+    { k: 'I', name: 'Человек', about: 'Обманывают не программу, а того, кто за ней сидит.', items: [
+      ['Фишинг', 'Письмо «от банка», поддельная страница, пароль уходит атакующему.'],
+      ['Целевой фишинг и подмена реквизитов', 'Письмо «от директора» с просьбой срочно оплатить счёт.'],
+      ['Подделка отправителя: SPF, DKIM, DMARC', 'Письмо с чужим адресом в поле «От» доходит или уходит в спам.'],
+      ['Звонок «из службы безопасности»', 'Давление, срочность, просьба назвать код.'],
+      ['Вредоносная реклама и фальшивые обновления', 'Баннер «обновите браузер» скачивает троян.'] ] },
+    { k: 'J', name: 'ИИ', about: 'Новые ошибки в чат-ботах и ИИ-агентах.', items: [
+      ['Prompt injection', '«Забудь инструкции» — и чат-бот раскрывает свои правила.'],
+      ['Скрытые команды для ИИ-агентов', 'Агент читает страницу со скрытой командой и выполняет её.'],
+      ['Отравление данных модели', 'В обучающие данные подмешаны вредные примеры.'],
+      ['Slopsquatting', 'ИИ советует несуществующий пакет, атакующий регистрирует его заранее.'] ] },
+    { k: 'K', name: 'Громкие случаи', about: 'Настоящие истории, разобранные по шагам.', items: [
+      ['Log4Shell (2021)', 'Строка в журнале заставляет библиотеку скачать чужой код.'],
+      ['Heartbleed (2014)', 'Сервер отдаёт кусок памяти с ключами.'],
+      ['WannaCry и EternalBlue (2017)', 'Червь-шифровальщик идёт от машины к машине.'],
+      ['Shellshock (2014)', 'Команда в переменной окружения исполняется при запуске bash.'],
+      ['Equifax и Apache Struts (2017)', 'Патч вышел, его не поставили: утекли данные около 147 млн человек.'],
+      ['SolarWinds (2020)', 'Закладка приходит клиентам с легальным обновлением.'],
+      ['Бэкдор в xz (2024)', 'Два года входа в доверие и находка из-за задержки в полсекунды.'] ] },
+  ];
+
+  // ---------- Glossary: t = term, c = topic, m = regex source used to find the term in lesson text, d = definition, see = related terms, l = lessons ----------
+  const E = '[а-яё]*';
+  const GLOSSARY = [
+    { id: 'vuln', t: 'Уязвимость', c: 'Основы', m: `уязвимост${E}`, d: 'Ошибка в программе или настройке, из-за которой систему можно заставить делать незадуманное: отдать чужие данные, пустить без пароля, выполнить чужой код.', see: 'exploit patch cve', l: 'A1' },
+    { id: 'exploit', t: 'Эксплойт', c: 'Основы', m: `эксплойт${E}`, d: 'Программа или приём, который использует конкретную уязвимость. Уязвимость — дыра в заборе, эксплойт — способ через неё пролезть.', see: 'vuln patch', l: 'A1' },
+    { id: 'patch', t: 'Патч', c: 'Основы', m: `патч${E}`, d: 'Обновление, которое исправляет ошибку. Пока патч не установлен, уязвимость остаётся открытой, даже если о ней все знают.', see: 'vuln', l: 'A1 K5' },
+    { id: 'cve', t: 'CVE', c: 'Основы', m: 'CVE(?:-\\d{4}-\\d+)?', d: 'Общий каталог известных уязвимостей. Каждой даётся номер вида CVE-2021-44228, чтобы все говорили об одной и той же ошибке.', see: 'cwe cvss', l: 'A2' },
+    { id: 'cwe', t: 'CWE', c: 'Основы', m: 'CWE(?:-\\d+)?', d: 'Каталог типов ошибок. CVE — конкретная дыра в конкретной программе, CWE — её класс: например, CWE-89 объединяет все SQL-инъекции.', see: 'cve owasp', l: 'A6' },
+    { id: 'cvss', t: 'CVSS', c: 'Основы', m: 'CVSS', d: 'Шкала тяжести уязвимости от 0 до 10. Считается по признакам: можно ли атаковать по сети, нужен ли вход в систему, что получает атакующий.', see: 'cve', l: 'A3' },
+    { id: 'owasp', t: 'OWASP', c: 'Основы', m: 'OWASP(?: Top 10(?::2021)?)?', d: 'Открытое сообщество по безопасности веб-приложений. Самый известный его документ — OWASP Top 10, список десяти главных классов рисков для сайтов.', see: 'cwe', l: 'A6' },
+    { id: 'attck', t: 'MITRE ATT&CK', c: 'Основы', m: '(?:MITRE )?ATT&CK', d: 'Открытый справочник приёмов, которыми пользуются атакующие. У каждой техники есть номер, например T1566 — фишинг.', see: 'cwe', l: 'A8' },
+    { id: 'rce', t: 'RCE', c: 'Основы', m: 'RCE', d: 'Remote Code Execution, удалённое выполнение кода: атакующий заставляет чужой компьютер выполнить свои команды. Один из самых тяжёлых исходов.', see: 'injection', l: 'A4' },
+    { id: 'nist', t: 'NIST', c: 'Основы', m: 'NIST(?: SP 800-63B)?', d: 'Национальный институт стандартов и технологий США. Публикует открытые рекомендации по безопасности; документ SP 800-63B посвящён паролям и подтверждению входа.', see: '2fa', l: 'F6' },
+    { id: 'rfc', t: 'RFC', c: 'Основы', m: 'RFC(?: \\d+)?', d: 'Открытые документы, в которых записаны правила работы интернета: протоколы и форматы. У каждого свой номер.', see: 'http arp', l: '' },
+    { id: 'trust', t: 'Граница доверия', c: 'Основы', m: `границ${E} доверия`, d: 'Линия, за которой данным нельзя верить на слово: всё, что пересекает её снаружи внутрь, нужно проверять. На схемах уроков нарисована пунктиром.', see: 'layers least', l: 'A7' },
+    { id: 'layers', t: 'Слои защиты', c: 'Основы', m: `сло${E} защиты`, d: 'Несколько независимых мер вместо одной. Если одна не сработала, атаку останавливает следующая.', see: 'least 2fa', l: 'A7' },
+    { id: 'least', t: 'Минимальные права', c: 'Основы', m: `минимальн${E} прав${E}`, d: 'Принцип: у каждой программы и учётной записи ровно столько прав, сколько нужно для работы. Тогда взлом одной части не отдаёт всё остальное.', see: 'layers account', l: 'A7' },
+    { id: 'attacker', t: 'Атакующий', c: 'Основы', d: 'Тот, кто пытается заставить систему работать не по правилам. В уроках он всегда в красном капюшоне, и красный цвет на схеме принадлежит только ему.', see: 'victim trust', l: 'A8' },
+    { id: 'victim', t: 'Пользователь', c: 'Основы', d: 'Обычный человек, который пользуется сайтом или сетью. В уроках это тот, чьи данные хочет получить атакующий.', see: 'attacker account', l: '' },
+
+    { id: 'server', t: 'Сервер', c: 'Веб', m: `(?:веб-)?сервер${E}`, d: 'Компьютер или программа, которая отвечает на запросы: отдаёт страницы сайта, проверяет логин, обращается к базе данных.', see: 'db http', l: '' },
+    { id: 'db', t: 'База данных', c: 'Веб', m: 'баз(?:а|ы|е|у|ой)(?: данных)?', d: 'Хранилище сведений сайта: пользователи, заказы, пароли. Сервер задаёт ей вопросы на языке запросов, чаще всего SQL.', see: 'sql server', l: 'B1' },
+    { id: 'browser', t: 'Браузер', c: 'Веб', m: `браузер${E}`, d: 'Программа, которой открывают сайты: Chrome, Safari, Firefox. Отправляет запросы серверу и показывает ответ.', see: 'http server', l: '' },
+    { id: 'site', t: 'Сайт', c: 'Веб', d: 'Сервис, к которому обращается пользователь. В уроках используются выдуманные адреса вроде bank.example: настоящих компаний здесь нет.', see: 'server domain', l: '' },
+    { id: 'http', t: 'HTTP', c: 'Веб', m: 'HTTP', d: 'Протокол, по которому браузер разговаривает с сайтом: запрос и ответ. Сам по себе ничего не шифрует.', see: 'https getpost', l: 'G1' },
+    { id: 'getpost', t: 'GET и POST', c: 'Веб', m: 'GET|POST', d: 'Два основных вида HTTP-запроса. GET просит что-то показать, POST отправляет данные, например логин и пароль из формы.', see: 'http', l: '' },
+    { id: 'sql', t: 'SQL', c: 'Веб', m: `SQL(?:-запрос${E})?`, d: 'Язык, на котором программы задают вопросы базе данных. Например, SELECT … WHERE login = \'anna\' значит «найди пользователя anna».', see: 'db sqli', l: 'B1' },
+    { id: 'injection', t: 'Инъекция', c: 'Веб', m: `инъекци${E}`, d: 'Класс атак, в которых присланные данные программа принимает за часть команды и выполняет.', see: 'sqli rce', l: 'B1 B2' },
+    { id: 'sqli', t: 'SQL-инъекция', c: 'Веб', m: `SQL-инъекци${E}|слеп${E} инъекци${E}`, d: 'Инъекция в запрос к базе данных: текст из поля формы меняет смысл SQL-запроса. Слепая инъекция — вариант, когда ответа не видно и данные угадывают по косвенным признакам.', see: 'injection prepared sql', l: 'B1' },
+    { id: 'prepared', t: 'Параметризованный запрос', c: 'Веб', m: `параметризованн${E} запрос${E}|подготовленн${E} запрос${E}|prepared statement`, d: 'Способ обращаться к базе, при котором текст запроса и данные пользователя отправляются отдельно, и база не может принять данные за команду. Другие названия: подготовленный запрос, prepared statement.', see: 'sqli escaping', l: 'B1' },
+    { id: 'escaping', t: 'Экранирование', c: 'Веб', m: `экранировани${E}`, d: 'Замена служебных знаков, например кавычек, на безопасные обозначения, чтобы они читались как обычный текст.', see: 'prepared whitelist', l: 'B1 C1' },
+    { id: 'whitelist', t: 'Белый список', c: 'Веб', m: `бел${E} списк${E}`, d: 'Правило «разрешено только перечисленное, остальное запрещено». Надёжнее чёрного списка, в котором перечисляют запрещённое.', see: 'escaping', l: 'B3' },
+    { id: 'session', t: 'Сессия', c: 'Веб', m: `сесси${E}`, d: 'Память сервера о том, что вы уже вошли. После входа сервер выдаёт браузеру идентификатор и узнаёт вас по нему, не спрашивая пароль на каждой странице.', see: 'cookie account', l: 'D3' },
+    { id: 'cookie', t: 'Куки', c: 'Веб', m: 'кук(?:и|а|у|ами|ах)', d: 'Небольшие данные, которые сайт просит браузер хранить и присылать с каждым запросом. В них обычно лежит идентификатор сессии.', see: 'session', l: 'D3' },
+    { id: 'account', t: 'Учётная запись', c: 'Веб', m: `учётн${E} запис${E}`, d: 'Запись о пользователе в системе: логин, пароль и права.', see: 'session least', l: '' },
+
+    { id: 'mitm', t: 'Человек посередине', c: 'Сеть', m: `человек${E} посередине|Adversary-in-the-Middle`, d: 'Атака, при которой посредник встаёт между двумя сторонами и пропускает их переписку через себя: читает её, а иногда и меняет.', see: 'arpspoof https sslstrip', l: 'G1 G3' },
+    { id: 'router', t: 'Роутер', c: 'Сеть', m: `роутер${E}`, d: 'Устройство, которое соединяет локальную сеть с интернетом. Весь трафик наружу идёт через него.', see: 'traffic arp', l: 'G1' },
+    { id: 'ip', t: 'IP-адрес', c: 'Сеть', m: `IP-адрес${E}`, d: 'Числовой адрес устройства в сети, например 192.0.2.24. По нему данные находят получателя.', see: 'mac arp', l: '' },
+    { id: 'mac', t: 'Сетевая карта и MAC-адрес', c: 'Сеть', m: `сетев${E} карт${E}|MAC-адрес${E}`, d: 'Сетевая карта — деталь, которой устройство подключается к сети. У неё есть свой номер, MAC-адрес; по нему устройства находят друг друга внутри локальной сети.', see: 'ip arp', l: 'G1' },
+    { id: 'arp', t: 'ARP', c: 'Сеть', m: `ARP(?:-ответ${E}|-таблиц${E})?`, d: 'Протокол локальной сети: с его помощью устройства выясняют, какой сетевой карте принадлежит IP-адрес. Ответам верит без проверки.', see: 'arpspoof mac ip', l: 'G1' },
+    { id: 'arpspoof', t: 'ARP spoofing', c: 'Сеть', m: 'ARP spoofing', d: 'Атака: поддельные ARP-ответы убеждают устройство, что адрес роутера принадлежит атакующему, и трафик идёт через него.', see: 'arp mitm dai', l: 'G1' },
+    { id: 'traffic', t: 'Трафик', c: 'Сеть', m: `трафик${E}`, d: 'Все данные, которые идут по сети между устройствами.', see: 'router plaintext', l: '' },
+    { id: 'plaintext', t: 'Открытый текст', c: 'Сеть', m: `открыт${E} текст${E}`, d: 'Данные без шифрования: их может прочитать любой, через кого они проходят.', see: 'encryption http', l: 'G1' },
+    { id: 'switch', t: 'Коммутатор', c: 'Сеть', m: `коммутатор${E}`, d: 'Устройство, которое соединяет компьютеры внутри локальной сети. В управляемых сетях умеет проверять и отбрасывать поддельные ARP-ответы.', see: 'dai router', l: 'G1' },
+    { id: 'dai', t: 'Dynamic ARP Inspection', c: 'Сеть', m: 'Dynamic ARP Inspection', d: 'Функция коммутатора: сверяет ARP-ответы с известными адресами и отбрасывает поддельные.', see: 'arpspoof switch', l: 'G1' },
+    { id: 'vpn', t: 'VPN', c: 'Сеть', m: 'VPN', d: 'Зашифрованный туннель от устройства до сервера VPN. В чужой сети посредник видит только то, что вы подключены к VPN.', see: 'encryption mitm', l: 'G1' },
+    { id: 'sni', t: 'SNI', c: 'Сеть', m: 'SNI', d: 'Поле в начале TLS-соединения, в котором браузер называет имя сайта. Обычно передаётся незашифрованным.', see: 'tls', l: '' },
+
+    { id: 'encryption', t: 'Шифрование', c: 'Шифрование', m: `(?:за)?шифр${E}`, d: 'Превращение данных в бессмысленный набор байтов, который можно вернуть обратно только с ключом.', see: 'key tls plaintext', l: 'F4' },
+    { id: 'key', t: 'Ключ', c: 'Шифрование', m: `ключ${E}(?: шифрования)?`, d: 'Секретное число, которым шифруют, расшифровывают или подписывают данные. Без ключа зашифрованное не прочитать.', see: 'encryption signature dh', l: 'F4' },
+    { id: 'https', t: 'HTTPS', c: 'Шифрование', m: 'HTTPS', d: 'HTTP внутри зашифрованного соединения TLS. Посредник видит, с каким сайтом вы общаетесь, но не видит содержимого.', see: 'tls http hsts', l: 'G1 G3' },
+    { id: 'tls', t: 'TLS', c: 'Шифрование', m: 'TLS(?: 1\\.3)?', d: 'Протокол, который шифрует соединение и проверяет, что сайт тот, за кого себя выдаёт. На нём работает HTTPS; версия 1.3 — текущая.', see: 'https cert dh', l: 'F4 F5' },
+    { id: 'cert', t: 'Сертификат', c: 'Шифрование', m: `сертификат${E}`, d: 'Электронное удостоверение сайта: в нём записаны имя сайта и его открытый ключ, а подлинность заверена удостоверяющим центром. Подтверждает адрес, а не добрые намерения.', see: 'tls signature domain', l: 'F5' },
+    { id: 'signature', t: 'Подпись', c: 'Шифрование', m: 'подпис(?:ь|и|ью|ей)', d: 'Электронная подпись — число, вычисленное закрытым ключом. Проверить её может любой, подделать без ключа нельзя.', see: 'key cert', l: 'F5' },
+    { id: 'dh', t: 'Обмен Диффи — Хеллмана', c: 'Шифрование', m: `обмен${E} Диффи — Хеллмана`, d: 'Способ двум сторонам получить общий секретный ключ по открытому каналу: тот, кто подслушивает, видит обмен, но вычислить ключ не может.', see: 'key tls', l: 'F4' },
+    { id: 'hsts', t: 'HSTS', c: 'Шифрование', m: 'HSTS', d: 'Указание сайта браузеру: «открывай меня только по HTTPS». После него браузер сам отказывается от незащищённого соединения.', see: 'sslstrip https', l: 'G3' },
+    { id: 'sslstrip', t: 'SSL stripping', c: 'Шифрование', m: 'SSL stripping', d: 'Атака посредника: с жертвой он держит незащищённый HTTP, а с сайтом — HTTPS, и читает всё по дороге.', see: 'hsts mitm', l: 'G3' },
+
+    { id: 'phishing', t: 'Фишинг', c: 'Вход и люди', m: `фишинг${E}|Phishing`, d: 'Обман, при котором человека заманивают на поддельную страницу или просят сообщить секрет, выдавая себя за банк, начальника или службу поддержки.', see: 'soceng fakepage proxyphish', l: 'I1 I2' },
+    { id: 'proxyphish', t: 'Прокси-фишинг', c: 'Вход и люди', m: `прокси-фишинг${E}`, d: 'Фишинг, при котором поддельная страница тут же пересылает всё настоящему сайту и обратно. Так перехватывают и пароль, и одноразовый код.', see: 'phishing 2fa passkey', l: 'F6' },
+    { id: 'soceng', t: 'Социальная инженерия', c: 'Вход и люди', m: `социальн${E} инженери${E}`, d: 'Атака не на программу, а на человека: давление, срочность, игра на доверии.', see: 'phishing', l: 'I1 I4' },
+    { id: 'fakepage', t: 'Поддельная страница', c: 'Вход и люди', m: `поддельн${E} страниц${E}`, d: 'Копия настоящей страницы входа на чужом адресе. Всё, что в неё вводят, получает атакующий.', see: 'phishing domain', l: 'I1' },
+    { id: 'domain', t: 'Домен', c: 'Вход и люди', m: `домен${E}`, d: 'Имя сайта в адресе, например bank.example. Понять, чей это сайт, можно только по нему, а не по внешнему виду страницы.', see: 'cert fakepage', l: 'I1' },
+    { id: 'spf', t: 'SPF, DKIM, DMARC', c: 'Вход и люди', m: 'SPF|DKIM|DMARC', d: 'Три проверки почты: с разрешённого ли сервера пришло письмо (SPF), не изменено ли оно (DKIM) и что делать с письмами, которые проверку не прошли (DMARC).', see: 'phishing domain', l: 'I3' },
+    { id: 'pwdmgr', t: 'Менеджер паролей', c: 'Вход и люди', m: `менеджер${E}(?: паролей)?`, d: 'Программа, которая хранит пароли и подставляет их только на том сайте, для которого они сохранены.', see: 'domain passkey', l: 'I1' },
+    { id: '2fa', t: 'Второй фактор', c: 'Вход и люди', m: `втор${E} фактор${E}`, d: 'Дополнительное подтверждение входа помимо пароля: код из приложения, уведомление на телефоне или аппаратный ключ.', see: 'passkey proxyphish layers', l: 'F6' },
+    { id: 'passkey', t: 'Passkeys', c: 'Вход и люди', m: 'passkeys?|WebAuthn|FIDO2', d: 'Вход без пароля: устройство хранит ключ, привязанный к домену сайта, и на поддельном сайте он не сработает. Стандарты называются WebAuthn и FIDO2.', see: '2fa domain key', l: 'F7' },
+    { id: 'stuffing', t: 'Credential stuffing', c: 'Вход и люди', m: 'credential stuffing', d: 'Проверка украденных пар «логин и пароль» на других сайтах в расчёте на то, что человек повторяет пароль.', see: 'leak 2fa', l: 'F2' },
+    { id: 'leak', t: 'Утечка', c: 'Вход и люди', m: `утечк${E}`, d: 'Случай, когда данные сервиса попали к посторонним, например база логинов и паролей.', see: 'stuffing', l: 'F1 F2' },
+  ];
+  const NODE_TERM = { attacker: 'attacker', server: 'server', db: 'db', user: 'victim', fake: 'fakepage', bank: 'site', router: 'router' };
+  const TERM = Object.fromEntries(GLOSSARY.map((t) => [t.id, t]));
+  const TERM_RX = GLOSSARY.filter((t) => t.m).map((t) => ({ id: t.id, rx: new RegExp(`(?<![\\p{L}\\p{N}])(?:${t.m})(?![\\p{L}\\p{N}])`, 'giu') }));
+  const CAT = {};
+  SECTIONS.forEach((s) => s.items.forEach(([title, desc], i) => { CAT[s.k + (i + 1)] = { id: s.k + (i + 1), sec: s, title, desc }; }));
+  const words = (s) => (s ? s.split(' ') : []);
+
+  // ---------- Player ----------
+  const FIRST = 'phishing'; // the lesson shown on load: the simplest one to follow
+  const state = { li: 0, mode: 'attack', si: 0, depth: 'simple', playing: false, speed: 1 };
+  const SPEEDS = [1, 2, 0.5];
+  const W = 760, LANE = 84, ICON_Y = 100;
+  const NS = 'http://www.w3.org/2000/svg';
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let raf = 0, timer = 0;
+
+  const $ = (id) => document.getElementById(id);
+  const lesson = () => LESSONS[state.li];
+  const steps = () => lesson().modes[state.mode];
+  const nodeIndex = (id) => lesson().nodes.findIndex((n) => n.id === id);
+  const cx = (i) => (i + 0.5) * W / lesson().nodes.length;
+  const svgEl = (name, attrs, text) => {
+    const e = document.createElementNS(NS, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    return e;
+  };
+  const el = (name, cls, text) => {
+    const e = document.createElement(name);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  };
+  function btn(cls, text, onClick) {
+    const b = el('button', cls, text);
+    b.type = 'button';
+    if (onClick) b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function buildScene() {
+    const l = lesson();
+    const svg = svgEl('svg', { viewBox: `0 0 ${W} 300`, role: 'group', 'aria-label': `Схема урока «${l.title}»`, 'font-family': 'Onest, system-ui, sans-serif' });
+    svg.append(svgEl('rect', { width: W, height: 300, fill: '#EDF0F3' }));
+    for (const z of l.zones) {
+      const x0 = cx(z.from) - 85, x1 = cx(z.to) + 85, color = z.danger ? '#E8523A' : '#1F2A44';
+      svg.append(svgEl('rect', { x: x0, y: 30, width: x1 - x0, height: 256, rx: 10, fill: 'none', stroke: color, 'stroke-width': 1.5, 'stroke-dasharray': '2 7', 'stroke-linecap': 'round' }));
+      svg.append(svgEl('text', { x: x0 + 12, y: 50, 'font-size': 10, 'letter-spacing': 1.5, fill: color, 'font-family': 'JetBrains Mono, monospace', class: 'zlabel', 'data-term': 'trust', tabindex: 0, role: 'button', 'aria-label': `Зона «${z.label}»: что такое граница доверия` }, z.label));
+    }
+    svg.append(svgEl('line', { x1: cx(0), y1: LANE, x2: cx(l.nodes.length - 1), y2: LANE, stroke: '#1F2A44', 'stroke-width': 1.5, opacity: .25 }));
+    l.nodes.forEach((n, i) => {
+      const x = cx(i);
+      svg.append(svgEl('line', { x1: x, y1: LANE, x2: x, y2: ICON_Y + 6, stroke: '#1F2A44', 'stroke-width': 1.5, opacity: .25 }));
+      const g = svgEl('g', { transform: `translate(${x - 75} ${ICON_Y})` });
+      g.append(svgEl('use', { href: `#ic-${n.icon}`, width: 150, height: 133 }), svgEl('use', { href: '#feather', width: 150, height: 133 }));
+      svg.append(g);
+      svg.append(svgEl('text', { x, y: 254, 'font-size': 13, 'font-weight': 700, 'text-anchor': 'middle', fill: '#1F2A44' }, n.name));
+      svg.append(svgEl('text', { x, y: 271, 'font-size': 10, 'text-anchor': 'middle', fill: '#5E6C7A', 'font-family': 'JetBrains Mono, monospace' }, n.sub));
+    });
+    svg.append(svgEl('rect', { id: 'ring', x: 0, y: ICON_Y - 2, width: 150, height: 137, rx: 12, fill: 'none', 'stroke-width': 3 }));
+    l.nodes.forEach((n, i) => {
+      svg.append(svgEl('rect', { x: cx(i) - 75, y: ICON_Y, width: 150, height: 178, rx: 12, class: 'hit', 'data-term': NODE_TERM[n.id], tabindex: 0, role: 'button', 'aria-label': `${n.name}: что это` }));
+    });
+    svg.append(svgEl('line', { id: 'trail', y1: LANE, y2: LANE, 'stroke-width': 3, 'stroke-linecap': 'round' }));
+    svg.append(svgEl('g', { id: 'msg' }));
+    $('stage').replaceChildren(svg);
+  }
+
+  function buildMessage(st) {
+    const g = $('msg');
+    g.replaceChildren();
+    const color = KIND[st.kind].color;
+    if (st.icon) {
+      g.append(svgEl('circle', { cx: 2, cy: 2, r: 21, fill: '#1F2A44', opacity: .3 }));
+      const clip = svgEl('g', { 'clip-path': 'url(#token)' });
+      clip.append(svgEl('rect', { x: -22, y: -22, width: 44, height: 44, fill: '#EDF0F3' }));
+      clip.append(svgEl('use', { href: `#ic-${st.icon}`, x: -24, y: -22, width: 48, height: 43 }));
+      g.append(clip, svgEl('circle', { cx: 0, cy: 0, r: 21, fill: 'none', stroke: color, 'stroke-width': 3 }));
+      return;
+    }
+    const text = KIND[st.kind].mark + st.label;
+    const w = Math.max(48, text.length * 6.9 + 18);
+    g.append(svgEl('rect', { x: -w / 2 + 3, y: -9, width: w, height: 24, rx: 5, fill: '#1F2A44', opacity: .3 }));
+    g.append(svgEl('rect', { x: -w / 2, y: -12, width: w, height: 24, rx: 5, fill: color }));
+    g.append(svgEl('text', { x: 0, y: 4, 'font-size': 11, 'font-weight': 700, 'text-anchor': 'middle', fill: '#FFFFFF', 'font-family': 'JetBrains Mono, monospace' }, text));
+  }
+
+  function setMessageX(x, x0) {
+    $('msg').setAttribute('transform', `translate(${x} ${LANE})`);
+    const trail = $('trail');
+    trail.setAttribute('x1', x0);
+    trail.setAttribute('x2', x);
+  }
+
+  function showStep(animate, done) {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    const st = steps()[state.si];
+    const x0 = cx(nodeIndex(st.from)), x1 = cx(nodeIndex(st.to));
+    const color = KIND[st.kind].color;
+    buildMessage(st);
+    $('trail').setAttribute('stroke', color);
+    const ring = $('ring');
+    ring.setAttribute('x', x1 - 75);
+    ring.setAttribute('stroke', color);
+    ring.classList.remove('pulse');
+    const arrive = () => {
+      setMessageX(x1, x0);
+      ring.setAttribute('opacity', .9);
+      void ring.getBoundingClientRect();
+      ring.classList.add('pulse');
+      if (done) done();
+    };
+    if (!animate || reduced.matches || x0 === x1) { arrive(); return; }
+    ring.setAttribute('opacity', 0);
+    const dur = 900 / state.speed;
+    let t0 = 0;
+    const tick = (t) => {
+      if (!t0) t0 = t;
+      const p = Math.min(1, (t - t0) / dur);
+      const e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      setMessageX(x0 + (x1 - x0) * e, x0);
+      if (p < 1) raf = requestAnimationFrame(tick); else arrive();
+    };
+    setMessageX(x0, x0);
+    raf = requestAnimationFrame(tick);
+  }
+
+  // ---------- Terms: find glossary words in a text and turn them into buttons ----------
+  function findTerms(text, skip) {
+    const hits = [];
+    for (const { id, rx } of TERM_RX) {
+      if (id === skip) continue;
+      rx.lastIndex = 0;
+      let m;
+      while ((m = rx.exec(text))) hits.push({ id, s: m.index, e: m.index + m[0].length });
+    }
+    hits.sort((a, b) => a.s - b.s || b.e - a.e);
+    let end = 0;
+    return hits.filter((h) => { if (h.s < end) return false; end = h.e; return true; });
+  }
+
+  function termBtn(id, text, cls) {
+    const b = btn(cls === undefined ? 'term' : cls, text);
+    b.dataset.term = id;
+    return b;
+  }
+
+  // Each term is linked once per text block, at its first occurrence.
+  function rich(text, skip) {
+    const frag = document.createDocumentFragment();
+    const seen = new Set();
+    let pos = 0;
+    for (const h of findTerms(text, skip)) {
+      if (seen.has(h.id)) continue;
+      seen.add(h.id);
+      frag.append(text.slice(pos, h.s), termBtn(h.id, text.slice(h.s, h.e)));
+      pos = h.e;
+    }
+    frag.append(text.slice(pos));
+    return frag;
+  }
+
+  function lessonLinks(ids) {
+    const frag = document.createDocumentFragment();
+    ids.forEach((id, i) => {
+      if (i) frag.append(', ');
+      const li = LESSONS.findIndex((l) => l.cat === id);
+      if (li >= 0) frag.append(btn('link', CAT[id].title, () => navTo(LESSONS[li].id)));
+      else frag.append(`${CAT[id].title} (в плане)`);
+    });
+    return frag;
+  }
+
+  let popAnchor = null;
+  function placePop() {
+    const pop = $('pop');
+    if (pop.hidden || !popAnchor || !popAnchor.isConnected) return;
+    const r = popAnchor.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    const w = pop.offsetWidth, h = pop.offsetHeight;
+    const left = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, vw - w - 12));
+    let top = r.bottom + 8;
+    if (top + h > window.innerHeight - 8) top = r.top - 8 - h > 8 ? r.top - 8 - h : Math.max(8, window.innerHeight - 8 - h);
+    pop.style.left = `${left + window.scrollX}px`;
+    pop.style.top = `${top + window.scrollY}px`;
+  }
+
+  function openTerm(id, anchor) {
+    const t = TERM[id];
+    if (!t) return;
+    const pop = $('pop');
+    if (!(anchor && pop.contains(anchor))) popAnchor = anchor;
+    const head = el('div', 'pop-head');
+    const x = btn('x', '×', () => closePop(true));
+    x.setAttribute('aria-label', 'Закрыть');
+    head.append(el('strong', '', t.t), x);
+    const def = el('p');
+    def.append(rich(t.d, id));
+    pop.replaceChildren(el('span', 'tag', t.c), head, def);
+    if (t.see) {
+      const chips = el('div', 'chips');
+      chips.append(...words(t.see).map((s) => termBtn(s, TERM[s].t, '')));
+      pop.append(el('span', 'where', 'Связанные слова'), chips);
+    }
+    if (t.l) {
+      const where = el('p', 'where', 'Уроки: ');
+      where.append(lessonLinks(words(t.l)));
+      pop.append(where);
+    }
+    pop.hidden = false;
+    placePop();
+    try { pop.focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function closePop(refocus) {
+    const pop = $('pop');
+    if (pop.hidden) return;
+    pop.hidden = true;
+    if (refocus && popAnchor && popAnchor.isConnected && popAnchor.focus) popAnchor.focus({ preventScroll: true });
+    popAnchor = null;
+  }
+
+  // ---------- Drawer: all lessons by section, and the glossary ----------
+  const dr = { tab: 'lessons', q: '' };
+  function renderDrawer() {
+    const isL = dr.tab === 'lessons';
+    $('tab-lessons').setAttribute('aria-pressed', String(isL));
+    $('tab-glossary').setAttribute('aria-pressed', String(!isL));
+    $('drawer-title').textContent = isL ? `Уроки · ${Object.keys(CAT).length} в ${SECTIONS.length} разделах` : `Словарь · ${GLOSSARY.length} слов`;
+    $('drawer-q').placeholder = isL ? 'Найти урок' : 'Найти слово';
+    const q = dr.q.trim().toLowerCase();
+    const out = [];
+    if (isL) {
+      for (const s of SECTIONS) {
+        const all = s.items.map((_, i) => CAT[s.k + (i + 1)]);
+        const shown = all.filter((c) => !q || `${c.title} ${c.desc} ${s.name}`.toLowerCase().includes(q));
+        if (!shown.length) continue;
+        const head = el('div', 'dsec');
+        head.append(el('span', '', `${s.k} · ${s.name}`), el('span', '', String(all.length)));
+        out.push(head);
+        for (const c of shown) {
+          const li = LESSONS.findIndex((l) => l.cat === c.id);
+          const item = li >= 0 ? btn('ditem', '', () => navTo(LESSONS[li].id)) : el('div', 'ditem');
+          if (li >= 0 && li === state.li) item.setAttribute('aria-current', 'true');
+          const tx = el('span', 'tx');
+          tx.append(el('b', '', c.title), el('span', '', c.desc));
+          item.append(el('span', 'id', c.id), tx, el('span', 'st', li >= 0 ? 'открыть' : 'в плане'));
+          out.push(item);
+        }
+      }
+      if (!out.length) out.push(el('p', 'empty', 'Ничего не нашлось.'));
+    } else {
+      const list = GLOSSARY.filter((t) => !q || `${t.t} ${t.d}`.toLowerCase().includes(q)).sort((a, b) => a.t.localeCompare(b.t, 'ru'));
+      for (const t of list) {
+        const a = el('div', 'gitem');
+        const hd = el('div', 'hd');
+        hd.append(el('b', '', t.t), el('span', 'tag', t.c));
+        const def = el('p');
+        def.append(rich(t.d, t.id));
+        a.append(hd, def);
+        if (t.l) {
+          const where = el('p', 'where', 'Уроки: ');
+          where.append(lessonLinks(words(t.l)));
+          a.append(where);
+        }
+        out.push(a);
+      }
+      if (!out.length) out.push(el('p', 'empty', 'Такого слова в словаре пока нет.'));
+    }
+    $('drawer-body').replaceChildren(...out);
+  }
+
+  let drawerOpener = null;
+  function openDrawer(tab, opener) {
+    stop();
+    closePop();
+    drawerOpener = opener || null;
+    dr.tab = tab; dr.q = '';
+    $('drawer-q').value = '';
+    $('drawer').hidden = false;
+    $('scrim').hidden = false;
+    renderDrawer();
+    $('drawer-body').scrollTop = 0;
+    const cur = $('drawer-body').querySelector('[aria-current="true"]');
+    if (cur) cur.scrollIntoView({ block: 'center' });
+    try { $('drawer-q').focus({ preventScroll: true }); } catch (e) {}
+  }
+
+  function closeDrawer() {
+    if ($('drawer').hidden) return;
+    closePop();
+    $('drawer').hidden = true;
+    $('scrim').hidden = true;
+    if (drawerOpener && drawerOpener.focus) drawerOpener.focus({ preventScroll: true });
+    drawerOpener = null;
+  }
+
+  // ---------- Lesson panels ----------
+  function codeBlock(code) {
+    const pre = el('pre');
+    code.split(/(⟦[^⟧]*⟧)/).forEach((part) => {
+      if (part.startsWith('⟦')) pre.append(el('mark', '', part.slice(1, -1)));
+      else pre.append(part);
+    });
+    return pre;
+  }
+
+  function renderExplain() {
+    const st = steps()[state.si];
+    const box = $('explain');
+    box.replaceChildren();
+    if (state.mode === 'defence') box.append(el('span', 'badge', `Защита: ${lesson().defenceName}`));
+    box.append(el('h3', '', `Шаг ${state.si + 1} из ${steps().length}. ${st.title}`));
+    const p = el('p');
+    p.append(rich(st[state.depth]));
+    box.append(p);
+    if (state.depth === 'deep' && st.code) box.append(codeBlock(st.code));
+    document.querySelectorAll('#depth button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.depth === state.depth)));
+  }
+
+  function renderHead() {
+    const l = lesson(), c = CAT[l.cat];
+    $('lesson-title').textContent = l.title;
+    $('lesson-sub').textContent = `${c.sec.name} · ${c.desc}`;
+    $('note').textContent = `готово ${LESSONS.length} из ${Object.keys(CAT).length} уроков`;
+    $('passport').replaceChildren(...l.passport.flatMap(([k, v]) => {
+      const dt = el('dt'), dd = el('dd');
+      dt.append(rich(k));
+      dd.append(rich(v));
+      return [dt, dd];
+    }));
+    const ids = new Set();
+    const scan = (text) => { if (text) findTerms(text).forEach((h) => ids.add(h.id)); };
+    for (const mode of Object.values(l.modes)) for (const st of mode) { scan(st.simple); scan(st.steps); scan(st.deep); }
+    l.passport.forEach(([k, v]) => { scan(k); scan(v); });
+    const list = [...ids].map((id) => TERM[id]).sort((a, b) => a.t.localeCompare(b.t, 'ru'));
+    $('lesson-terms').replaceChildren(...list.map((t) => termBtn(t.id, t.t, '')));
+  }
+
+  // The table lists every step of the lesson; steps after the current one are dimmed.
+  function renderLog() {
+    const name = (id) => lesson().nodes[nodeIndex(id)].name;
+    $('log').replaceChildren(...steps().map((st, i) => {
+      const tr = el('tr', i === state.si ? 'now' : i > state.si ? 'future' : '');
+      const num = btn('num', String(i + 1));
+      num.style.background = KIND[st.kind].color;
+      num.setAttribute('aria-label', `Шаг ${i + 1}: ${st.title}`);
+      if (i === state.si) num.setAttribute('aria-current', 'step');
+      const td = el('td');
+      td.append(num);
+      tr.append(td, el('td', '', st.title), el('td', '', name(st.from)), el('td', '', st.from === st.to ? '—' : name(st.to)), el('td', 'what', st.what || st.label), el('td', KIND[st.kind].cls, KIND[st.kind].mark + st.result));
+      tr.addEventListener('click', () => { stop(); go(i, i === state.si + 1); });
+      return tr;
+    }));
+    const now = $('log').querySelector('tr.now');
+    if (now && now.scrollIntoView && window.matchMedia('(min-width: 861px)').matches) now.scrollIntoView({ block: 'nearest' });
+  }
+
+  function renderControls() {
+    $('play').textContent = state.playing ? 'Пауза' : 'Пуск';
+    $('prev').disabled = state.si === 0;
+    $('next').disabled = state.si === steps().length - 1;
+    $('speed').textContent = `${String(state.speed).replace('.', ',')}×`;
+    $('m-attack').setAttribute('aria-pressed', String(state.mode === 'attack'));
+    $('m-defence').setAttribute('aria-pressed', String(state.mode === 'defence'));
+  }
+
+  function go(si, animate, done) {
+    state.si = Math.max(0, Math.min(steps().length - 1, si));
+    closePop();
+    renderExplain(); renderLog(); renderControls();
+    showStep(animate, done);
+  }
+
+  function stop() { state.playing = false; clearTimeout(timer); renderControls(); }
+
+  function playFrom(si) {
+    state.playing = true;
+    go(si, true, () => {
+      if (!state.playing) return;
+      if (state.si >= steps().length - 1) { stop(); return; }
+      timer = setTimeout(() => playFrom(state.si + 1), 1500 / state.speed);
+    });
+  }
+
+  function togglePlay() {
+    if (state.playing) { stop(); return; }
+    playFrom(state.si >= steps().length - 1 ? 0 : state.si + 1);
+  }
+
+  function setMode(mode) {
+    if (state.mode === mode) return;
+    stop();
+    state.mode = mode;
+    go(state.si, false);
+  }
+
+  function openLesson(i) {
+    stop();
+    state.li = i; state.si = 0; state.mode = 'attack';
+    renderHead(); buildScene();
+    go(0, false);
+  }
+
+  // ---------- Routing: the hash is the lesson id ----------
+  let current = null;
+  function route(h) {
+    if (h === undefined) { try { h = decodeURIComponent(location.hash.slice(1)); } catch (e) { h = ''; } }
+    let i = LESSONS.findIndex((l) => l.id === h);
+    if (i < 0) i = LESSONS.findIndex((l) => l.id === FIRST);
+    if (LESSONS[i].id === current) return;
+    current = LESSONS[i].id;
+    openLesson(i);
+  }
+
+  function navTo(h) {
+    closeDrawer();
+    closePop();
+    try { history.pushState(null, '', `#${h}`); } catch (e) {}
+    route(h);
+  }
+
+  $('play').addEventListener('click', togglePlay);
+  $('prev').addEventListener('click', () => { stop(); go(state.si - 1, false); });
+  $('next').addEventListener('click', () => { stop(); go(state.si + 1, true); });
+  $('again').addEventListener('click', () => { stop(); go(0, false); });
+  $('speed').addEventListener('click', () => { state.speed = SPEEDS[(SPEEDS.indexOf(state.speed) + 1) % SPEEDS.length]; renderControls(); });
+  $('m-attack').addEventListener('click', () => setMode('attack'));
+  $('m-defence').addEventListener('click', () => setMode('defence'));
+  document.querySelectorAll('#depth button').forEach((b) => b.addEventListener('click', () => { state.depth = b.dataset.depth; closePop(); renderExplain(); }));
+  $('open-lessons').addEventListener('click', (ev) => openDrawer('lessons', ev.currentTarget));
+  $('open-glossary').addEventListener('click', (ev) => openDrawer('glossary', ev.currentTarget));
+  $('tab-lessons').addEventListener('click', () => { dr.tab = 'lessons'; closePop(); renderDrawer(); });
+  $('tab-glossary').addEventListener('click', () => { dr.tab = 'glossary'; closePop(); renderDrawer(); });
+  $('drawer-q').addEventListener('input', (ev) => { dr.q = ev.target.value; renderDrawer(); });
+  $('drawer-x').addEventListener('click', closeDrawer);
+  $('scrim').addEventListener('click', closeDrawer);
+  document.addEventListener('click', (ev) => {
+    const t = ev.target.closest && ev.target.closest('[data-term]');
+    if (t) { openTerm(t.dataset.term, t); return; }
+    if (!ev.target.closest || !ev.target.closest('#pop')) closePop();
+  });
+  window.addEventListener('resize', placePop);
+  document.addEventListener('scroll', (ev) => { if (ev.target !== $('pop') && !$('pop').contains(ev.target)) closePop(); }, true);
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') { if (!$('pop').hidden) closePop(true); else closeDrawer(); return; }
+    if (ev.target.closest && ev.target.closest('input, textarea, select')) return;
+    const onTerm = ev.target.closest && ev.target.closest('[data-term], #pop');
+    if (onTerm) {
+      if ((ev.key === 'Enter' || ev.code === 'Space') && ev.target.tagName !== 'BUTTON' && ev.target.dataset.term) { ev.preventDefault(); openTerm(ev.target.dataset.term, ev.target); }
+      return;
+    }
+    if (!$('drawer').hidden) return;
+    if (ev.code === 'Space') { ev.preventDefault(); togglePlay(); }
+    else if (ev.key === 'ArrowRight') { stop(); go(state.si + 1, true); }
+    else if (ev.key === 'ArrowLeft') { stop(); go(state.si - 1, false); }
+    else if (ev.key.toLowerCase() === 'd' || ev.key.toLowerCase() === 'в') setMode(state.mode === 'attack' ? 'defence' : 'attack');
+  });
+  window.addEventListener('popstate', () => route());
+  window.addEventListener('hashchange', () => route());
+
+  window.__app = { state, LESSONS, SECTIONS, GLOSSARY, CAT, go, setMode, openLesson, togglePlay, navTo, openTerm, openDrawer, closeDrawer, findTerms };
+  route();
+</script>
