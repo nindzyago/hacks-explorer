@@ -6,7 +6,7 @@ import { REAL_TIME_DRIVER, timingRules } from './scripts/timing-rules.mjs';
 import svelteConfig from './svelte.config.js';
 
 export default ts.config(
-  { ignores: ['dist/', 'node_modules/', 'prototype/', 'reference/'] },
+  { ignores: ['dist/', 'dist-e2e/', 'test-results/', 'node_modules/', 'prototype/', 'reference/'] },
   js.configs.recommended,
   ...ts.configs.strictTypeChecked,
   ...svelte.configs.recommended,
