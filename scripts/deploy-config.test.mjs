@@ -33,6 +33,8 @@ const wrangler = (patch = {}) =>
     name: 'hacks-explorer',
     compatibility_date: '2026-11-17',
     assets: { directory: './dist', not_found_handling: 'single-page-application' },
+    workers_dev: true,
+    preview_urls: true,
     previews: {},
     ...patch,
   });
@@ -155,6 +157,9 @@ describe('checkWrangler', () => {
     [{ previews: undefined }, 'previews'],
     [{ account_id: 'abc' }, 'account_id'],
     [{ workers_dev: false }, 'workers_dev'],
+    [{ workers_dev: undefined }, 'workers_dev'],
+    [{ preview_urls: false }, 'preview_urls'],
+    [{ preview_urls: undefined }, 'preview_urls'],
   ])('rejects %j', (patch, word) => {
     expect(checkWrangler(wrangler(patch)).join('\n')).toContain(word);
   });

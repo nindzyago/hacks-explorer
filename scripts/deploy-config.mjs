@@ -197,8 +197,11 @@ export function checkWrangler(text, today = new Date().toISOString().slice(0, 10
   if (previews === null || typeof previews !== 'object' || Array.isArray(previews)) {
     problems.push('previews must be an object: `wrangler preview` needs the block');
   }
-  if ('workers_dev' in config && config.workers_dev !== true) {
-    problems.push('workers_dev must stay on: the draft and preview addresses use it');
+  if (config.workers_dev !== true) {
+    problems.push('workers_dev must be true: the draft and preview addresses use it');
+  }
+  if (config.preview_urls !== true) {
+    problems.push('preview_urls must be true: set it, do not rely on the Cloudflare default');
   }
   return problems;
 }

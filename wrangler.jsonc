@@ -10,10 +10,13 @@
   "assets": {
     "directory": "./dist",
     // Lesson addresses such as /ru/lesson/B1 are routes inside the page, not files.
+    // On preview addresses this works only for browser navigation (docs/deploy.md).
     "not_found_handling": "single-page-application"
   },
   // The draft address (main) and pull request previews live on workers.dev.
   "workers_dev": true,
+  // Said out loud: without it wrangler warns and falls back to the account default.
+  "preview_urls": true,
   // `wrangler preview` needs this block; a static site has nothing to put in it.
   "previews": {}
 }
