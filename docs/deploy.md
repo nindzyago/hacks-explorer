@@ -12,7 +12,8 @@
 | push в любую другую ветку, pull request | `npm run build`, затем `npx wrangler preview` | предпросмотр: `https://<ветка>-hacks-explorer.<поддомен>.workers.dev`, ссылка приходит комментарием в pull request |
 | pull request из форка | скорее всего ничего (не проверено, см. ниже) | нет; `gate` в GitHub Actions при этом работает |
 
-`<поддомен>` — поддомен `workers.dev` учётной записи (Workers & Pages → справа Subdomain).
+`<поддомен>` — поддомен `workers.dev` учётной записи; сейчас это `mike-antipiev`, черновой адрес
+`https://hacks-explorer.mike-antipiev.workers.dev` (первая выкладка 2026-11-17).
 
 Файлы в репозитории: `wrangler.jsonc` (имя Worker, папка `dist`, отдача `index.html` на
 неизвестные адреса), `public/_headers` (заголовки безопасности), `.node-version` (Node 22 для
