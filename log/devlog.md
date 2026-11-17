@@ -14,3 +14,9 @@ Landed: Vite 8 + Svelte 5 + TypeScript 6; `npm run gate` (prettier, eslint, svel
 Numbers: gate зелёный, 9 тестов в 2 файлах; сборка 10.9 КБ JS в gzip (вывод vite build). Подложенные нарушение слоёв, `!`, `any` и код в `content/` дают красный gate (проверено вручную, файлы удалены).
 Not measured on real data: CI на GitHub не запускался; на Linux gate не проверялся.
 Still open: `npx` на этой машине падает с MODULE_NOT_FOUND, инструменты запускаются через `npm run` и `node_modules/.bin`; LICENSE и ATTRIBUTION.md появятся в M4.4.
+
+## 2026-11-17 20:45 — удалённый репозиторий (agent: Claude)
+Landed: по слову владельца создан закрытый репозиторий `nindzyago/hacks-explorer`, `main` отправлена, `origin` настроен.
+Numbers: первый прогон CI (gate, ubuntu-latest, Node 22) зелёный, run 44160754669.
+Not measured on real data: —
+Still open: предупреждение CI — actions/checkout@v4 и setup-node@v4 рассчитаны на Node 20, обновить версии действий в M0.5; сайт не выложен; репозиторий открывается перед выпуском 0.1 (M4.7).

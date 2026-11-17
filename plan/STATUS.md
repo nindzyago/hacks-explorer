@@ -4,7 +4,7 @@
 
 **Current milestone:** M0 — Каркас, gate, наблюдаемость
 **Next task:** M0.2 — Реестр команд
-**Blockers (need a human):** нет для M0.1–M0.4. Для M0.5 нужны владелец: удалённый репозиторий на GitHub, вход в Cloudflare и адрес сайта (L3)
+**Blockers (need a human):** нет для M0.2–M0.4. Удалённый репозиторий есть: закрытый `nindzyago/hacks-explorer`, CI зелёный. Для M0.5 нужны владелец: вход в Cloudflare и адрес сайта (L3)
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
 ## Milestones
