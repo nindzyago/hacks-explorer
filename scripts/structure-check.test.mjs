@@ -13,6 +13,7 @@ describe('layerOf', () => {
     expect(layerOf('src/ui/App.svelte')).toBe('adapters');
     expect(layerOf('src/scene/Stage.svelte')).toBe('adapters');
     expect(layerOf('src/control/app.ts')).toBe('adapters');
+    expect(layerOf('src/time/real-time-driver.ts')).toBe('adapters');
     expect(layerOf('src/main.ts')).toBe('entry');
     expect(layerOf('README.md')).toBe(null);
   });
