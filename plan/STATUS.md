@@ -1,9 +1,9 @@
 # Status
 
-> Updated: 2026-11-17 by Claude (craftspec next)
+> Updated: 2026-11-17 by Claude (craftspec orchestrate)
 
 **Current milestone:** M0 — Каркас, gate, наблюдаемость
-**Next task:** M0.2 — Реестр команд
+**Next task:** M0.3 — Канал управления и M0.4 — Детерминизм (волна 2), M0.5 на проверке
 **Blockers (need a human):** нет для M0.2–M0.4. Удалённый репозиторий есть: закрытый `nindzyago/hacks-explorer`, CI зелёный. Для M0.5 нужны владелец: вход в Cloudflare и адрес сайта (L3)
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -11,7 +11,7 @@
 
 | Id | Milestone | State | Done / total |
 |---|---|---|---|
-| M0 | Каркас, gate, наблюдаемость | in progress | 1 / 5 |
+| M0 | Каркас, gate, наблюдаемость | in progress | 2 / 5 |
 | M1 | Один урок насквозь: SQL-инъекция | not started | 0 / 6 |
 | M2 | Оболочка: панель уроков, языки, глубина, телефон | not started | 0 / 8 |
 | M3 | Первый выпуск: по три урока в каждом разделе (36) | not started | 0 / 13 |
@@ -25,7 +25,7 @@
 ## Checklist (current milestone)
 
 - [x] M0.1 Каркас репозитория и одна команда `npm run gate`
-- [ ] M0.2 Реестр команд
+- [x] M0.2 Реестр команд
 - [ ] M0.3 Канал управления
 - [ ] M0.4 Детерминизм
 - [ ] M0.5 CI и выкладка на Cloudflare
