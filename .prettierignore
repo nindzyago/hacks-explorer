@@ -1,0 +1,9 @@
+# Generated or not ours
+dist/
+node_modules/
+package-lock.json
+reference/
+# The evaluation mock-up (K6) is frozen and outside the gate
+prototype/
+# Method and plan documents keep their hand-made tables
+*.md
