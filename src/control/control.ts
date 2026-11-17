@@ -4,8 +4,13 @@
  * e2e/production.spec.ts proves the production build has no trace of it. See README.md.
  */
 import type { AppContext } from '../commands/app';
+import { createClockChannel, type ClockChannel } from '../commands/clock';
 import type { CommandInfo, RunResult } from '../commands/registry';
+import type { ClockSnapshot } from '../core/clock';
 import type { AppState } from '../core/state';
+
+/** What `state.get()` returns: the stored state and, next to it, the player clock (K17). */
+export type ControlState = AppState & { readonly clock: ClockSnapshot };
 
 export interface AppControl {
   readonly commands: {
@@ -15,10 +20,14 @@ export interface AppControl {
     run(id: unknown, params?: unknown): RunResult;
   };
   readonly state: {
-    /** A copy of the application state, as plain data. */
-    get(): AppState;
+    /** A copy of the application state and of the clock, as plain data. */
+    get(): ControlState;
   };
-  // EXTENSION POINT (M0.4): `readonly clock: { set(ms: unknown): …; tick(ms: unknown): … }`.
+  /**
+   * Moves the player clock by hand: the commands `clock.set` and `clock.tick`. Never throws;
+   * `ms` may be anything. The first accepted move stops the real-time driver.
+   */
+  readonly clock: ClockChannel;
 }
 
 declare global {
@@ -29,26 +38,28 @@ declare global {
 }
 
 export function createControl(app: AppContext): AppControl {
+  const run = (id: unknown, params?: unknown): RunResult => {
+    try {
+      // A copy: the caller gets data it may change without touching the application.
+      return structuredClone(app.registry.run(id, params));
+    } catch {
+      // The registry promises not to throw; the channel does not rely on that promise.
+      return {
+        ok: false,
+        error: { code: 'failed', commandId: '', message: 'control channel failed' },
+      };
+    }
+  };
   return Object.freeze({
     commands: Object.freeze({
-      // Copies: the caller gets data it may change without touching the application.
       list: () => structuredClone(app.registry.list()),
-      run: (id: unknown, params?: unknown): RunResult => {
-        try {
-          return structuredClone(app.registry.run(id, params));
-        } catch {
-          // The registry promises not to throw; the channel does not rely on that promise.
-          return {
-            ok: false,
-            error: { code: 'failed', commandId: '', message: 'control channel failed' },
-          };
-        }
-      },
+      run,
     }),
     state: Object.freeze({
-      get: () => structuredClone(app.store.get()),
+      get: () => structuredClone({ ...app.store.get(), clock: app.clock.snapshot() }),
     }),
-    // EXTENSION POINT (M0.4): `clock: Object.freeze({ set: …, tick: … })`, built from `app`.
+    // The same commands by id, through the same safe `run`.
+    clock: Object.freeze(createClockChannel({ run })),
   });
 }
 
