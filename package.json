@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:e2e": "vite build --mode e2e --outDir dist-e2e --emptyOutDir",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -18,10 +19,12 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "vitest run",
     "structure": "node scripts/structure-check.mjs",
-    "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run build"
+    "e2e": "npm run build && npm run build:e2e && playwright test",
+    "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run e2e"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/node": "^26.6.6",
     "eslint": "^10.15.0",
