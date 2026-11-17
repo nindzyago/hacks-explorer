@@ -212,3 +212,30 @@ describe('specProblems', () => {
     expect(specProblems(bad)).toHaveLength(1);
   });
 });
+
+describe('checkParams with a polluted Object.prototype (N2b)', () => {
+  it('reads own properties only and hands the command nothing inherited', () => {
+    const polluted = {
+      step: { kind: 'integer' },
+      note: { kind: 'string', optional: true },
+    } as const;
+    try {
+      Object.defineProperty(Object.prototype, 'step', { value: 5, configurable: true });
+      Object.defineProperty(Object.prototype, 'note', { value: 'evil', configurable: true });
+
+      expect(problemsOf({}, polluted)).toEqual([{ param: 'step', problem: 'is required' }]);
+
+      const result = checkParams(polluted, { step: 1 });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.params.step).toBe(1);
+        expect(result.params.note).toBeUndefined();
+      }
+    } finally {
+      Reflect.deleteProperty(Object.prototype, 'step');
+      Reflect.deleteProperty(Object.prototype, 'note');
+    }
+    expect(Object.prototype).not.toHaveProperty('step');
+    expect(Object.prototype).not.toHaveProperty('note');
+  });
+});

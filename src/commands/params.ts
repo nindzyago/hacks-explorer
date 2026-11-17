@@ -143,7 +143,8 @@ export function checkParams<S extends ParamsSpec>(spec: S, raw: unknown): Params
       }
     }
     if (problems.length > 0) return failure(problems);
-    const params: unknown = Object.fromEntries(entries);
+    // No prototype: a parameter named `constructor` or `toString` must not read as inherited.
+    const params: unknown = Object.setPrototypeOf(Object.fromEntries(entries), null);
     if (conforms(spec, params)) return { ok: true, params };
     return failure([{ param: '', problem: 'parameters could not be read' }]);
   } catch {
