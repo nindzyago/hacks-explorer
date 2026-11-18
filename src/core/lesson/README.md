@@ -146,17 +146,48 @@ example.net и всё в `.example`, `.test`, `.invalid`, `.localhost` (L4.2). �
      `/путь`;
    - в нём есть метка punycode `xn--`;
    - в нём смешаны латиница и кириллица (`google.сom` с кириллической «с»);
-   - оно кончается зоной из короткого списка явных хостовых зон: `com net org edu gov mil biz
-     ru su рф рус ua by kz uk de fr cn jp kr br ca au nl es se ch eu us io co tv xyz tech zip mov`.
+   - оно кончается зоной из списка явных хостовых зон: `com net org edu gov mil biz ru su рф рус
+     ua by kz uk de fr cn jp kr br ca au nl es se ch eu us io co tv xyz tech zip mov ai cc gg ly
+     icu buzz cfd sbs`;
+   - оно кончается зоной, любимой фишингом, но похожей на поле в коде: `app dev site store shop
+     top info online me to it in pl pw live click vip club link` — и не похоже на код. Похоже на
+     код, если:
+     - **все** метки перед зоной — «получатели» (без учёта регистра):
+       объекты JS и Python `this self cls super window document navigator globalThis process
+       module exports console logger log logging req res request response ctx context app config
+       settings options opts props state store vm os sys System path event err error el elem
+       element node style rect bounds offset pos position box stack parent item items data user
+       status btn`; файлы сборки `Makefile Dockerfile configure setup requirements MANIFEST`;
+       элементы HTML в селекторах CSS `a abbr article aside b body button canvas code dd div dl
+       dt em footer form h1–h6 header html i img input label li main nav ol option p pre section
+       select small span strong table tbody td textarea th thead tr ul`. В шаблоне сборки
+       `имя.<расширение>.in` метка перед `in` может быть расширением (`h c py cfg txt json yml
+       yaml toml ini conf xml mk am`): `config.h.in`, `setup.py.in`;
+     - или имя из двух меток и сразу за ним, без пробела, стоит `(` или `[`: `tensor.to(device)`,
+       `items.shop[0]`.
+
+     Так `bit.ly`, `t.me`, `paypal.me`, `evil.top`, `x.vercel.app`, `evil.pages.dev`,
+     `this.evil.top` (чужая метка в цепочке), `login.evil.top[0]` (больше двух меток),
+     `evil.top (там форма)` (пробел перед скобкой) — хосты, а `window.top`, `this.props.store`,
+     `logger.info`, `logging.info(…)`, `navigator.onLine`, `System.in`, `Makefile.in`,
+     `MANIFEST.in`, `requirements.in`, `Dockerfile.dev`, `div.app`, `span.info`, `offset.top` —
+     код.
 4. Прочие имена через точку — идентификаторы и файлы: `users.id`, `u.email`, `this.name`,
-   `window.top`, `file.py`, `ru.md`, `libc.so`, `run.sh`, `main.rs`, `Makefile.in`. Зоны, которые
-   совпадают с частыми полями и расширениями (`id`, `py`, `md`, `so`, `sh`, `rs`, `in`, `name`,
-   `email`, `date`, `info`, `top`, `app`, `store`, `site` и прочие не из списка), считаются
-   хостом только в положении адреса (пункт 3, первый вариант).
+   `file.py`, `ru.md`, `libc.so`, `run.sh`, `main.rs`. Зоны, которые совпадают с частыми полями и
+   расширениями (`id`, `py`, `md`, `so`, `sh`, `rs`, `js`, `name`, `email`, `date` и прочие не из
+   списков), считаются хостом только в положении адреса (пункт 3, первый вариант).
+
+Известные совпадения (ошибка `address` на коде; пишите иначе или в положении, где ясно, что это
+код): `main.cc` (файл C++ — зона `cc`), `run.pl` (скрипт Perl — `pl`), поле объекта с
+незнакомым получателем: `cart.store`, `game.top`, `user2.info`, `ctx2.app`, `post.link`,
+`page.live`, `team.club`. Получатель из списка и вызов спасают: `this.store`, `cart.store()`.
 
 Ограничения правила: `evil.lol` или `evil.id` без `www.`, схемы, `@`, порта и пути не
-распознаются; IPv4 целым числом (`134744072`) и в восьмеричной или шестнадцатеричной записи не
-распознаётся; омоглифы из других алфавитов, кроме кириллицы, не ловятся. Их найдёт ревью.
+распознаются; хост с зоной второго списка, у которого все метки перед зоной — получатели
+(`app.store`, `user.me`, `a.info`), или имя из двух меток, за которым вплотную стоит `(` или `[`
+(`evil.top[1]`, `evil.link(x)`), не распознаётся; IPv4 целым числом
+(`134744072`) и в восьмеричной или шестнадцатеричной записи не распознаётся; омоглифы из других
+алфавитов, кроме кириллицы, не ловятся. Их найдёт ревью.
 
 ## API
 
@@ -186,13 +217,19 @@ result.errors.map(formatError); // 'content/lessons/B1/ru.md:41:1: step `glue`: 
 | предел | значение | что без него |
 |---|---|---|
 | размер | 64 КБ в UTF-8 | — |
-| строк | 1000 (B1 — около 220) | 16 000 setext-заголовков `a` / `=` — 14 с |
+| строк | 1000, как их нумерует редактор: перевод строки в конце файла новой строки не начинает (B1 — около 220) | 16 000 setext-заголовков `a` / `=` — 14 с |
 | знаков `*` `_` `[` | 2000 (B1 — около 60) | 16 000 знаков выделения — 1,2 с |
 | маркеров `>` `-` `+` `*` `1.` в начале строки | 2, и последний не дальше 16-го столбца | 64 000 `>` — 4 с; 2000 строк `- - - - a` — 0,9 с; список, вложенный отступами на 200 уровней, — 0,4 с |
 
 Худший замеренный случай после пределов — около 180 мс на этом Mac (1000 строк setext-заголовков
 `a` / `-`; обычно до 120 мс; перебрано около 45 видов враждебных файлов до 64 КБ, два прогона).
 Отступ без маркеров (код внутри блока) не ограничен.
+
+Границы закреплены тестами `limits.test.ts` на самом пределе и на единицу дальше: 65 536 байт
+проходят, 65 537 нет (и латиницей, и кириллицей); 1000 строк проходят с переводом строки в конце
+и без него, 1001 нет; 2000 знаков `*` `_` `[` вместе проходят, 2001 нет; два маркера (`> >`,
+`1. 1.`, `> -`) проходят, три нет; маркер, который кончается в 16-м столбце (табуляция — 4
+столбца), проходит, в 17-м нет.
 
 
 | code | когда |
