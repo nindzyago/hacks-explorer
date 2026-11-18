@@ -72,6 +72,22 @@ describe('describeStep', () => {
     );
   });
 
+  it('does not name the participant twice for a stopped step that stays put (I1 autofill)', () => {
+    const autofill = {
+      ...base,
+      title: 'Менеджер паролей молчит',
+      from: 'attacker',
+      to: 'attacker',
+      kind: 'safe',
+      stopped: true,
+      message: 'пароль не подставлен',
+    } as const;
+    expect(describeStep(participants, { number: 3, count: 5, step: autofill })).toBe(
+      'Шаг 3 из 5. Менеджер паролей молчит: у участника «Атакующий», безопасное сообщение ' +
+        '«пароль не подставлен» остановлено.',
+    );
+  });
+
   it('describes a step that stays with one participant', () => {
     const self = { ...base, from: 'db', to: 'db', kind: 'legit', message: 'проверка' } as const;
     expect(describeStep(participants, { number: 1, count: 1, step: self })).toBe(

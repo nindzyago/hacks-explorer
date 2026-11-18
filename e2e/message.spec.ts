@@ -170,7 +170,40 @@ for (const viewport of VIEWPORTS) {
       expect(Math.abs(at - (await centreX(page, icon('user'))))).toBeLessThan(
         viewport.width < 500 ? 40 : 1,
       );
-      await expect(page.getByTestId('scene-step')).toContainText('у участника «Сотрудник»');
+      await expect(page.getByTestId('scene-step')).toHaveText(
+        'Шаг 3 из 5. Менеджер паролей молчит: у участника «Сотрудник», безопасное сообщение ' +
+          '«пароль не подставлен» остановлено.',
+      );
+      await sceneReady(page);
+      await keep(page, testInfo, `m12b-i1-step3-defence-autofill-${viewport.name}`);
+
+      // The stolen password reaches the bank and stops there: the second factor (D3 a).
+      await run(page, ['scene.step', { step: 4 }]);
+      await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS);
+      await expect(message).toHaveAttribute('data-step', 'leak');
+      await expect(message).toHaveAttribute('data-kind', 'attack');
+      await expect(message).toHaveAttribute('data-stopped', 'true');
+      await expect(page.getByTestId('message-word')).toHaveText('остановлено');
+      const bank = await page
+        .getByTestId('zone-bank-site')
+        .locator('[data-part="frame"]')
+        .boundingBox();
+      const box = await page.locator(plaque).boundingBox();
+      expect(box?.x ?? 0).toBeGreaterThanOrEqual(
+        (bank?.x ?? Infinity) - (viewport.width < 500 ? 80 : 0),
+      );
+      await expect(page.getByTestId('scene-step')).toHaveText(
+        'Шаг 4 из 5. Пароль утёк в другом месте: Атакующий → Банк, вредное сообщение ' +
+          '«чужой пароль» остановлено у участника «Банк».',
+      );
+      await sceneReady(page);
+      await keep(page, testInfo, `m12b-i1-step4-defence-stopped-${viewport.name}`);
+      // The bank's answer is a plain safe reply, no shield.
+      await run(page, ['scene.step', { step: 5 }]);
+      await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS);
+      await expect(message).toHaveAttribute('data-step', 'second');
+      await expect(message).toHaveAttribute('data-stopped', 'false');
+      await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'safe');
     });
   });
 }

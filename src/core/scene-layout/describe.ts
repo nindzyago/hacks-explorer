@@ -21,7 +21,9 @@ export function describeStep(
   const kind = messageWord(step.kind, false);
   // «… вредное сообщение «…» остановлено у участника «База данных».»: the message, not the
   // participant, is what was stopped.
-  const stopped = step.stopped ? ` остановлено у участника «${name(step.to)}»` : '';
+  // A step that stays with one participant has already named it.
+  const where = step.from === step.to ? '' : ` у участника «${name(step.to)}»`;
+  const stopped = step.stopped ? ` остановлено${where}` : '';
   return (
     `Шаг ${String(number)} из ${String(count)}. ${step.title}: ${route}, ` +
     `${kind} сообщение «${step.message}»${stopped}.`
