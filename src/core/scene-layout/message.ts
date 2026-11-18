@@ -127,6 +127,20 @@ function plaqueOf(message: string, maxWidth: number): NonNullable<MessageLayout[
   return { width, height: MESSAGE_HEIGHT, text, cut };
 }
 
+/**
+ * Where a message of half width `half` rests at participant `p`: over its column, moved just
+ * enough to stay inside the participant's zone frame (2 px in) when it fits there — so a wide
+ * plaque on a phone does not cover the neighbour's frame — and always inside the scene.
+ */
+function restX(scene: SceneLayout, p: { readonly id: string; readonly cx: number }, half: number) {
+  const zone = scene.zones.find((z) => z.members.includes(p.id));
+  let x = p.cx;
+  if (zone !== undefined && 2 * (half + 2) <= zone.rect.width) {
+    x = Math.min(zone.rect.x + zone.rect.width - 2 - half, Math.max(zone.rect.x + 2 + half, x));
+  }
+  return Math.min(scene.width - EDGE - half, Math.max(EDGE + half, x));
+}
+
 /** Where the message of `step` stands after `elapsedMs`; null if a participant is missing. */
 export function layoutMessage(
   scene: SceneLayout,
@@ -139,14 +153,13 @@ export function layoutMessage(
   if (from === undefined || to === undefined) return null;
   const moves = from.id !== to.id;
   const progress = moves ? travelProgress(elapsedMs, reducedMotion) : 1;
-  const pathX = from.cx + (to.cx - from.cx) * progress;
   const y = scene.lane.y;
 
   const token = step.icon === null ? null : { icon: step.icon, radius: TOKEN_RADIUS };
   const plaque = token === null ? plaqueOf(step.message, scene.width - 2 * EDGE) : null;
   const half = plaque === null ? TOKEN_RADIUS + 2 : plaque.width / 2;
-  // A long plaque at the first or last participant would stick out of the scene.
-  const x = Math.min(scene.width - EDGE - half, Math.max(EDGE + half, pathX));
+  const x =
+    restX(scene, from, half) + (restX(scene, to, half) - restX(scene, from, half)) * progress;
 
   // A stopped message travels as its kind and gets the shield where it stops (D3 a).
   const stoppedHere = step.stopped && progress === 1;

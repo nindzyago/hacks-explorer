@@ -59,16 +59,16 @@ describe('describeStep', () => {
   });
 
   it('says where a stopped message stopped', () => {
-    const refuse = {
+    const param = {
       ...base,
-      kind: 'safe',
+      title: 'Запрос с параметром',
+      mode: 'with-defence',
       stopped: true,
-      to: 'attacker',
-      message: 'Неверный вход',
+      message: "параметр: admin' --",
     } as const;
-    expect(describeStep(participants, { number: 5, count: 5, step: refuse })).toBe(
-      'Шаг 5 из 5. Сервер склеивает запрос: Веб-сервер → Атакующий, безопасное сообщение ' +
-        '«Неверный вход», остановлено у участника «Атакующий».',
+    expect(describeStep(participants, { number: 3, count: 5, step: param })).toBe(
+      'Шаг 3 из 5. Запрос с параметром: Веб-сервер → База данных, вредное сообщение ' +
+        "«параметр: admin' --» остановлено у участника «База данных».",
     );
   });
 

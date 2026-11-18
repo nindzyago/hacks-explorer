@@ -84,6 +84,21 @@ describe('a valid lesson', () => {
     });
   });
 
+  it('accepts a harmful message stopped by the defence (D3 a: attack · with-defence · stopped)', () => {
+    const text = edit(
+      validRu,
+      '`site → attacker` · `safe` · `with-defence` · `stopped`',
+      '`site → attacker` · `attack` · `with-defence` · `stopped`',
+    );
+    const stopped = check(text);
+    expect(stopped.errors).toEqual([]);
+    expect(stopped.lesson?.steps.at(-1)).toMatchObject({
+      kind: 'attack',
+      mode: 'with-defence',
+      stopped: true,
+    });
+  });
+
   it('keeps steps with their service line, plaque texts, code and three levels', () => {
     const steps = result.lesson?.steps ?? [];
     expect(steps.map((s) => [s.id, s.from, s.to, s.kind, s.mode, s.stopped])).toEqual([

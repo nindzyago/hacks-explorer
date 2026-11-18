@@ -1,7 +1,7 @@
 // M1.2b acceptance (design M1.2 §8; oracle A for the screenshots, D for S2 and S11): the
 // message of the current step moves by the player clock, through the temporary commands
 // `scene.step` and `scene.defence` (E10). B1 step 3 stands at the middle of its path in the
-// middle of the step; two runs give byte-equal screenshots; with the defence the stopped plaque
+// middle of the step; two runs give byte-equal screenshots; with the defence step 3's harmful plaque
 // stays at the participant that stopped it, with a shield and «остановлено»; with reduced motion
 // the message is at its target at once (S11). I1 shows an icon token and a step that stays put.
 import { copyFileSync, mkdirSync } from 'node:fs';
@@ -90,35 +90,53 @@ for (const viewport of VIEWPORTS) {
       await openApp(page);
       await page.evaluate(() => window.__app?.clock.set(0));
       await run(page, ['scene.defence', { on: true }], ['scene.step', { step: 3 }]);
-      // Step 3 with the defence: the query goes to the database as data, a safe message.
-      await page.evaluate((ms) => window.__app?.clock.set(ms), TRAVEL_MS);
+      // B1 step 3 with the defence: the harmful input travels to the database as a parameter.
+      // On its way it is a harmful message like any other, without a shield…
+      await page.evaluate((ms) => window.__app?.clock.set(ms), TRAVEL_MS / 2);
       const message = page.getByTestId('message');
       await expect(message).toHaveAttribute('data-step', 'param');
-      await expect(message).toHaveAttribute('data-kind', 'safe');
-      await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'safe');
-
-      // The step the defence stopped: on its way it is a safe message without a shield…
-      await run(page, ['scene.step', { step: 5 }]);
-      await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS / 2);
-      await expect(message).toHaveAttribute('data-step', 'refuse');
+      await expect(message).toHaveAttribute('data-kind', 'attack');
       await expect(message).toHaveAttribute('data-stopped', 'false');
-      // …and where it stops it gets the shield and the word, at the attacker's column.
-      await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS / 2);
+      await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'attack');
+      // …and at the database, the defender, it gets the shield and «остановлено» and stays.
+      await page.evaluate((ms) => window.__app?.clock.set(ms), TRAVEL_MS);
       await expect(message).toHaveAttribute('data-stopped', 'true');
       await expect(page.getByTestId('message-word')).toHaveText('остановлено');
       await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'stopped');
       const stoppedAt = await centreX(page, plaque);
-      expect(Math.abs(stoppedAt - (await centreX(page, icon('attacker'))))).toBeLessThan(
-        viewport.width < 500 ? 40 : 1,
+      expect(Math.abs(stoppedAt - (await centreX(page, icon('db'))))).toBeLessThan(
+        viewport.width < 500 ? 60 : 1,
       );
-      await expect(page.getByTestId('scene-step')).toContainText('остановлено у участника');
+      // The plaque and its word rest inside the database's zone, off the neighbour frames.
+      const zone = await page.getByTestId('zone-site').locator('[data-part="frame"]').boundingBox();
+      for (const part of [plaque, '[data-testid="message-word"]']) {
+        const box = await page.locator(part).boundingBox();
+        expect(box?.x ?? 0).toBeGreaterThanOrEqual(zone?.x ?? Infinity);
+        expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(
+          (zone?.x ?? 0) + (zone?.width ?? 0),
+        );
+      }
+      await expect(page.getByTestId('scene-step')).toHaveText(
+        'Шаг 3 из 5. Запрос с параметром: Веб-сервер → База данных, вредное сообщение ' +
+          "«параметр: admin' --» остановлено у участника «База данных».",
+      );
       await sceneReady(page);
-      await keep(page, testInfo, `m12b-b1-step5-defence-stopped-${viewport.name}`);
+      await keep(page, testInfo, `m12b-b1-step3-defence-stopped-${viewport.name}`);
       // Nothing travels further down the line: much later it is in the same place.
       const before = await page.getByTestId('scene').screenshot(SHOT);
       await page.evaluate(() => window.__app?.clock.tick(10_000));
       expect(await centreX(page, plaque)).toBe(stoppedAt);
       expect((await page.getByTestId('scene').screenshot(SHOT)).equals(before)).toBe(true);
+
+      // The last step is a plain refusal to the attacker: safe, no shield.
+      await run(page, ['scene.step', { step: 5 }]);
+      await page.evaluate(() => window.__app?.clock.tick(900));
+      await expect(message).toHaveAttribute('data-step', 'refuse');
+      await expect(message).toHaveAttribute('data-kind', 'safe');
+      await expect(message).toHaveAttribute('data-stopped', 'false');
+      await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'safe');
+      await sceneReady(page);
+      await keep(page, testInfo, `m12b-b1-step5-defence-refuse-${viewport.name}`);
     });
 
     test('I1: an icon step is a round token; a step to oneself does not move', async ({

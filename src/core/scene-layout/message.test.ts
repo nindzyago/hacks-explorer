@@ -45,7 +45,15 @@ const B1_STEPS: readonly StepInput[] = [
   step({ id: 'glue', from: 'server', to: 'db', kind: 'attack', mode: 'without-defence' }),
   step({ id: 'answer', from: 'db', to: 'server', kind: 'attack', mode: 'without-defence' }),
   step({ id: 'enter', from: 'server', to: 'attacker', kind: 'attack', mode: 'without-defence' }),
-  step({ id: 'param', from: 'server', to: 'db', kind: 'safe', mode: 'with-defence' }),
+  step({
+    id: 'param',
+    from: 'server',
+    to: 'db',
+    kind: 'attack',
+    mode: 'with-defence',
+    stopped: true,
+    message: "параметр: admin' --",
+  }),
   step({ id: 'empty', from: 'db', to: 'server', kind: 'safe', mode: 'with-defence' }),
   step({
     id: 'refuse',
@@ -53,7 +61,6 @@ const B1_STEPS: readonly StepInput[] = [
     to: 'attacker',
     kind: 'safe',
     mode: 'with-defence',
-    stopped: true,
     message: 'Неверный вход',
   }),
 ];
@@ -157,14 +164,18 @@ describe('layoutMessage', () => {
   });
 
   it('stops a stopped message at the participant that stopped it, with a shield (D3 a, S2)', () => {
-    const refuse = B1_STEPS[7] ?? step({ id: 'missing' });
-    // On the way it is a safe message like any other; the shield comes where it stops.
-    const half = layoutMessage(scene, refuse, TRAVEL_MS / 2, false);
-    expect(half).toMatchObject({ stopped: false, sign: 'safe', word: 'безопасное' });
-    const end = layoutMessage(scene, refuse, TRAVEL_MS, false);
-    expect(end).toMatchObject({ stopped: true, sign: 'stopped', word: 'остановлено' });
-    const later = layoutMessage(scene, refuse, TRAVEL_MS * 20, false);
-    expect(end?.x).toBeCloseTo(cx('attacker'), 6);
+    // B1 with the defence, step 3: the harmful query reaches the database as data.
+    const param = currentStep(B1_STEPS, true, 3)?.step ?? step({ id: 'missing' });
+    expect(param.id).toBe('param');
+    // On the way it is a harmful message like any other; the shield comes where it stops.
+    const half = layoutMessage(scene, param, TRAVEL_MS / 2, false);
+    expect(half).toMatchObject({ kind: 'attack', stopped: false, sign: 'attack', word: 'вредное' });
+    expect(half?.x).toBeCloseTo((cx('server') + cx('db')) / 2, 6);
+    const end = layoutMessage(scene, param, TRAVEL_MS, false);
+    expect(end).toMatchObject({ kind: 'attack', stopped: true, sign: 'stopped' });
+    expect(end?.word).toBe('остановлено');
+    const later = layoutMessage(scene, param, TRAVEL_MS * 20, false);
+    expect(end?.x).toBeCloseTo(cx('db'), 6);
     // It stays there: nothing travels further down the line.
     expect(later).toEqual(end);
   });
@@ -183,6 +194,21 @@ describe('layoutMessage', () => {
     const x = cut?.x ?? Number.NaN;
     expect(x - width / 2).toBeGreaterThanOrEqual(0);
     expect(x + width / 2).toBeLessThanOrEqual(narrow.width);
+  });
+
+  it('rests a wide plaque inside the receiver zone on a phone, off the neighbour frame', () => {
+    const phone = layoutScene({ ...B1, width: 356 });
+    const param = currentStep(B1_STEPS, true, 3)?.step ?? step({ id: 'missing' });
+    const m = layoutMessage(phone, param, TRAVEL_MS, false);
+    const site = phone.zones.find((z) => z.id === 'site')?.rect;
+    const w = m?.plaque?.width ?? Infinity;
+    expect(w).toBeGreaterThan(phone.participants[2]?.area.width ?? 0);
+    expect((m?.x ?? 0) - w / 2).toBeGreaterThanOrEqual(site?.x ?? Infinity);
+    expect((m?.x ?? 0) + w / 2).toBeLessThanOrEqual((site?.x ?? 0) + (site?.width ?? 0));
+    // At the first participant a plaque wider than its one-column zone stays in the scene.
+    const refuse = currentStep(B1_STEPS, true, 5)?.step ?? step({ id: 'missing' });
+    const r = layoutMessage(phone, refuse, TRAVEL_MS, false);
+    expect((r?.x ?? 0) - (r?.plaque?.width ?? 0) / 2).toBeGreaterThanOrEqual(0);
   });
 
   it('keeps a plaque inside the scene at the first and last participant', () => {
