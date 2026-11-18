@@ -60,6 +60,7 @@ describe('feedLines', () => {
   it('writes who sends what to whom, by the names of the participants', () => {
     const [first] = feedLines(lesson, { step: 1, defence: false }, true);
     expect(first?.text).toBe('Атакующий → Веб-сервер: msg form');
+    expect(first).toMatchObject({ who: 'Атакующий → Веб-сервер', message: 'msg form' });
   });
 
   it('writes one name for a step that stays with its participant, an id for an unknown one', () => {

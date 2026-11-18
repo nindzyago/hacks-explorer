@@ -32,6 +32,9 @@ export interface FeedLine {
   readonly id: string;
   /** «Кто → Кому: сообщение», or «Кто: сообщение» when it stays with its participant. */
   readonly text: string;
+  /** The two parts of `text`: «Кто → Кому» (or «Кто») and the message. */
+  readonly who: string;
+  readonly message: string;
   readonly kind: MessageKind;
   readonly stopped: boolean;
   readonly mark: FeedMark;
@@ -80,6 +83,8 @@ export function feedLines(
         number,
         id: step.id,
         text: `${who}: ${step.message}`,
+        who,
+        message: step.message,
         kind: step.kind,
         stopped: step.stopped,
         mark: moving ? 'moving' : step.stopped ? 'stopped' : step.kind,

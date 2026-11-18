@@ -6,6 +6,7 @@
   import { MediaQuery } from 'svelte/reactivity';
   import type { Clock } from '../core/clock';
   import { feedLines, stepArrived, type FeedMark } from '../core/feed/feed';
+  import { keepTogether } from '../core/feed/result';
   import type { SiteLesson } from '../core/lesson/site';
   import { elapsedMs, type PlayerState } from '../core/player/player';
   import { currentStep } from '../core/scene-layout/message';
@@ -57,7 +58,11 @@
           aria-current={line.current ? 'step' : undefined}
         >
           <span class="num" data-testid="feed-number">{line.number}</span>
-          <span class="text">{line.text}</span>
+          <span class="text"
+            >{line.who}:
+            <span class="payload" data-testid="feed-payload">{keepTogether(line.message)}</span
+            ></span
+          >
           <span class="mark {line.mark}" data-testid="feed-mark"
             >{#if line.mark === 'stopped'}<ShieldMark />{:else}<span aria-hidden="true"
                 >{SIGN[line.mark]}</span

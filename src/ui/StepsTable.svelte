@@ -4,6 +4,7 @@
   // number is a button that runs `player.goto` (K13). On a phone each row is a small card.
   import type { SiteLesson } from '../core/lesson/site';
   import type { PlayerState } from '../core/player/player';
+  import { resultText } from '../core/feed/result';
   import { stepsInMode } from '../core/scene-layout/message';
   import ShieldMark from './ShieldMark.svelte';
 
@@ -20,9 +21,6 @@
   const steps = $derived(stepsInMode(lesson.steps, player.defence));
   const names = $derived(new Map(lesson.participants.map((p) => [p.id, p.name])));
   const name = (id: string) => names.get(id) ?? id;
-  const MARK = { legit: '', attack: '! ', safe: '✓ ' } as const;
-  /** A stopped step (K44, K62): the shield, the word, then its result. */
-  const STOPPED = 'остановлено: ';
 </script>
 
 <!-- data-player-keys: Space here is play/pause (K69). -->
@@ -43,6 +41,8 @@
     {#each steps as step, i (i)}
       {@const n = i + 1}
       {@const paint = step.stopped ? 'stopped' : step.kind}
+      <!-- A stopped step (K44, K62): the shield, «остановлено:» unless its result says it. -->
+      {@const shown = resultText(step)}
       <tr
         data-testid="step-row-{n}"
         data-step={step.id}
@@ -67,9 +67,8 @@
         <td class="who" data-label="Кому">{step.from === step.to ? '—' : name(step.to)}</td>
         <td class="what">{step.message}</td>
         <td class="result {paint}" data-testid="step-result"
-          >{#if step.stopped}<span class="stopped-word"><ShieldMark /> {STOPPED}</span>{:else}{MARK[
-              step.kind
-            ]}{/if}{step.result}</td
+          >{#if shown.stopped}<span class="stopped-word"><ShieldMark /> {shown.prefix}</span
+            >{:else}{shown.prefix}{/if}{shown.text}</td
         >
       </tr>
     {/each}

@@ -118,6 +118,16 @@ for (const viewport of [
       await expect(third).toContainText("Веб-сервер → База данных: параметр: admin' --");
       await expect(third).toContainText('остановлено');
       await expect(third.getByTestId('stopped-mark')).toBeVisible();
+      // Verifier M1.5: the stopped mark of the feed is the defence green of the tokens.
+      expect(
+        await third.getByTestId('feed-mark').evaluate((el) => getComputedStyle(el).color),
+      ).toBe(await token(page, '--scene-message-stopped'));
+      // Verifier M1.5: the payload keeps its words together, «admin'» and «--» on one line.
+      const payload = third.getByTestId('feed-payload');
+      expect(await payload.evaluate((el) => el.getClientRects().length)).toBe(1);
+      expect(await payload.evaluate((el) => el.textContent.replace(/\u00a0/g, ' '))).toBe(
+        "параметр: admin' --",
+      );
       await expect(page.getByTestId('feed-line-2')).toHaveAttribute('data-mark', 'attack');
       await expect(page.getByTestId('feed-line-5')).toHaveAttribute('data-mark', 'safe');
       await expect(page.getByTestId('defence-on')).toHaveAttribute('aria-pressed', 'true');
@@ -289,4 +299,69 @@ test.describe('the event feed', () => {
       expect(overflow).toBe(0);
     });
   });
+});
+
+// Verifier M1.5: the caption «Защита: …» appeared inside the bar and moved the buttons (250 px
+// at 1280, a new row at 1024). Every button of the bar stays where it was when the mode changes.
+for (const viewport of [
+  { width: 1280, height: 720 },
+  { width: 1024, height: 768 },
+  { width: 390, height: 844 },
+] as const) {
+  test.describe(`the controls bar at ${String(viewport.width)} px`, () => {
+    test.use({ viewport });
+
+    test('does not move when the defence is turned on and off', async ({ page }) => {
+      await freshB1(page);
+      const boxes = () =>
+        page
+          .locator('[data-testid="player"] button, [data-testid="defence-toggle"] button')
+          .evaluateAll((list) =>
+            list.map((b) => {
+              const r = b.getBoundingClientRect();
+              return { id: b.getAttribute('data-testid'), x: r.x, y: r.y, w: r.width, h: r.height };
+            }),
+          );
+      const off = await boxes();
+      expect(off).toHaveLength(7);
+      for (const on of [true, false, true]) {
+        await run(page, 'defence.set', { on });
+        await expect(page.getByTestId('defence-on')).toHaveAttribute('aria-pressed', String(on));
+        const now = await boxes();
+        expect(now.map((b) => b.id)).toEqual(off.map((b) => b.id));
+        now.forEach((b, i) => {
+          const was = off[i];
+          if (was === undefined) throw new Error('lost a button');
+          for (const k of ['x', 'y', 'w', 'h'] as const) {
+            expect(
+              Math.abs(b[k] - was[k]),
+              `${b.id ?? ''} ${k} with defence ${String(on)}`,
+            ).toBeLessThanOrEqual(1);
+          }
+        });
+      }
+      // The caption is all there: not cut, the whole name in the text.
+      const name = page.getByTestId('defence-name');
+      await expect(name).toHaveText('Защита: Параметризованный запрос');
+      expect(await name.evaluate((el) => el.scrollHeight <= el.clientHeight + 1)).toBe(true);
+    });
+  });
+}
+
+// Verifier M1.5: I1's stopped autofill step says «остановлено» in its result already; the table
+// does not say it twice.
+test('a stopped result that says «остановлено» is not prefixed again (I1)', async ({ page }) => {
+  await openApp(page);
+  await run(page, 'lesson.open', { id: 'I1' });
+  await run(page, 'defence.set', { on: true });
+  const row = page.locator('[data-testid="steps-table"] tr[data-step="autofill"]');
+  await expect(row).toHaveCount(1);
+  const result = row.getByTestId('step-result');
+  await expect(result.getByTestId('stopped-mark')).toBeVisible();
+  expect((await result.textContent())?.trim()).toBe('остановлено');
+  // The other stopped step of I1 keeps the prefix before its own result.
+  const leak = page
+    .locator('[data-testid="steps-table"] tr[data-step="leak"]')
+    .getByTestId('step-result');
+  expect((await leak.textContent())?.trim()).toBe('остановлено: пароль верный, но вход не открыт');
 });

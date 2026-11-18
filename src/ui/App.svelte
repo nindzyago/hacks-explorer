@@ -260,8 +260,10 @@
   }
 
   .player-area {
-    flex: 1 1 32rem;
+    flex: 1 1 30rem;
     min-width: 0;
+    /* The player's bar takes the height of the row: as tall as the toggle next to it. */
+    display: grid;
   }
 
   .explain {
