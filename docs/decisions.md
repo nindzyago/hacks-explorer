@@ -1,5 +1,47 @@
 # Decisions
 
+## K23 · 2026-11-18: инженерные решения формата урока E1–E12 (M1.1, design r2 sha256 1a0a99f69726, approved)
+
+By: agent · Area: контент · Status: active · Reviewed: no
+Source: design M1.1
+
+Разбор `mdast-util-from-markdown` (MIT, только при сборке); свой валидатор в `src/core/lesson`, ошибки — данные с файлом и строкой; в тексте жирный, курсив, списки, код, пометка ⟦…⟧, без HTML, картинок и ссылок (ссылки только в «Источниках», домены из `content/sources.md`); враждебный файл больше 64 КБ — ошибка; паспорт служебными строками (cwe, owasp, attack, cvss, cves, severity); правила содержания S8 и L4 в валидаторе; виды legit/attack/safe и исход stopped; строка `format` 1, «Песочница» пока запрещена; проверка в gate и `npm run content`; урок отдельным файлом до 30 КБ; словарь — в M2. Полный текст: `plan/designs/M1.1.md` §4.
+
+## K22 · 2026-11-18: у каждого шага три уровня объяснения обязательны (M1.1, design r2 sha256 1a0a99f69726, approved)
+
+By: owner · Area: контент · Status: active · Reviewed: yes
+Source: design M1.1
+
+D4 a. «Просто», «По шагам», «Глубже» — иначе урок не принимается.
+
+## K21 · 2026-11-18: урок — один Markdown-файл на язык (M1.1, design r2 sha256 1a0a99f69726, approved)
+
+By: owner · Area: контент · Status: active · Reviewed: yes
+Source: design M1.1
+
+D3 r2 a. `content/lessons/<id>/ru.md`, `en.md` той же формы; служебные строки в обратных кавычках одинаковы во всех языках, проверка их сверяет.
+
+## K20 · 2026-11-18: ход «с защитой» — пометки на шагах одного списка (M1.1, design r2 sha256 1a0a99f69726, approved)
+
+By: owner · Area: контент · Status: active · Reviewed: yes
+Source: design M1.1
+
+D2 a. Пометки: всегда, только без защиты (`without-defence`), только с защитой (`with-defence`).
+
+## K19 · 2026-11-18: участники схемы стоят в одну линию по порядку перечисления (M1.1, design r2 sha256 1a0a99f69726, approved)
+
+By: owner · Area: контент · Status: active · Reviewed: yes
+Source: design M1.1
+
+D1 a. Зоны доверия задаются списком участников; координат в файле нет. Больше шести участников в линию не помещается — ограничение для авторов.
+
+## K18 · 2026-11-18: формат урока — Markdown, YAML в проекте нет (M1.1, design r2 sha256 1a0a99f69726, approved)
+
+By: owner · Area: контент · Status: active · Reviewed: yes
+Source: design M1.1
+
+D3 r1 «Something else»: «давай да меняем все на md формат, убираем yaml вообще». Уроки, тексты и словарь пишутся в Markdown; заменяет K10 в части формата (выпуски через GitHub и Cloudflare из K10 остаются).
+
 ## K17 · 2026-11-17: устройство детерминизма (M0.4)
 
 By: agent · Area: архитектура · Status: active · Reviewed: no
@@ -120,7 +162,7 @@ Source: during M0.1
 лицензий зависимостей — с M4.4. Версии инструментов — последние на дату установки
 (TypeScript 6, Vite 8, ESLint 10, Vitest 5), закреплены в `package-lock.json`.
 
-## K10 · 2026-11-17: уроки и переводы в YAML, выпуски через GitHub, сайт на Cloudflare (chat)
+## K10 · 2026-11-17 (формат заменён K18): уроки и переводы в YAML, выпуски через GitHub, сайт на Cloudflare (chat)
 
 By: owner · Area: стек · Status: active · Reviewed: yes
 Source: chat
