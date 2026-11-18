@@ -22,15 +22,15 @@
 
 | Task | Revision | Status | Link | sha256 of the md |
 |---|---|---|---|---|
-| M1.1 Формат урока в YAML | r1 | awaiting-approval (2026-11-18) | https://claude.ai/artifact/Pert7Z6UKR1yd73v9vQukp · `plan/designs/M1.1.md` | a1ef725aae65… |
-| M1.2 Сцена | r1 | awaiting-approval (2026-11-18) | https://claude.ai/artifact/2TTAMfjL1v9Y3CLMrKXc7Q · `plan/designs/M1.2.md` | 341621f878df… |
+| M1.1 Формат урока в Markdown | r2 | awaiting-approval (2026-11-18): новый D3 | https://claude.ai/artifact/Pert7Z6UKR1yd73v9vQukp · `plan/designs/M1.1.md` | 1a0a99f69726… |
+| M1.2 Сцена | r2 | awaiting-approval (2026-11-18): D1 без ответа | https://claude.ai/artifact/2TTAMfjL1v9Y3CLMrKXc7Q · `plan/designs/M1.2.md` | 744c2b1b8b61… |
 
 Ещё нужны перед M2.1 и M2.3.
 
 ## Checklist (current milestone)
 
-- [ ] M1.1 Формат урока в YAML [design r1 — ждёт ответа]
-- [ ] M1.2 Сцена [design r1 — ждёт ответа]
+- [ ] M1.1 Формат урока в Markdown [design r2 — ждёт ответа на D3]
+- [ ] M1.2 Сцена [design r2 — ждёт ответа на D1]
 - [ ] M1.3 Плеер
 - [ ] M1.4 Панель объяснения
 - [ ] M1.5 Переключатель защиты и лента событий

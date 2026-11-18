@@ -230,9 +230,9 @@ tr:last-child td { border-bottom: 0; }
       <span class="pill warn" id="status-pill" data-t="status_waiting"></span>
       <span>M1.1</span><span id="rev"></span><span id="sha" title="sha256 of plan/designs/&lt;task-id&gt;.md"></span><span>2026-11-18</span><span>Hacks Explorer</span>
     </div>
-    <h1>M1.1 — Формат урока: два текстовых файла и проверка</h1>
+    <h1>M1.1 — Формат урока: Markdown-файл и проверка</h1>
     
-    <p class="changes" hidden></p>
+    <p class="changes"><b data-t="changes_since"></b> r1: Ты выбрал в D3 «меняем всё на Markdown, YAML убираем». Урок теперь — обычный Markdown-файл, YAML в проекте нет. Новый вопрос D3: как разложить урок по файлам. В тексте можно жирный, курсив, списки и код. Ответы на D1, D2 и D4 сохранены.</p>
     <nav class="views" role="tablist" id="views" hidden>
       <button type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected="true" data-t="tab_design"></button>
       <button type="button" role="tab" id="tab-built" aria-controls="view-built" aria-selected="false"><span data-t="tab_built"></span> <span class="pill ok" id="built-pill"></span></button>
@@ -243,8 +243,8 @@ tr:last-child td { border-bottom: 0; }
 
   
   <section class="summary" id="summary">
-    <p class="intro">Урок становится двумя текстовыми файлами в репозитории: в одном описано, кто участвует и что за чем происходит, в другом лежат тексты на одном языке. Чтобы добавить или поправить урок, человек правит эти файлы и открывает pull request; если в файле ошибка, проверка называет файл, строку и причину. На сайте пока ничего не меняется: это основа для сцены, плеера и панели объяснения.</p>
-    <p class="how">Для инженеров: content/lessons/&lt;id&gt;/lesson.yaml и content/locales/&lt;язык&gt;/&lt;id&gt;.yaml, разбор пакетом yaml, свой валидатор в src/core/lesson с ошибками «файл:строка», проверка в npm run gate, урок B1 как первый настоящий файл.</p>
+    <p class="intro">Урок — это обычный Markdown-файл в репозитории: заголовок, участники схемы (атакующий, сервер, база и так далее), зоны доверия и шаги с тремя уровнями объяснения. Его можно читать прямо на GitHub и править как текст; YAML нигде нет. Если в файле ошибка, проверка называет файл, строку и причину. На сайте пока ничего не меняется.</p>
+    <p class="how">Для инженеров: content/lessons/&lt;id&gt;/&lt;язык&gt;.md, разбор mdast-util-from-markdown при сборке, свой валидатор в src/core/lesson с ошибками «файл:строка», проверка в npm run gate, урок B1 как первый настоящий файл.</p>
   </section>
 
   
@@ -271,74 +271,77 @@ tr:last-child td { border-bottom: 0; }
       </div>
     </div>
     <div class="frame">
-      <div class="chrome"><i></i><i></i><i></i><span id="addr">content/lessons/B1/lesson.yaml</span></div>
+      <div class="chrome"><i></i><i></i><i></i><span id="addr">content/lessons/B1/ru.md</span></div>
       <div class="screen" id="after-view">
-        <div class="track" role="tablist"><button role="tab" type="button" data-tab="lesson" data-path="" aria-selected="true">Урок: lesson.yaml</button><button role="tab" type="button" data-tab="texts" data-path="" aria-selected="false">Тексты: locales/ru/B1.yaml</button><button role="tab" type="button" data-tab="errors" data-path="" aria-selected="false">Что увидит автор при ошибке</button></div>
-        <div data-panel="lesson" role="tabpanel"><div class="card"><h4>Кто участвует и что за чем происходит <span><span class="callout">D1</span> <span class="callout">D2</span></span></h4><pre class="yaml">format: 1
-id: B1
-section: B            # Веб: инъекции
-wave: 1
+        <div class="track" role="tablist"><button role="tab" type="button" data-tab="lesson" data-path="" aria-selected="true">Урок: B1/ru.md</button><button role="tab" type="button" data-tab="files" data-path="" aria-selected="false">Файлы урока</button><button role="tab" type="button" data-tab="errors" data-path="" aria-selected="false">Что увидит автор при ошибке</button></div>
+        <div data-panel="lesson" role="tabpanel"><div class="card"><h4>Весь урок в одном Markdown-файле <span><span class="callout">D1</span> <span class="callout">D2</span> <span class="callout">D4</span></span></h4><pre class="yaml"># SQL-инъекция
 
-passport:
-  cwe: [89]
-  owasp: [&quot;A03:2021&quot;]
-  severity: critical
-  sources:
-    - title: OWASP SQL Injection Prevention Cheat Sheet
-      url: https://cheatsheetseries.owasp.org/…
-    - title: &quot;CWE-89&quot;
-      url: https://cwe.mitre.org/data/definitions/89.html
+`lesson` B1 · `section` B · `wave` 1 · `format` 1
 
-scene:
-  nodes:                               # D1: по порядку, слева направо
-    - { id: attacker, icon: attacker, address: 203.0.113.66 }
-    - { id: server,   icon: server,   address: 198.51.100.10 }
-    - { id: db,       icon: db }
-  zones:
-    - { id: internet, nodes: [attacker] }
-    - { id: site,     nodes: [server, db] }
+## Паспорт
 
-steps:                                 # D2: один список, пометка when
-  - { id: form,    from: attacker, to: server,   kind: legit }
-  - { id: payload, from: attacker, to: server,   kind: attack }
-  - { id: glue,    from: server,   to: db,       kind: attack, when: attack }
-  - { id: leak,    from: db,       to: server,   kind: attack, when: attack }
-  - { id: login,   from: server,   to: attacker, kind: attack, when: attack }
-  - { id: param,   from: server,   to: db,       kind: safe,   when: defence }
-  - { id: empty,   from: db,       to: server,   kind: safe,   when: defence }
-  - { id: refuse,  from: server,   to: attacker, kind: safe,   when: defence,
-      outcome: stopped }</pre></div></div><div data-panel="texts" role="tabpanel" hidden><div class="card"><h4>Тексты на одном языке <span><span class="callout">D3</span> <span class="callout">D4</span></span></h4><pre class="yaml">title: SQL-инъекция
-defence: параметризованный запрос
-howToDefend: &gt;
-  Передавайте данные отдельно от запроса: параметризованные запросы…
+- `cwe` 89
+- `owasp` A03:2021
+- `severity` critical
+- `defence` Параметризованный запрос
 
-nodes:
-  attacker: { name: Атакующий }
-  server:   { name: Веб-сервер }
-  db:       { name: База данных, note: таблица users }
-zones:
-  internet: Интернет
-  site: Сайт shop.example
+## Источники
 
-steps:
-  glue:
-    title: Сервер склеивает запрос
-    label: &quot;SELECT ...&quot;
-    result: атака
-    simple: &gt;                          # D4: три уровня у каждого шага
-      Сервер берёт то, что ввёл посетитель, и вклеивает прямо
-      в вопрос к базе…
-    steps: &gt;
-      Сервер собирает запрос склейкой строк и отправляет базе…
-    deep: &gt;
-      Ошибка в склейке строк: данные пользователя стали частью
-      кода запроса…
-    code: |                            # D3: единственная пометка ⟦…⟧
-      SELECT * FROM users
-      WHERE login = &#x27;⟦admin&#x27; --⟧&#x27;
-        AND password = &#x27;123&#x27;</pre></div></div><div data-panel="errors" role="tabpanel" hidden><div class="card"><h4>Сообщения проверки</h4><pre class="yaml">content/lessons/B1/lesson.yaml:27:45  unknown node &quot;database&quot; in steps[2].to — known: attacker, server, db
-content/locales/ru/B1.yaml:31:7      steps.glue.deep is missing — every step needs simple, steps and deep
-content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation range (use 192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24)</pre></div></div>
+- [OWASP SQL Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/…)
+- [CWE-89](https://cwe.mitre.org/data/definitions/89.html)
+
+## Участники                          ← D1: по порядку, слева направо
+
+- `attacker` **Атакующий** — 203.0.113.66
+- `server` **Веб-сервер** — 198.51.100.10
+- `db` **База данных** — таблица users
+
+## Зоны
+
+- `internet` Интернет: `attacker`
+- `site` Сайт shop.example: `server`, `db`
+
+## Шаги                               ← D2: один список с пометками
+
+### `glue` Сервер склеивает запрос
+
+`server → db` · `attack` · `without-defence`
+Сообщение: SELECT ... · Итог: атака
+
+#### Просто                            ← D4: три уровня у шага
+
+Сервер берёт то, что ввёл посетитель, и **вклеивает
+прямо в вопрос к базе**…
+
+#### По шагам
+
+Сервер собирает запрос склейкой строк…
+
+#### Глубже
+
+Ошибка в склейке строк: данные пользователя стали
+частью кода запроса.
+
+```sql
+SELECT * FROM users
+WHERE login = &#x27;⟦admin&#x27; --⟧&#x27;
+  AND password = &#x27;123&#x27;
+```
+
+### `param` Запрос с параметром
+
+`server → db` · `safe` · `with-defence`
+…
+
+## Как защититься
+
+Передавайте данные отдельно от запроса…</pre></div></div><div data-panel="files" role="tabpanel" hidden><div class="card"><h4>Как урок лежит в репозитории <span class="callout">D3</span></h4><pre class="yaml">content/lessons/B1/
+  ru.md      ← весь урок по-русски          (D3, вариант a)
+  en.md      ← перевод той же формы; строки
+               в обратных кавычках одинаковы</pre><p class="hint">Слова в обратных кавычках — служебные: имена участников и шагов, вид сообщения, пометка защиты. Их не переводят, проверка сверяет их между языками.</p></div></div><div data-panel="errors" role="tabpanel" hidden><div class="card"><h4>Сообщения проверки</h4><pre class="yaml">content/lessons/B1/ru.md:41:1   step `glue`: unknown participant `database` — known: attacker, server, db
+content/lessons/B1/ru.md:58:1   step `glue`: section «Глубже» is missing — every step needs Просто, По шагам, Глубже
+content/lessons/B1/ru.md:12:28  address 8.8.8.8 is not in a documentation range (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24)
+content/lessons/B1/en.md:41:1   step `glue` goes server → attacker here but server → db in ru.md</pre></div></div>
       </div>
       <div class="screen" id="before-view" hidden><div class="card"><h4>Сейчас</h4><p style="margin:0">В новом коде уроков нет. Три урока прототипа записаны прямо в его программе: чтобы поправить текст, нужно править код.</p></div></div>
     </div>
@@ -349,7 +352,7 @@ content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation r
   <section id="flow" aria-labelledby="flow-h">
     <h2 id="flow-h" data-t="flow_h"></h2>
     <div class="scroll">
-      <svg class="flow" viewBox="0 0 680 250" role="img" aria-label="Сейчас уроки записаны в коде прототипа; после — файлы урока проходят проверку и попадают в данные сайта"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0 0L10 5L0 10z"/></marker><marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow new" d="M0 0L10 5L0 10z"/></marker></defs><text class="label" x="20" y="28">СЕЙЧАС</text><rect class="box " x="20" y="44" width="150" height="48" rx="6"/><text x="95" y="65" text-anchor="middle">Уроки внутри кода</text><text x="95" y="81" text-anchor="middle">прототипа</text><rect class="box gone" x="265" y="44" width="150" height="48" rx="6"/><text x="340" y="65" text-anchor="middle">Правка текста =</text><text x="340" y="81" text-anchor="middle">правка кода</text><rect class="box " x="510" y="44" width="150" height="48" rx="6"/><text x="585" y="65" text-anchor="middle">В новом коде</text><text x="585" y="81" text-anchor="middle">уроков нет</text><path class="edge " d="M170 68H263" marker-end="url(#a)"/><path class="edge " d="M415 68H508" marker-end="url(#a)"/><text class="label" x="20" y="158">ПОСЛЕ</text><rect class="box new" x="20" y="174" width="150" height="48" rx="6"/><text x="95" y="195" text-anchor="middle">Файл урока и</text><text x="95" y="211" text-anchor="middle">файлы текстов</text><rect class="box new" x="265" y="174" width="150" height="48" rx="6"/><text x="340" y="195" text-anchor="middle">Проверка: файл,</text><text x="340" y="211" text-anchor="middle">строка, причина</text><rect class="box new" x="510" y="174" width="150" height="48" rx="6"/><text x="585" y="195" text-anchor="middle">Gate и данные</text><text x="585" y="211" text-anchor="middle">сайта</text><path class="edge new" d="M170 198H263" marker-end="url(#an)"/><path class="edge new" d="M415 198H508" marker-end="url(#an)"/></svg>
+      <svg class="flow" viewBox="0 0 680 250" role="img" aria-label="Сейчас уроки записаны в коде прототипа; после — Markdown-файлы урока проходят проверку и попадают в данные сайта"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0 0L10 5L0 10z"/></marker><marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow new" d="M0 0L10 5L0 10z"/></marker></defs><text class="label" x="20" y="28">СЕЙЧАС</text><rect class="box " x="20" y="44" width="150" height="48" rx="6"/><text x="95" y="65" text-anchor="middle">Уроки внутри кода</text><text x="95" y="81" text-anchor="middle">прототипа</text><rect class="box gone" x="265" y="44" width="150" height="48" rx="6"/><text x="340" y="65" text-anchor="middle">Правка текста =</text><text x="340" y="81" text-anchor="middle">правка кода</text><rect class="box " x="510" y="44" width="150" height="48" rx="6"/><text x="585" y="65" text-anchor="middle">В новом коде</text><text x="585" y="81" text-anchor="middle">уроков нет</text><path class="edge " d="M170 68H263" marker-end="url(#a)"/><path class="edge " d="M415 68H508" marker-end="url(#a)"/><text class="label" x="20" y="158">ПОСЛЕ</text><rect class="box new" x="20" y="174" width="150" height="48" rx="6"/><text x="95" y="195" text-anchor="middle">ru.md, en.md</text><text x="95" y="211" text-anchor="middle">урока</text><rect class="box new" x="265" y="174" width="150" height="48" rx="6"/><text x="340" y="195" text-anchor="middle">Проверка: файл,</text><text x="340" y="211" text-anchor="middle">строка, причина</text><rect class="box new" x="510" y="174" width="150" height="48" rx="6"/><text x="585" y="195" text-anchor="middle">Gate и данные</text><text x="585" y="211" text-anchor="middle">сайта</text><path class="edge new" d="M170 198H263" marker-end="url(#an)"/><path class="edge new" d="M415 198H508" marker-end="url(#an)"/></svg>
     </div>
   </section>
 
@@ -413,21 +416,21 @@ content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation r
     <details class="more" id="oracle">
       <summary><span class="t" data-t="tests_t"></span><span class="o">Уровень D: урок B1 проходит, каждый испорченный вариант файла падает с названным файлом, строкой и причиной</span></summary>
       <div class="body"><div class="scroll"><table>
-        <tr><th data-t="th_check"></th><th data-t="th_proof"></th><th data-t="th_level"></th></tr><tr><td>B1 проходит</td><td>Файлы урока B1 → npm run gate → ошибок контента нет</td><td>D</td></tr><tr><td>Нет защиты (S8)</td><td>Урок без шага «только с защитой» → gate красный, названы урок, поле и строка</td><td>D</td></tr><tr><td>Адрес вне учебных (S8)</td><td>8.8.8.8 или google.com в любом тексте → ошибка с файлом и строкой</td><td>D</td></tr><tr><td>Нет источников (S8)</td><td>Пустой список источников → ошибка</td><td>D</td></tr><tr><td>Нет текста</td><td>Шаг без уровня «Глубже» на русском → ошибка называет ключ</td><td>D</td></tr><tr><td>Враждебный файл</td><td>Якоря, дубли ключей, 1 МБ, неверные типы, __proto__ → ошибки-данные, без падения</td><td>D</td></tr><tr><td>Мутации</td><td>Верификатор ломает правила валидатора — тесты краснеют</td><td>D</td></tr>
+        <tr><th data-t="th_check"></th><th data-t="th_proof"></th><th data-t="th_level"></th></tr><tr><td>B1 проходит</td><td>content/lessons/B1/ru.md → npm run gate → ошибок контента нет</td><td>D</td></tr><tr><td>Нет защиты (S8)</td><td>Урок без шага «только с защитой» → gate красный, названы урок, раздел и строка</td><td>D</td></tr><tr><td>Адрес вне учебных (S8)</td><td>8.8.8.8 или google.com в тексте → ошибка с файлом и строкой</td><td>D</td></tr><tr><td>Нет источников (S8)</td><td>Пустой раздел «Источники» → ошибка</td><td>D</td></tr><tr><td>Нет уровня</td><td>Шаг без «Глубже» → ошибка называет шаг</td><td>D</td></tr><tr><td>Перевод расходится</td><td>en.md с другим получателем в шаге → ошибка</td><td>D</td></tr><tr><td>Враждебный файл</td><td>HTML, картинка, ссылка в тексте шага, 1 МБ → ошибки-данные, без падения</td><td>D</td></tr><tr><td>Мутации</td><td>Верификатор ломает правила — тесты краснеют</td><td>D</td></tr>
       </table></div></div>
     </details>
     <details class="more" id="risks">
-      <summary><span class="t" data-t="risks_t"></span><span class="o">Главный риск — формат окажется неудобным при массовом написании уроков; откат — обычный revert</span></summary>
-      <div class="body dl"><div><b>Формат придётся менять после 36 уроков</b><span>Номер формата в файле; второй урок другого вида (I1 «Фишинг») переносится из прототипа в этом же дизайне как проверка формата</span></div><div><b>Правило учебных адресов ложно срабатывает на версии и имена файлов</b><span>Проверяется на текстах трёх уроков прототипа; исключения только списком</span></div><div><b>Одна линия участников тесна для сетевых уроков</b><span>Вопрос D1; ограничение записывается в руководство автора</span></div>
+      <summary><span class="t" data-t="risks_t"></span><span class="o">Главный риск — служебные строки в Markdown окажутся хрупкими для авторов; откат — revert</span></summary>
+      <div class="body dl"><div><b>Автор ломает служебную строку и не понимает ошибку</b><span>Сообщение называет строку и показывает правильный вид; образец урока в руководстве автора</span></div><div><b>Формат придётся менять после 36 уроков</b><span>Номер формата в файле; второй урок другого вида (I1) в этом же дизайне как проверка</span></div><div><b>Ложные срабатывания правила учебных адресов</b><span>Проверяется на текстах трёх уроков прототипа</span></div>
         <div><b data-t="rollback"></b><span>Revert коммитов; сайт формат ещё не использует, данных пользователей нет.</span></div>
-        <div><b data-t="needs_human"></b><span>Нет. Новая зависимость yaml под лицензией ISC входит в разрешённый список.</span></div>
+        <div><b data-t="needs_human"></b><span>Нет. Новые зависимости mdast-util-from-markdown и её пакеты — под MIT; рабочий проверяет лицензии всех и остановится, если найдёт чужую.</span></div>
       </div>
     </details>
     <details class="more" id="files">
       <summary><span class="t" data-t="files_t"></span><span class="o">Новая папка content/ с двумя уроками и новый модуль src/core/lesson; существующий код почти не трогается</span></summary>
       <div class="body">
         <div class="scroll"><table>
-          <tr><th data-t="th_where"></th><th data-t="th_change"></th></tr><tr><td><code>content/lessons/B1/, content/lessons/I1/</code></td><td>новые</td></tr><tr><td><code>content/locales/ru/B1.yaml, I1.yaml</code></td><td>новые</td></tr><tr><td><code>content/sources.yaml</code></td><td>новый</td></tr><tr><td><code>src/core/lesson/</code></td><td>новый: типы, валидатор, тесты</td></tr><tr><td><code>scripts/</code></td><td>новое: чтение контента, плагин Vite, тест контента</td></tr><tr><td><code>scripts/structure-check.mjs</code></td><td>правка: ссылки только в источниках</td></tr><tr><td><code>package.json, package-lock.json, vite.config.ts</code></td><td>правка: зависимость yaml</td></tr><tr><td><code>src/ui, src/commands, src/control</code></td><td>без изменений</td></tr>
+          <tr><th data-t="th_where"></th><th data-t="th_change"></th></tr><tr><td><code>content/lessons/B1/ru.md, content/lessons/I1/ru.md</code></td><td>новые</td></tr><tr><td><code>content/sources.md</code></td><td>новый</td></tr><tr><td><code>src/core/lesson/</code></td><td>новый: типы, валидатор, тесты</td></tr><tr><td><code>scripts/</code></td><td>новое: чтение контента, плагин Vite, тест контента</td></tr><tr><td><code>scripts/structure-check.mjs</code></td><td>правка: ссылки только в источниках</td></tr><tr><td><code>package.json, package-lock.json, vite.config.ts</code></td><td>правка: зависимость mdast-util-from-markdown</td></tr><tr><td><code>plan/architecture.md, plan/execution-plan.md</code></td><td>правка: YAML → Markdown</td></tr>
         </table></div>
         <p class="hint"><span data-t="files_full"></span> <code>plan/designs/M1.1.md</code>.</p>
       </div>
@@ -482,8 +485,8 @@ content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation r
 
 <script type="application/json" id="design-data">
 {
- "revision": "r1",
- "design_sha256": "a1ef725aae655a52bd0acf3f372d5710b3d08d74e6ab2538b36d4c9ce5538f30",
+ "revision": "r2",
+ "design_sha256": "1a0a99f69726f6f5008ec194d7ee43567f652311922b49ba3b3a0e4c392a61cd",
  "decisions": [
   {
    "id": "D1",
@@ -528,7 +531,8 @@ content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation r
       "автор двигает цифры вслепую"
      ]
     }
-   ]
+   ],
+   "since": "r1"
   },
   {
    "id": "D2",
@@ -560,43 +564,46 @@ content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation r
       "переводчик переводит одно и то же дважды"
      ]
     }
-   ]
+   ],
+   "since": "r1"
   },
   {
    "id": "D3",
-   "tab": "texts",
-   "q": "Что автор может делать в тексте урока?",
+   "tab": "files",
+   "q": "Как урок разложен по файлам?",
    "options": [
     {
      "key": "a",
-     "title": "Обычный текст и одна пометка",
-     "why": "Только текст и выделение вредной части в примере запроса; слова из словаря сайт находит сам, как в прототипе.",
+     "title": "Один Markdown-файл на язык",
+     "why": "ru.md — весь урок целиком, en.md — перевод той же формы. Служебные строки одинаковы во всех языках, проверка сверяет, что перевод им не противоречит.",
      "pros": [
-      "текст нельзя сломать и в него нельзя подложить разметку",
-      "переводчику нечего портить"
+      "автор читает и пишет урок одним файлом сверху вниз",
+      "на GitHub выглядит как статья"
      ],
      "cons": [
-      "нет жирного, списков и ссылок внутри объяснения"
+      "служебные строки повторяются в каждом языке",
+      "поменять схему — поправить все языки"
      ],
      "rec": true
     },
     {
      "key": "b",
-     "title": "Упрощённый Markdown",
-     "why": "Жирный, списки и ссылки привычны авторам, но ссылки уводят с сайта, а разметку легко сломать при переводе.",
+     "title": "Схема отдельно, тексты отдельно",
+     "why": "lesson.md со схемой на все языки и ru.md с текстами, которые ссылаются на шаги по имени.",
      "pros": [
-      "выразительнее"
+      "схема в одном месте",
+      "переводчик видит только текст"
      ],
      "cons": [
-      "нужна проверка каждой ссылки",
-      "больше ошибок в переводах"
+      "два файла на один урок",
+      "в файле текстов шаги без схемы рядом"
      ]
     }
    ]
   },
   {
    "id": "D4",
-   "tab": "texts",
+   "tab": "lesson",
    "q": "Обязательны ли все три уровня объяснения у каждого шага?",
    "options": [
     {
@@ -625,69 +632,70 @@ content/locales/ru/B1.yaml:12:28     address 8.8.8.8 is not in a documentation r
       "«Глубже» будут пропускать там, где оно нужнее всего"
      ]
     }
-   ]
+   ],
+   "since": "r1"
   }
  ],
  "engineering": [
   {
    "id": "E1",
-   "title": "Два файла на урок: структура отдельно, тексты по языкам отдельно",
-   "why": "content/lessons/<id>/lesson.yaml и content/locales/<язык>/<id>.yaml (K10). Один файл с текстами внутри проиграл: перевод менял бы файл структуры."
+   "title": "Формат — Markdown, YAML в проекте нет",
+   "why": "Твоё решение в r1; заменяет K10 в части формата. content/lessons/<id>/<язык>.md. Служебные слова в обратных кавычках не переводятся, всё остальное — текст."
   },
   {
    "id": "E2",
-   "title": "Разбор YAML пакетом yaml (лицензия ISC), только при сборке и в тестах",
-   "why": "Отдаёт строку и столбец каждого значения. js-yaml проиграл: позиций узлов нет. Это новая зависимость проекта."
+   "title": "Разбор Markdown пакетом mdast-util-from-markdown (MIT), только при сборке",
+   "why": "Отдаёт строку и столбец каждого узла. Свой построчный разборщик проиграл: в Markdown много крайних случаев. remark целиком не нужен."
   },
   {
    "id": "E3",
-   "title": "Свой валидатор в src/core/lesson, без библиотек схем",
-   "why": "Ошибки — данные {file, line, column, path, code, message}, без исключений, как в реестре команд. zod и ajv проиграли: зависимость ради десятка правил и чужие тексты ошибок."
+   "title": "Свой валидатор в src/core/lesson, ошибки — данные",
+   "why": "{file, line, column, path, code, message}, без исключений, как в реестре команд."
   },
   {
    "id": "E4",
-   "title": "Неизвестные ключи, якоря и теги YAML, дубли ключей, файлы больше 64 КБ — ошибка",
-   "why": "Файлы уроков приходят из pull request и считаются враждебными."
+   "title": "В тексте можно жирный, курсив, списки и код; HTML, картинки и ссылки — нельзя",
+   "why": "Ссылки только в разделе «Источники». Пометка ⟦…⟧ выделяет вредную часть в коде. Сайт показывает текст своими компонентами, HTML не вставляет."
   },
   {
    "id": "E5",
-   "title": "Паспорт урока — поля, а не пары строк",
-   "why": "cwe, owasp, attack, cvss, cves, sources[]. Нужны калькулятору CVSS и сверке фактов; в прототипе это были произвольные строки."
+   "title": "Враждебный файл — ошибка, не падение",
+   "why": "Больше 64 КБ, неизвестный раздел или служебное слово, HTML внутри — ошибка с файлом и строкой."
   },
   {
    "id": "E6",
-   "title": "Правила содержания проверяет валидатор",
-   "why": "У урока об атаке есть шаг «только с защитой» и текст «Как защититься»; есть источник; все IP-адреса и домены только из учебных диапазонов; у каждого ключа структуры есть текст на русском."
+   "title": "Паспорт урока — служебные строки, источники — список ссылок",
+   "why": "cwe, owasp, attack, cvss, cves, severity. Нужны калькулятору CVSS и сверке фактов."
   },
   {
    "id": "E7",
-   "title": "Внешняя ссылка разрешена только в источниках, домен — из списка",
-   "why": "content/sources.yaml: OWASP, MITRE, NVD, RFC Editor, FIRST, CISA, W3C, WHATWG, MDN; расширяется через pull request. Сайт по ссылкам ничего не запрашивает."
+   "title": "Правила содержания проверяет валидатор",
+   "why": "Шаг «только с защитой» и раздел «Как защититься»; хотя бы один источник; только учебные адреса; три уровня у каждого шага; перевод совпадает с ru.md по служебным строкам."
   },
   {
    "id": "E8",
-   "title": "Виды сообщения: обычное, вредное, безопасное; «остановлено» — отдельное поле исхода",
-   "why": "Как в прототипе (legit, attack, safe); четвёртый вид не нужен."
+   "title": "Ссылки в «Источниках» — только на домены из списка",
+   "why": "content/sources.md: OWASP, MITRE, NVD, RFC Editor, FIRST, CISA, W3C, WHATWG, MDN; расширяется через pull request."
   },
   {
    "id": "E9",
-   "title": "В файле есть номер формата и зарезервированное место под песочницу",
-   "why": "format: 1; ключ sandbox в первой версии обязан отсутствовать (gap G2)."
+   "title": "Виды сообщения: обычное, вредное, безопасное; «остановлено» — пометка исхода",
+   "why": "Как в прототипе: legit, attack, safe."
   },
   {
    "id": "E10",
-   "title": "Проверка контента — тест в gate и отдельная команда npm run content",
-   "why": "Печатает ошибки списком «файл:строка: причина». Данные для сайта собирает плагин Vite, урок уходит отдельным файлом не больше 30 КБ."
+   "title": "Номер формата в файле, раздел «Песочница» пока запрещён",
+   "why": "Место под будущую песочницу (G2)."
   },
   {
    "id": "E11",
-   "title": "Тексты ошибок проверки — на английском",
-   "why": "Как остальные сообщения для разработчиков; руководство автора на русском и английском появится в M4.1."
+   "title": "Проверка контента — в gate и командой npm run content",
+   "why": "Данные для сайта собирает плагин Vite, урок уходит отдельным файлом не больше 30 КБ."
   },
   {
    "id": "E12",
    "title": "Словарь в этот дизайн не входит",
-   "why": "Формат словаря и поиск слов проектируются в M2 вместе с панелью словаря; регулярные выражения прототипа в файлы не переносятся."
+   "why": "Проектируется в M2, тоже Markdown."
   }
  ]
 }
