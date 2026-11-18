@@ -4,7 +4,7 @@
  * scene and elapsed time always give the same answer, so a screenshot repeats byte for byte.
  */
 import type { MessageKind, StepMode } from '../lesson/types';
-import { MIN_SQUEEZE, wrap, type Rect, type SceneLayout } from './layout';
+import { MIN_SQUEEZE, type Rect, type SceneLayout } from './layout';
 
 /** How long a message travels from sender to receiver, in player clock milliseconds. */
 export const TRAVEL_MS = 900;
@@ -18,15 +18,27 @@ const CHAR_WIDTH = MESSAGE_FONT_SIZE * 0.6;
 const PLAQUE_PAD = 9;
 const SIGN_ROOM = 16;
 /**
- * A compact plaque (M1.2c), for a column too narrow for the one-line plaque: 4 px, the sign in
- * 11 px, the text in up to two lines, 4 px.
+ * A compact plaque (M1.2c, M1.2d), for a column too narrow for the one-line plaque: 3 px, the
+ * sign in 11…16 px before the first line only, the text in up to three lines — the second and
+ * third start under the sign — and 3 px.
  */
-const COMPACT_PAD = 4;
+const COMPACT_PAD = 3;
 const COMPACT_SIGN = 11;
-const COMPACT_END = 4;
-/** Height of a two-line plaque and the baselines of its lines, from its middle. */
+const COMPACT_END = 3;
+const COMPACT_LINES = 3;
+/** Heights of a two- and three-line plaque and the baselines of its lines, from its middle. */
 export const MESSAGE_HEIGHT_2 = 30;
-const LINE_BASELINES: Readonly<Record<1 | 2, readonly number[]>> = { 1: [4], 2: [-3, 10] };
+export const MESSAGE_HEIGHT_3 = 42;
+const LINE_BASELINES: Readonly<Record<1 | 2 | 3, readonly number[]>> = {
+  1: [4],
+  2: [-3, 10],
+  3: [-9, 4, 17],
+};
+const HEIGHTS: Readonly<Record<1 | 2 | 3, number>> = {
+  1: MESSAGE_HEIGHT,
+  2: MESSAGE_HEIGHT_2,
+  3: MESSAGE_HEIGHT_3,
+};
 /** The plaque's shadow lies this far right and down. */
 const PLAQUE_SHADOW = 3;
 /** The word over the message: letter spacing of 0.5 px (Scene.svelte). */
@@ -54,9 +66,19 @@ export interface StepInput {
  */
 export type MessageSign = 'attack' | 'safe' | 'stopped' | 'right' | 'left' | 'here';
 
+/**
+ * The colour a message is painted with (M1.2d, K62): its kind, or the defence colour once a
+ * stopped message has stopped. Plaque or token, sign badge, word and receiver ring take it.
+ */
+export type MessagePaint = MessageKind | 'stopped';
+
 export interface MessageLayout {
   readonly kind: MessageKind;
   readonly stopped: boolean;
+  /** Plaque, word and ring: the kind, `stopped` (green) where a stopped message stops. */
+  readonly paint: MessagePaint;
+  /** The trail always shows the kind of the message that came. */
+  readonly trailPaint: MessageKind;
   readonly sign: MessageSign;
   /** The word that doubles the colour, shown above the message. */
   readonly word: string;
@@ -87,16 +109,21 @@ export interface PlaqueLayout {
   readonly height: number;
   /** All of the text as drawn, lines joined by a space. */
   readonly text: string;
-  /** Lines with their baselines from the middle of the plaque and an optional `textLength`. */
+  /**
+   * Lines with their baselines from the middle of the plaque, where they start from the
+   * plaque's left edge and an optional `textLength`.
+   */
   readonly lines: readonly {
     readonly text: string;
+    readonly x: number;
     readonly y: number;
     readonly fit: number | null;
   }[];
   /** The text did not fit and ends with «…». */
   readonly cut: boolean;
-  /** Where the sign's middle and the text start, from the plaque's left edge. */
+  /** Where the sign's middle stands (from the left edge and the middle) and the first line starts. */
   readonly signX: number;
+  readonly signY: number;
   readonly textX: number;
 }
 
@@ -150,47 +177,92 @@ export function travelProgress(elapsedMs: number, reducedMotion: boolean): numbe
   return p < 0.5 ? 2 * p * p : 1 - (-2 * p + 2) ** 2 / 2;
 }
 
+const count = (text: string) => Array.from(text).length;
+
+/**
+ * The text of a compact plaque in lines broken at spaces (M1.2d): the first line has `first`
+ * px (the sign stands before it), the others `rest`; a line may be drawn down to 85% of its
+ * width. A word too long for its line loses its end to «…»; past three lines the third is cut.
+ */
+function hang(text: string, first: number, rest: number): { lines: string[]; cut: boolean } {
+  const room = (i: number) => (i === 0 ? first : rest);
+  const most = (i: number) => Math.max(1, Math.floor(room(i) / (CHAR_WIDTH * MIN_SQUEEZE) + 1e-9));
+  const lines: string[] = [];
+  let line = '';
+  let cut = false;
+  for (const word of text.split(/\s+/).filter((w) => w !== '')) {
+    const joined = line === '' ? word : `${line} ${word}`;
+    if (count(joined) <= most(lines.length)) {
+      line = joined;
+      continue;
+    }
+    if (line !== '') lines.push(line);
+    line = word;
+    if (count(word) > most(lines.length)) {
+      line = `${Array.from(word)
+        .slice(0, most(lines.length) - 1)
+        .join('')}…`;
+      cut = true;
+    }
+  }
+  if (line !== '') lines.push(line);
+  if (lines.length <= COMPACT_LINES) return { lines, cut };
+  const kept = lines.slice(0, COMPACT_LINES);
+  const last = Array.from(kept[COMPACT_LINES - 1] ?? '');
+  kept[COMPACT_LINES - 1] = `${last.slice(0, most(COMPACT_LINES - 1) - 1).join('')}…`;
+  return { lines: kept, cut: true };
+}
+
 /**
  * The plaque for `maxWidth` of room (shadow included): one line as in the prototype when it
- * fits; else compact (M1.2c), the text in up to two lines broken at spaces, a word a little
- * too wide drawn narrower (down to 85%), the rest cut with «…».
+ * fits; else compact (M1.2c, M1.2d): the sign before the first line, the text in up to three
+ * lines broken at spaces, the next lines under the sign, a line a little too wide drawn
+ * narrower (down to 85%), the rest cut with «…».
  */
 function plaqueOf(message: string, maxWidth: number): PlaqueLayout {
-  const chars = Array.from(message.trim());
-  const full = chars.length * CHAR_WIDTH;
+  const text = Array.from(message.trim()).join('');
+  const full = count(text) * CHAR_WIDTH;
   const wide = Math.max(48, full + 2 * PLAQUE_PAD + SIGN_ROOM);
   if (wide + PLAQUE_SHADOW <= maxWidth) {
-    const text = chars.join('');
     return {
       width: wide,
       height: MESSAGE_HEIGHT,
       text,
-      lines: [{ text, y: 4, fit: null }],
+      lines: [{ text, x: 25, y: 4, fit: null }],
       cut: false,
       signX: 15,
+      signY: 0,
       textX: 25,
     };
   }
-  const frame = COMPACT_PAD + COMPACT_SIGN + COMPACT_END;
-  const textMax = Math.max(CHAR_WIDTH, maxWidth - PLAQUE_SHADOW - frame);
-  const wrapped = wrap(chars.join(''), textMax, MESSAGE_FONT_SIZE, 0, 2, true);
+  const textMax = Math.max(CHAR_WIDTH, maxWidth - PLAQUE_SHADOW - COMPACT_PAD - COMPACT_END);
+  const firstMax = Math.max(CHAR_WIDTH, textMax - COMPACT_SIGN);
+  const wrapped = hang(text, firstMax, textMax);
   const texts = wrapped.lines.length === 0 ? [''] : wrapped.lines;
-  const baselines = LINE_BASELINES[texts.length === 1 ? 1 : 2];
-  const lines = texts.map((text, i) => {
-    const natural = Array.from(text).length * CHAR_WIDTH;
-    return { text, y: baselines[i] ?? 0, fit: natural > textMax ? textMax : null };
+  const n: 1 | 2 | 3 = texts.length >= 3 ? 3 : texts.length === 2 ? 2 : 1;
+  const drawn = texts.map((t, i) => Math.min(count(t) * CHAR_WIDTH, i === 0 ? firstMax : textMax));
+  const head = drawn[0] ?? 0;
+  // The sign gets back up to its full room when the first line leaves it.
+  const sign = Math.min(SIGN_ROOM, Math.max(COMPACT_SIGN, textMax - head));
+  const inner = Math.max(sign + head, ...drawn.slice(1));
+  const lines = texts.map((t, i) => {
+    const natural = count(t) * CHAR_WIDTH;
+    const width = drawn[i] ?? natural;
+    return {
+      text: t,
+      x: i === 0 ? COMPACT_PAD + sign : COMPACT_PAD,
+      y: LINE_BASELINES[n][i] ?? 0,
+      fit: natural > width ? width : null,
+    };
   });
-  const drawn = Math.max(...lines.map((l) => l.fit ?? Array.from(l.text).length * CHAR_WIDTH));
-  // The sign gets back up to its full room when the lines leave it.
-  const free = maxWidth - PLAQUE_SHADOW - COMPACT_PAD - COMPACT_END - drawn;
-  const sign = Math.min(SIGN_ROOM, Math.max(COMPACT_SIGN, free));
   return {
-    width: drawn + COMPACT_PAD + sign + COMPACT_END,
-    height: lines.length === 1 ? MESSAGE_HEIGHT : MESSAGE_HEIGHT_2,
+    width: inner + COMPACT_PAD + COMPACT_END,
+    height: HEIGHTS[n],
     text: texts.join(' '),
     lines,
     cut: wrapped.cut,
     signX: COMPACT_PAD + sign / 2,
+    signY: (lines[0]?.y ?? 4) - 4,
     textX: COMPACT_PAD + sign,
   };
 }
@@ -284,6 +356,8 @@ export function layoutMessage(
   return {
     kind: step.kind,
     stopped: stoppedHere,
+    paint: stoppedHere ? 'stopped' : step.kind,
+    trailPaint: step.kind,
     sign,
     word,
     wordY,

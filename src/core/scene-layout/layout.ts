@@ -3,9 +3,9 @@
  * participants, the zones and the scene width. Units are CSS pixels; the scene draws an SVG
  * whose viewBox is exactly `width × height`, so 11 here is 11 px on the screen.
  *
- * Text width is estimated, not measured (the core has no DOM): a character of the scene fonts
- * is taken as 0.6 em wide, which is the advance of JetBrains Mono and a little over the average
- * of bold Onest, so the estimate errs on the wide side. The e2e test checks the real boxes.
+ * Text width is estimated, not measured (the core has no DOM): a character of JetBrains Mono
+ * is 0.6 em; bold Onest (names) goes by a small table of its advances, rounded up (M1.2d), so
+ * the estimate errs on the wide side. The e2e test checks the real boxes.
  */
 
 export interface Rect {
@@ -24,6 +24,11 @@ export interface TextLine {
    * instead of breaking inside it (M1.2b); null when the line fits as it is.
    */
   readonly fit: number | null;
+  /**
+   * The line goes on with the word of the line before it, with no space between (an address
+   * broken after a dot, M1.2d): the scene joins them so the text reads as one word.
+   */
+  readonly glued: boolean;
 }
 
 export interface TextBlock {
@@ -103,12 +108,29 @@ const ZONE_GAP = 6;
 /** Width of the receiver ring's line (M1.2c). */
 export const RING_STROKE = 2;
 /**
- * Room between the column frame and its text, at each side (M1.2c): the zone frame's line
- * (0.75 px in), the ring's line (1.5…3.5 px in) and 1 px of air.
+ * Room between the column frame and its text, at each side (M1.2c, M1.2d): the zone frame's
+ * line (0.75 px in), 2.25 px of paper, the ring's line (3…5 px in) and 2 px of paper.
  */
-const TEXT_INSET = 4.5;
-/** Where the middle of the ring's line stands inside the column frame. */
-const RING_INSET = 2.5;
+const TEXT_INSET = 8;
+/**
+ * Where the middle of the ring's line stands inside the column frame (M1.2d: 4.5, was 2.5),
+ * rounded to whole pixels so the 2 px line is drawn sharp: the ring keeps at least 2.25 px of
+ * paper from the zone frame's line, so that a red ring inside the red «Подделка» frame reads
+ * as a line of its own, and at least 2 px from the text.
+ */
+const RING_INSET = 4.5;
+/**
+ * The lane lies this far below the zone labels (M1.2b: 38; M1.2d: 50): the word over a message
+ * (11 px over a 21 px token) keeps 15 px of paper from the label above it, so it does not read
+ * as the label's second line.
+ */
+const LANE_BELOW_LABELS = 50;
+/**
+ * The icons start this far below the lane (M1.2b: 16; M1.2d: 30): the tallest message at rest
+ * — a three-line plaque, 42 px and its 3 px shadow, or a token — ends above the receiver's
+ * ring and covers no icon.
+ */
+const ICON_BELOW_LANE = 30;
 const CHAR_EM = 0.6;
 const ZONE_LABEL_SIZE = 11;
 const ZONE_LABEL_SPACING = 1;
@@ -132,28 +154,111 @@ function chars(text: string): string[] {
   return Array.from(text);
 }
 
-export function textWidth(text: string, fontSize: number, spacing = 0): number {
-  return chars(text).length * (fontSize * CHAR_EM + spacing);
+/** The two scene fonts: JetBrains Mono (notes, zone labels) and bold Onest (names). */
+export type SceneFont = 'mono' | 'sans';
+
+// Bold Onest (M1.2d): advance widths in em, measured in Chromium and rounded up. The mono font
+// is 0.6 em for every character. M1.2b took Onest as 0.6 em too, but bold Cyrillic runs wider
+// («Атакующий» is 0.64 em a letter), and on a 360 px phone a name came 0.4 px from the ring.
+const SANS_NARROW = new Set(Array.from(" .,:;!'|iljI1"));
+const SANS_SLIM = new Set(Array.from('ftr()"-гт'));
+const SANS_WIDE = new Set(Array.from('жшщюыфмmw'));
+const SANS_CAPS_WIDE = new Set(Array.from('ЖШЩЮЫМФWM'));
+function sansEm(c: string): number {
+  if (SANS_NARROW.has(c)) return 0.3;
+  if (SANS_SLIM.has(c)) return 0.5;
+  if (SANS_WIDE.has(c)) return 0.87;
+  if (SANS_CAPS_WIDE.has(c)) return 1.02;
+  if (c !== c.toLowerCase()) return 0.77;
+  return 0.62;
+}
+
+/** Estimated width of `text` in px: font size, letter spacing and the font's advances. */
+export function textWidth(text: string, fontSize: number, spacing = 0, font: SceneFont = 'mono') {
+  let em = 0;
+  for (const c of chars(text)) em += font === 'mono' ? CHAR_EM : sansEm(c);
+  return em * fontSize + chars(text).length * spacing;
+}
+
+/** How a block measures its text: one function of a string, in px. */
+type Measure = (text: string) => number;
+
+/** The longest start of `letters` that, with «…» after it, is at most `max` px wide. */
+function prefixWithin(letters: readonly string[], max: number, measure: Measure): string {
+  let n = letters.length;
+  while (n > 0 && measure(`${letters.slice(0, n).join('')}…`) > max) n -= 1;
+  return `${letters.slice(0, n).join('')}…`;
 }
 
 /**
- * A word wider than the line, shortened with «…» (M1.2b: a word never breaks inside). An
- * address (`bank-login.example`, `203.0.113.66`) keeps its end after the first dot, where the
- * zone is, and loses its middle; any other word keeps its start.
+ * An address (M1.2d): an IP address or a domain name — letters, digits and hyphens in parts
+ * joined by dots or colons, starting and ending with a letter or digit (`203.0.113.66`,
+ * `bank-login.example`, `2001:db8::1`). `параметр:` or `конец.` is a word, not an address.
  */
-function shorten(word: string[], maxChars: number): string {
-  if (maxChars <= 1) return '…';
-  const dot = word.indexOf('.');
-  const tail = dot > 0 ? word.slice(dot + 1) : [];
-  if (tail.length > 0 && tail.length <= maxChars - 2) {
-    return `${word.slice(0, maxChars - 1 - tail.length).join('')}…${tail.join('')}`;
-  }
-  return `${word.slice(0, maxChars - 1).join('')}…`;
+const ADDRESS = /^[\p{L}\p{N}](?:[\p{L}\p{N}-]|[.:]+(?=[\p{L}\p{N}]))*[\p{L}\p{N}]$/u;
+export function isAddress(word: string): boolean {
+  return /[.:]/.test(word) && ADDRESS.test(word);
 }
 
 /**
- * Greedy line breaking at spaces only; at most `MAX_LINES`, the last cut with «…» when the text
- * is longer. A word longer than a line gets a line of its own, shortened with «…».
+ * An address too long for one line, in the fewest lines of at most `max` px, broken only
+ * after a dot, colon or hyphen, with the longest line as short as it can be (M1.2d: never
+ * «20…0.113.66»). A part wider than a line on its own loses its end to «…»: the last resort on
+ * a scene far narrower than a phone.
+ */
+function breakAddress(word: string, max: number, measure: Measure) {
+  const parts = word.match(/[^.:-]*(?:[.:-]+|$)/g)?.filter((p) => p !== '') ?? [word];
+  let cut = false;
+  const pieces = parts.map((p) => {
+    if (measure(p) <= max) return p;
+    cut = true;
+    return prefixWithin(chars(p), max, measure);
+  });
+  const n = pieces.length;
+  const width = (from: number, to: number) => measure(pieces.slice(from, to).join(''));
+  // best[k][i]: the widest line when the first i pieces make k lines; start[k][i]: where the
+  // last of those lines starts.
+  const best: number[][] = [[0, ...pieces.map(() => Infinity)]];
+  const start: number[][] = [[]];
+  for (let k = 1; k <= n; k += 1) {
+    const row = [Infinity];
+    const back = [0];
+    for (let i = 1; i <= n; i += 1) {
+      let least = Infinity;
+      let at = 0;
+      for (let j = k - 1; j < i; j += 1) {
+        const line = width(j, i);
+        if (line > max) continue;
+        const worst = Math.max(best[k - 1]?.[j] ?? Infinity, line);
+        if (worst < least) {
+          least = worst;
+          at = j;
+        }
+      }
+      row.push(least);
+      back.push(at);
+    }
+    best.push(row);
+    start.push(back);
+    if ((row[n] ?? Infinity) < Infinity) {
+      const lines: string[] = [];
+      let end = n;
+      for (let line = k; line > 0; line -= 1) {
+        const from = start[line]?.[end] ?? 0;
+        lines.unshift(pieces.slice(from, end).join(''));
+        end = from;
+      }
+      return { lines, cut };
+    }
+  }
+  return { lines: pieces, cut };
+}
+
+/**
+ * Greedy line breaking at spaces only, by the estimated width of `font`; at most `MAX_LINES`,
+ * the last cut with «…» when the text is longer. A word alone on its line may be drawn down to
+ * 85% of its width (M1.2b); a word wider still gets a line of its own, its end cut with «…»,
+ * but an address breaks after a dot instead (M1.2d), its lines after the first marked `glued`.
  */
 export function wrap(
   text: string,
@@ -161,41 +266,47 @@ export function wrap(
   fontSize: number,
   spacing: number,
   maxLines = MAX_LINES,
-  squeezeJoined = false,
-): { lines: string[]; cut: boolean } {
-  const perChar = fontSize * CHAR_EM + spacing;
-  const maxChars = Math.max(1, Math.floor(maxWidth / perChar));
-  // A word alone on its line may be drawn narrower, down to MIN_SQUEEZE of its width.
-  const squeezedChars = Math.max(maxChars, Math.floor(maxWidth / (perChar * MIN_SQUEEZE)));
+  font: SceneFont = 'mono',
+): { lines: string[]; glued: boolean[]; cut: boolean } {
+  const measure: Measure = (s) => textWidth(s, fontSize, spacing, font);
+  const squeezed = maxWidth / MIN_SQUEEZE;
   const lines: string[] = [];
+  const glued: boolean[] = [];
   let line = '';
   let shortened = false;
+  const add = (t: string, joined = false) => {
+    lines.push(t);
+    glued.push(joined);
+  };
   const push = () => {
-    if (line !== '') lines.push(line);
+    if (line !== '') add(line);
     line = '';
   };
   for (const word of text.split(/\s+/).filter((w) => w !== '')) {
     const joined = line === '' ? word : `${line} ${word}`;
-    // A plaque (M1.2c) may draw a line of several words narrower too; names and notes may not.
-    if (chars(joined).length <= (squeezeJoined && line !== '' ? squeezedChars : maxChars)) {
+    if (measure(joined) <= maxWidth) {
       line = joined;
       continue;
     }
     push();
-    const letters = chars(word);
-    if (letters.length <= maxChars) line = word;
-    else if (letters.length <= squeezedChars) lines.push(word);
-    else {
-      lines.push(shorten(letters, squeezedChars));
+    if (measure(word) <= maxWidth) line = word;
+    else if (measure(word) <= squeezed) add(word);
+    else if (isAddress(word)) {
+      const broken = breakAddress(word, squeezed, measure);
+      broken.lines.forEach((l, i) => {
+        add(l, i > 0);
+      });
+      shortened ||= broken.cut;
+    } else {
+      add(prefixWithin(chars(word), squeezed, measure));
       shortened = true;
     }
   }
   push();
-  if (lines.length <= maxLines) return { lines, cut: shortened };
+  if (lines.length <= maxLines) return { lines, glued, cut: shortened };
   const kept = lines.slice(0, maxLines);
-  const last = chars(kept[maxLines - 1] ?? '');
-  kept[maxLines - 1] = `${last.slice(0, Math.max(0, maxChars - 1)).join('')}…`;
-  return { lines: kept, cut: true };
+  kept[maxLines - 1] = prefixWithin(chars(kept[maxLines - 1] ?? ''), maxWidth, measure);
+  return { lines: kept, glued: glued.slice(0, maxLines), cut: true };
 }
 
 function block(
@@ -208,15 +319,15 @@ function block(
     fontSize: number;
     lineHeight: number;
     spacing?: number;
+    font?: SceneFont;
   },
 ): TextBlock {
   const { anchor, x, firstBaseline, maxWidth, fontSize, lineHeight } = options;
   const spacing = options.spacing ?? 0;
-  const { lines, cut } = wrap(text, maxWidth, fontSize, spacing);
-  const width = Math.min(
-    maxWidth,
-    Math.max(0, ...lines.map((l) => textWidth(l, fontSize, spacing))),
-  );
+  const font = options.font ?? 'mono';
+  const { lines, glued, cut } = wrap(text, maxWidth, fontSize, spacing, MAX_LINES, font);
+  const measure = (t: string) => textWidth(t, fontSize, spacing, font);
+  const width = Math.min(maxWidth, Math.max(0, ...lines.map(measure)));
   const top = firstBaseline - fontSize * 0.8;
   const height = (lines.length - 1) * lineHeight + fontSize * 1.05;
   return {
@@ -226,7 +337,8 @@ function block(
     lines: lines.map((t, i) => ({
       text: t,
       y: firstBaseline + i * lineHeight,
-      fit: textWidth(t, fontSize, spacing) > maxWidth ? maxWidth : null,
+      fit: measure(t) > maxWidth ? maxWidth : null,
+      glued: glued[i] ?? false,
     })),
     box: { x: anchor === 'middle' ? x - width / 2 : x, y: top, width, height },
     cut,
@@ -236,9 +348,9 @@ function block(
 /** Name size: 13 px on a roomy column, 12 on a tight one, 11 when a word would not fit. */
 function nameSize(name: string, column: number, maxWidth: number): number {
   const start = column >= 140 ? 13 : 12;
-  const longest = Math.max(0, ...name.split(/\s+/).map((w) => chars(w).length));
+  const words = name.split(/\s+/);
   for (let size = start; size > MIN_FONT_SIZE; size -= 1) {
-    if (longest * size * CHAR_EM <= maxWidth) return size;
+    if (words.every((w) => textWidth(w, size, 0, 'sans') <= maxWidth)) return size;
   }
   return MIN_FONT_SIZE;
 }
@@ -276,12 +388,12 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
   const labelBottom = Math.max(zoneTop + 8 + ZONE_LABEL_SIZE, ...labels.map((l) => bottom(l.box)));
 
   // Room above the lane for the word over a message (M1.2b): 11 px text over a 21 px token.
-  const laneY = labelBottom + 38;
+  const laneY = labelBottom + LANE_BELOW_LABELS;
   const iconWidth = Math.min(MAX_ICON_WIDTH, Math.max(0, 2 * half - 16));
   const iconHeight = iconWidth * ICON_ASPECT;
-  const iconTop = laneY + 16;
+  const iconTop = laneY + ICON_BELOW_LANE;
   // Text may use the whole frame of the column but TEXT_INSET at each side, where the ring
-  // runs (M1.2c); an address of 12 characters still fits a phone column of four participants.
+  // runs (M1.2c, M1.2d); an address too long for a phone column breaks after a dot.
   const textWidthMax = Math.max(0, 2 * half - 2 * TEXT_INSET);
 
   const participants = input.participants.map((p, i): ParticipantLayout => {
@@ -295,6 +407,7 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
       maxWidth: textWidthMax,
       fontSize: size,
       lineHeight: Math.round(size * 1.25),
+      font: 'sans',
     });
     const note =
       p.note.trim() === ''
@@ -308,11 +421,14 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
             lineHeight: NOTE_LINE,
           });
     const last = note ?? name;
+    // The ring's line keeps 2 px of paper from the icon and the text (M1.2d).
+    const left = Math.round(x - half + RING_INSET);
+    const top = Math.round(iconTop - 4);
     const area = {
-      x: x - half + RING_INSET,
-      y: iconTop - 2,
-      width: 2 * half - 2 * RING_INSET,
-      height: bottom(last.box) - iconTop + 6,
+      x: left,
+      y: top,
+      width: Math.round(x + half - RING_INSET) - left,
+      height: Math.round(bottom(last.box) + 4) - top,
     };
     return { id: p.id, cx: x, icon, name, note, area, span: { x1: x - half, x2: x + half } };
   });

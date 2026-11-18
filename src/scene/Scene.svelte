@@ -67,8 +67,12 @@
 
 {#snippet lines(block: TextBlock)}
   <!-- A space between lines, so the text reads as words (textContent, screen readers). -->
-  {#each block.lines as line, i (i)}{i > 0 ? ' ' : ''}<tspan
-      x={round(block.x)}
+  <!-- An address broken after a dot (M1.2d) goes on with no space: it reads as one word. -->
+  <!-- A line drawn narrower (textLength) starts at its left edge: Chromium centres such a line
+       by its natural width, which pushed it 1.5 px aside (M1.2d). -->
+  {#each block.lines as line, i (i)}{i > 0 && !line.glued ? ' ' : ''}<tspan
+      x={round(block.anchor === 'middle' && line.fit !== null ? block.x - line.fit / 2 : block.x)}
+      text-anchor={block.anchor === 'middle' && line.fit !== null ? 'start' : undefined}
       y={round(line.y)}
       textLength={line.fit === null ? undefined : round(line.fit)}
       lengthAdjust={line.fit === null ? undefined : 'spacingAndGlyphs'}>{line.text}</tspan
@@ -183,12 +187,14 @@
 
     {#if message !== null && current !== null}
       <g
-        class="message {message.kind}"
+        class="message {message.trailPaint}"
+        class:stopped={message.paint === 'stopped'}
         data-testid="message"
         data-step={current.step.id}
         data-from={current.step.from}
         data-to={current.step.to}
         data-kind={message.kind}
+        data-paint={message.paint}
         data-stopped={message.stopped}
         data-arrived={message.arrived}
         data-progress={Math.round(message.progress * 1000) / 1000}
@@ -217,8 +223,9 @@
           <text
             class="word"
             data-testid="message-word"
+            x={message.wordFit === null ? undefined : round(-message.wordFit / 2)}
             y={round(message.wordY - message.y)}
-            text-anchor="middle"
+            text-anchor={message.wordFit === null ? 'middle' : 'start'}
             textLength={message.wordFit === null ? undefined : round(message.wordFit)}
             lengthAdjust={message.wordFit === null ? undefined : 'spacingAndGlyphs'}
             font-size="11">{message.word}</text
@@ -244,12 +251,12 @@
                 height={round(h)}
                 rx="5"
               />
-              <g transform="translate({round(-w / 2 + plaque.signX)} 0)">
+              <g transform="translate({round(-w / 2 + plaque.signX)} {round(plaque.signY)})">
                 {@render sign(message.sign, 'message-sign')}
               </g>
               <text class="label" data-testid="message-label" font-size="11"
                 >{#each plaque.lines as line, i (i)}{i > 0 ? ' ' : ''}<tspan
-                    x={round(-w / 2 + plaque.textX)}
+                    x={round(-w / 2 + line.x)}
                     y={round(line.y)}
                     textLength={line.fit === null ? undefined : round(line.fit)}
                     lengthAdjust={line.fit === null ? undefined : 'spacingAndGlyphs'}
@@ -369,9 +376,14 @@
     font-weight: 700;
   }
 
-  /* The message: one colour per kind, always with a sign and a word (E8). */
+  /*
+   * The message: one colour per kind, always with a sign and a word (E8). Where a stopped
+   * message stops, plaque, word and ring turn into the defence green; the trail keeps the
+   * colour of the kind that came (M1.2d, K62).
+   */
   .message {
     --kind: var(--scene-message-legit);
+    --paint: var(--kind);
   }
 
   .message.attack {
@@ -382,10 +394,13 @@
     --kind: var(--scene-message-safe);
   }
 
+  .message.stopped {
+    --paint: var(--scene-message-stopped);
+  }
+
   .ring {
     fill: none;
-    stroke: var(--kind);
-    opacity: 0.9;
+    stroke: var(--paint);
   }
 
   .trail {
@@ -401,7 +416,7 @@
 
   .plaque,
   .badge {
-    fill: var(--kind);
+    fill: var(--paint);
   }
 
   .label {
@@ -411,7 +426,7 @@
   }
 
   .word {
-    fill: var(--kind);
+    fill: var(--paint);
     font-family: var(--font-mono);
     font-weight: 700;
     letter-spacing: 0.5px;
@@ -436,7 +451,7 @@
 
   .token-ring {
     fill: none;
-    stroke: var(--kind);
+    stroke: var(--paint);
     stroke-width: 3;
   }
 </style>

@@ -95,7 +95,15 @@ describe('tokens', () => {
     ['--scene-message-attack', '--scene-paper'],
     ['--scene-message-safe', '--scene-paper'],
     ['--scene-message-legit', '--scene-paper'],
+    // M1.2d: a stopped message is green, its word on the paper and its label on the plaque.
+    ['--scene-message-text', '--scene-message-stopped'],
+    ['--scene-message-stopped', '--scene-paper'],
   ];
+
+  it('paint a stopped message in the defence green, never in red (M1.2d)', () => {
+    expect(colour('--scene-message-stopped')).toBe(colour('--scene-message-safe'));
+    expect(colour('--scene-message-stopped')).not.toBe(colour('--scene-message-attack'));
+  });
 
   it.each(TEXT_PAIRS)('%s on %s has a contrast of at least 4.5:1', (fg, bg) => {
     expect(contrast(colour(fg), colour(bg))).toBeGreaterThanOrEqual(4.5);

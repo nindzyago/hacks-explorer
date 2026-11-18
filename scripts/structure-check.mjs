@@ -19,7 +19,8 @@
 //                     hex is a colour, whatever word stands before it, hex-like id selectors
 //                     (`#cafe {`) included; in a script every hex in code is; in markup prose a
 //                     number after a word («Issue #123») is not. Comments never count. Also
-//                     `el.style['color'] = …` and a 0x number as the value of a colour property.
+//                     `el.style['color'] = …` (M1.2d: and `` style[`color`] ``) and a 0x number
+//                     as the value of a colour property.
 //                     Not seen: a colour built at run time (`'#' + hex`, a variable).
 //   no-css-animation  time comes from the player clock (design M1.2 E4, gap G14): no CSS
 //                     `animation*`, `transition*`, `@keyframes`, view transitions or
@@ -28,6 +29,17 @@
 //                     Svelte `transition:`, `in:`, `out:`, `animate:` or `style:transition`
 //                     directives, no `style.transition`/`style.animation…` from a script. The
 //                     Web Animations API and svelte/transition are the ESLint timing rules'.
+//                     M1.2d (K63): also -o-/-ms- prefixes; SMIL tags in any case (a PascalCase
+//                     tag in a .svelte file is a component); any backslash escape in a CSS
+//                     property name. In script code and Svelte `{…}` expressions the rule goes
+//                     by content: any string or template literal (multi-line too, \u and \x
+//                     escapes decoded) holding an animating declaration, @keyframes, a view
+//                     transition or a SMIL tag; any string that is exactly an animating property
+//                     name (`'transition'`, `'animationDuration'`); any member write to
+//                     `.transition…`/`.animation…` (=, +=, ||=…); Object.assign(el.style, {
+//                     transition }); a SMIL element in createElement(NS) or <svelte:element
+//                     this>. A key `transition` in a plain object is data. Not seen: CSS built
+//                     at run time by joining pieces of a name (`'trans' + 'ition'`).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,7 +75,7 @@ const PROSE_WORD = /(?<![\w-])\p{L}+ $/u;
 // A 0x number as the value of a colour property (`fill: 0xff0000`).
 const HEX_NUMBER = /(?<![\w.])0x[0-9a-f]{3,8}\b/gi;
 // `el.style['color'] = …`: the property is a string.
-const STYLE_INDEX = /\bstyle\s*\[\s*(['"])([\w-]+)\1\s*\]\s*=(?!=)\s*/g;
+const STYLE_INDEX = /\bstyle\s*\[\s*(['"`])([\w-]+)\1\s*\]\s*=(?!=)\s*/g;
 const COLOUR_FUNCTION =
   /(?<![\w-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(|(?<![\w.$-])color\(\s*(?:srgb(?:-linear)?|display-p3|a98-rgb|prophoto-rgb|rec2020|xyz(?:-d50|-d65)?|from)\b/gi;
 // Any name followed by `:` or `=` (CSS `prop: value`, markup `attr="value"`, Svelte
@@ -331,18 +343,115 @@ function literalColours(path, source) {
 // no-css-animation (M1.2c, design M1.2 E4, G14). A CSS property that animates: `animation…`,
 // `transition…` (also -webkit-/-moz-), a view transition. Not after `.`, `#` or a word
 // character: `.transition:hover` is a selector.
-const CSS_ANIMATED =
-  /(?<![\w.#-])((?:-webkit-|-moz-)?(?:animation|transition)(?:-[a-z-]+)?|view-transition(?:-[a-z]+)?)\s*:(?!:)\s*([^;}]*)/gi;
-const CSS_AT =
-  /@(?:-webkit-|-moz-)?keyframes\b|@view-transition\b|(?<![\w-])scroll-behavior\s*:\s*smooth\b/gi;
-const SMIL = /^<(animate|animateTransform|animateMotion|animateColor|set)(?=[\s/>])/;
-const DIRECTIVE =
-  /(?<=\s)(?:(?:transition|in|out|animate):[A-Za-z_$]|style:(?:-webkit-)?(?:animation|transition)\b)/g;
-const SCRIPT_STYLE = [
-  /\.style\s*\.\s*(?:webkit|moz)?(?:animation|transition)\w*\s*=(?!=)/gi,
-  /\.style\s*\[\s*(['"])(?:-webkit-)?(?:animation|transition)[\w-]*\1\s*\]\s*=(?!=)/gi,
-  /\bsetProperty\(\s*(['"])(?:-webkit-)?(?:animation|transition)[\w-]*\1/gi,
-];
+// M1.2d: the -o- and -ms- prefixes too.
+const PREFIX = '(?:-webkit-|-moz-|-o-|-ms-)?';
+const CSS_ANIMATED = new RegExp(
+  `(?<![\\w.#-])(${PREFIX}(?:animation|transition)(?:-[a-z-]+)?|view-transition(?:-[a-z]+)?)\\s*:(?!:)\\s*([^;}]*)`,
+  'gi',
+);
+const CSS_AT = new RegExp(
+  `@${PREFIX}keyframes\\b|@view-transition\\b|(?<![\\w-])scroll-behavior\\s*:\\s*smooth\\b`,
+  'gi',
+);
+// M1.2d: a backslash escape in a CSS property name (`tr\61nsition`) is always an error: a
+// declaration starts after `{`, `;` or the quote of a style attribute.
+const CSS_ESCAPED_NAME = /(?<=[{;"']\s*)(-?(?:[a-z_-]|\\[^\n])(?:[\w-]|\\[^\n])*)\s*:(?!:)/gi;
+const SMIL_NAMES = '(?:animate|animateTransform|animateMotion|animateColor|set)';
+const SMIL = new RegExp(`^<(${SMIL_NAMES})(?=[\\s/>])`, 'i');
+// A SMIL tag written inside a script string (M1.2d).
+const SMIL_IN_STRING = new RegExp(`<\\s*(${SMIL_NAMES})(?=[\\s/>])`, 'gi');
+const SMIL_CREATE = new RegExp(
+  `\\bcreateElement(?:NS)?\\(\\s*(?:[^,()]+,\\s*)?(['"\`])(${SMIL_NAMES})\\1`,
+  'gi',
+);
+const DIRECTIVE = new RegExp(
+  `(?<=\\s)(?:(?:transition|in|out|animate):[A-Za-z_$]|style:${PREFIX}(?:animation|transition)\\b)`,
+  'g',
+);
+// M1.2d, by content: a string that is exactly an animating property name, kebab or camel case
+// (`'transition'`, `'animation-duration'`, `'webkitTransition'`, `'viewTransitionName'`).
+// `'transitions'`, `'animationend'` and prose are other words.
+const ANIMATED_NAME = new RegExp(
+  `^(?:${PREFIX}(?:animation|transition)(?:-[a-z-]+)?|view-transition(?:-[a-z]+)?|` +
+    '(?:(?:webkit|moz|ms|o|Webkit|Moz|Ms|O)(?:Animation|Transition)|animation|transition|viewTransition)(?:[A-Z]\\w*)?)$',
+);
+// A member write to an animating property, of any object: `.transition = …`, `+=`, `||=`.
+const ANIMATED_MEMBER =
+  /\.\s*(?:(?:webkit|moz|ms|o|Webkit|Moz|Ms|O)(?:Animation|Transition)|animation|transition)\w*\s*(?:\+|-|\|\||&&|\?\?)?=(?!=)/g;
+// Object.assign(el.style, { transition }) (M1.2d): the keys of the object are properties.
+const ASSIGN_STYLE = /\bObject\.assign\(\s*[\w$.]*\bstyle\s*,/g;
+const STYLE_KEY =
+  /(?<=[{,]\s*)(['"`]?)((?:webkit|moz|ms|o)?-?(?:animation|transition)[\w-]*)\1\s*(?=[:,}])/gi;
+
+/** Svelte component names are PascalCase (`<Set />`): not SMIL in a .svelte file (M1.2d). */
+const isComponent = (path, name) => path.endsWith('.svelte') && /^[A-Z](?=.*[a-z])/.test(name);
+
+/** CSS animations in a piece of CSS text (`transition: none` is a reset and allowed). */
+function cssAnimated(css) {
+  const out = [];
+  for (const m of css.matchAll(CSS_ANIMATED)) {
+    if (/^none(\s*!important)?$/i.test((m[2] ?? '').trim())) continue;
+    out.push(m[1] ?? 'animation');
+  }
+  return out;
+}
+
+/**
+ * The string and template literals of `text` where `inScript(index)`, as `[index, body]`:
+ * a template may span lines; `\uXXXX`, `\u{…}` and `\xXX` escapes are decoded, so
+ * `'transition: 1s'` reads as what it is (M1.2d).
+ */
+function literals(text, inScript) {
+  const out = [];
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if ((c === "'" || c === '"' || c === '`') && inScript(i)) {
+      let j = i + 1;
+      while (j < text.length && text[j] !== c && !(c !== '`' && text[j] === '\n')) {
+        j += text[j] === '\\' ? 2 : 1;
+      }
+      const body = text
+        .slice(i + 1, j)
+        .replace(/\\u\{([0-9a-f]+)\}|\\u([0-9a-f]{4})|\\x([0-9a-f]{2})/gi, (_m, a, b, d) =>
+          String.fromCodePoint(Number.parseInt(a ?? b ?? d, 16)),
+        );
+      out.push([i, body]);
+      i = j + 1;
+      continue;
+    }
+    i += 1;
+  }
+  return out;
+}
+
+/** How deep in `{…}` index `k` of a tag is, past quoted attribute values. */
+function depthAt(tag, k) {
+  let depth = 0;
+  let quote = '';
+  for (let i = 0; i < k; i += 1) {
+    const c = tag[i];
+    if (depth === 0 && quote !== '') {
+      if (c === quote) quote = '';
+    } else if (depth === 0 && (c === '"' || c === "'")) quote = c;
+    else if (c === '{') depth += 1;
+    else if (c === '}') depth = Math.max(0, depth - 1);
+  }
+  return depth;
+}
+
+/** What in a script literal makes it CSS that animates, or SMIL; null when nothing does. */
+function animatedLiteral(body) {
+  const css = cssAnimated(body);
+  if (css.length > 0) return css[0] ?? 'animation';
+  const at = new RegExp(CSS_AT.source, 'i').exec(body);
+  if (at !== null) return at[0];
+  const smil = SMIL_IN_STRING.exec(body);
+  SMIL_IN_STRING.lastIndex = 0;
+  if (smil !== null) return `<${smil[1] ?? ''}> in a string`;
+  if (ANIMATED_NAME.test(body.trim())) return `'${body.trim()}'`;
+  return null;
+}
 
 /** Animations in one file of site code, as `[index, what]` pairs in file order. */
 function animations(path, source) {
@@ -356,17 +465,55 @@ function animations(path, source) {
   for (const m of text.matchAll(CSS_AT)) {
     if (kindAt(m.index) === 'css') found.push([m.index, m[0]]);
   }
-  for (const [start, tag] of tags(text, kindAt)) {
-    const smil = SMIL.exec(tag);
-    if (smil !== null) found.push([start, `<${smil[1] ?? ''}>`]);
-    for (const d of tag.matchAll(DIRECTIVE)) found.push([start + d.index, d[0]]);
-  }
-  for (const pattern of SCRIPT_STYLE) {
-    for (const m of text.matchAll(pattern)) {
-      if (kindAt(m.index) === 'script') found.push([m.index, m[0]]);
+  for (const m of text.matchAll(CSS_ESCAPED_NAME)) {
+    if (kindAt(m.index) === 'css' && (m[1] ?? '').includes('\\')) {
+      found.push([m.index, `an escaped property name ${m[1] ?? ''}`]);
     }
   }
-  return found.sort((a, b) => a[0] - b[0]);
+  for (const [start, tag] of tags(text, kindAt)) {
+    const smil = SMIL.exec(tag);
+    if (smil !== null && !isComponent(path, smil[1] ?? '')) {
+      found.push([start, `<${smil[1] ?? ''}>`]);
+    }
+    for (const d of tag.matchAll(DIRECTIVE)) found.push([start + d.index, d[0]]);
+    // Svelte expressions in a tag (`style={…}`, any `{…}`): their literals are script.
+    for (const [index, body] of literals(tag, (k) => depthAt(tag, k) > 0)) {
+      const what = animatedLiteral(body);
+      if (what !== null) found.push([start + index, what]);
+    }
+    // <svelte:element this="animate"> or this={"animate"} (M1.2d).
+    if (/^<svelte:element\b/.test(tag)) {
+      const name = /\sthis\s*=\s*(?:\{\s*)?(['"`])([^'"`]*)\1/.exec(tag)?.[2] ?? '';
+      if (new RegExp(`^${SMIL_NAMES}$`, 'i').test(name)) found.push([start, `<${name}>`]);
+    }
+  }
+  // Script code (M1.2d, by content): literals, member writes, Object.assign onto a style,
+  // SMIL elements made by name.
+  for (const [index, body] of literals(text, (k) => kindAt(k) === 'script')) {
+    const what = animatedLiteral(body);
+    if (what !== null) found.push([index, what]);
+  }
+  for (const m of text.matchAll(ANIMATED_MEMBER)) {
+    if (kindAt(m.index) === 'script') found.push([m.index, m[0]]);
+  }
+  for (const m of text.matchAll(ASSIGN_STYLE)) {
+    if (kindAt(m.index) !== 'script') continue;
+    const args = enclosed(text, m.index + m[0].indexOf('('), '(', ')');
+    for (const key of args.matchAll(STYLE_KEY)) found.push([m.index, `style ${key[2] ?? ''}`]);
+  }
+  for (const m of text.matchAll(SMIL_CREATE)) {
+    if (kindAt(m.index) === 'script') found.push([m.index, `<${m[2] ?? ''}>`]);
+  }
+  const seen = new Set();
+  return found
+    .sort((a, b) => a[0] - b[0])
+    .filter(([index]) => {
+      // One report per line.
+      const line = lineAt(text, index);
+      if (seen.has(line)) return false;
+      seen.add(line);
+      return true;
+    });
 }
 
 /**
