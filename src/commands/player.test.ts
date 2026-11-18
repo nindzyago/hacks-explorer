@@ -237,10 +237,21 @@ describe('player.speed', () => {
     'rejects %j and keeps the speed',
     (params) => {
       const app = loaded();
-      expect(app.registry.run('player.speed', params)).toMatchObject({ ok: false });
+      // Verifier M1.3: a bad value is a parameter error, not a failure inside the command.
+      expect(app.registry.run('player.speed', params)).toMatchObject({
+        ok: false,
+        error: { code: 'invalid-params' },
+      });
       expect(player(app).speed).toBe(1);
     },
   );
+
+  it('lists its values as data', () => {
+    const info = createApp()
+      .registry.list()
+      .find((c) => c.id === 'player.speed');
+    expect(info?.params).toEqual({ value: { kind: 'number', values: [0.5, 1, 2] } });
+  });
 });
 
 describe('lesson.open', () => {
@@ -274,33 +285,74 @@ describe('lesson.open', () => {
     expect(player(app)).toMatchObject({ step: 1, counts: B1 });
   });
 
-  it.each([[{}], [{ id: 7 }], [{ id: 'x'.repeat(33) }], [{ id: '' }], [{ id: 'B1/../x' }]])(
-    'rejects %j',
-    (params) => {
-      const app = createApp();
-      expect(app.registry.run('lesson.open', params)).toMatchObject({ ok: false });
-      expect(app.store.get().lesson).toBe('B1');
-    },
-  );
+  it.each([
+    [{}],
+    [{ id: 7 }],
+    [{ id: 'x'.repeat(33) }],
+    [{ id: '' }],
+    [{ id: 'B1/../x' }],
+    [{ id: 'b1' }],
+    [{ id: 'B1\n' }],
+    [{ id: 'B1234' }],
+  ])('rejects %j as invalid parameters', (params) => {
+    const app = createApp();
+    expect(app.registry.run('lesson.open', params)).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-params' },
+    });
+    expect(app.store.get().lesson).toBe('B1');
+  });
+});
+
+describe('player.play without a lesson', () => {
+  // Verifier M1.3: after a failed load (no steps) play started the real-time driver forever.
+  it('is disabled and does not ask for time', () => {
+    const asked: boolean[] = [];
+    const app = createApp({ onTimeNeeded: (needed) => asked.push(needed) });
+    app.registry.run('lesson.open', { id: 'Z999' });
+    expect(app.registry.run('player.play')).toMatchObject({
+      ok: false,
+      error: { code: 'disabled' },
+    });
+    expect(player(app).playing).toBe(false);
+    expect(app.timeNeeded()).toBe(false);
+    expect(asked).toEqual([]);
+    expect(app.registry.list().find((c) => c.id === 'player.play')?.enabled).toBe(false);
+  });
+});
+
+describe('player.play on the last step', () => {
+  it('lets a travelling last message finish, then stops; again from step 1 after', () => {
+    const app = loaded();
+    app.clock.set(0);
+    app.registry.run('player.goto', { step: 5 });
+    app.registry.run('player.play');
+    expect(player(app)).toMatchObject({ step: 5, playing: true, startedMs: 0 });
+    app.clock.tick(TRAVEL_MS);
+    expect(player(app)).toMatchObject({ step: 5, playing: false });
+    app.registry.run('player.play');
+    expect(player(app)).toMatchObject({ step: 1, playing: true, startedMs: TRAVEL_MS });
+  });
 });
 
 describe('the real-time driver follows the player (K17)', () => {
   it('asks for time while playing or while a message travels, and lets go after', () => {
     const asked: boolean[] = [];
     const app = loaded({ onTimeNeeded: (needed) => asked.push(needed) });
-    // The page load: step 1 travels from time 0.
+    // The lesson loaded (M1.3 fix: no time before that): step 1 travels from time 0.
+    expect(asked).toEqual([true]);
     expect(app.timeNeeded()).toBe(true);
     app.clock.tick(TRAVEL_MS);
-    expect(asked).toEqual([false]);
+    expect(asked).toEqual([true, false]);
     app.registry.run('player.play');
-    expect(asked).toEqual([false, true]);
+    expect(asked).toEqual([true, false, true]);
     app.registry.run('player.pause');
     // Pausing right after a new step started: its message still travels.
-    expect(asked).toEqual([false, true]);
+    expect(asked).toEqual([true, false, true]);
     app.clock.tick(TRAVEL_MS);
-    expect(asked).toEqual([false, true, false]);
+    expect(asked).toEqual([true, false, true, false]);
     app.registry.run('player.step');
-    expect(asked).toEqual([false, true, false, true]);
+    expect(asked).toEqual([true, false, true, false, true]);
   });
 
   it('a manual clock command still calls onManualClock', () => {

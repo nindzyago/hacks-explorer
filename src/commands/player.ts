@@ -18,6 +18,8 @@ import {
   play,
   setDefence,
   setSpeed,
+  SPEEDS,
+  stepCount,
   stepForward,
   withCounts,
   type PlayerState,
@@ -27,8 +29,8 @@ import type { AppState } from '../core/state';
 import type { Store } from '../core/store';
 import type { CommandRegistry } from './registry';
 
-/** A lesson id: a section letter and a number (B1, I1, K12). */
-const LESSON_ID = /^[A-Z]\d{1,3}$/;
+/** A lesson id: a section letter and a number (B1, I1, K12); checked as a parameter. */
+const LESSON_ID = '[A-Z][0-9]{1,3}';
 
 export interface PlayerCommandsOptions {
   /**
@@ -78,6 +80,8 @@ export function registerPlayerCommands(
     id: 'player.play',
     titleKey: 'command.player.play',
     params: {},
+    // No steps (no lesson shown, a failed load): nothing to play, and the clock must not run.
+    enabled: (state) => stepCount(state.player) > 0,
     run: () => {
       change(play);
     },
@@ -117,10 +121,10 @@ export function registerPlayerCommands(
   registry.register({
     id: 'player.speed',
     titleKey: 'command.player.speed',
-    params: { value: { kind: 'number', min: 0.5, max: 2 } },
+    params: { value: { kind: 'number', values: SPEEDS } },
     run: ({ value }) => {
-      if (!isSpeed(value)) throw new Error('speed is one of 0.5, 1, 2');
-      change((player, now) => setSpeed(player, value, now));
+      // The registry already allowed only SPEEDS; the check narrows the type.
+      if (isSpeed(value)) change((player, now) => setSpeed(player, value, now));
     },
   });
   registry.register({
@@ -142,9 +146,8 @@ export function registerPlayerCommands(
   registry.register({
     id: 'lesson.open',
     titleKey: 'command.lesson.open',
-    params: { id: { kind: 'string', maxLength: 32 } },
+    params: { id: { kind: 'string', maxLength: 32, pattern: LESSON_ID } },
     run: ({ id }) => {
-      if (!LESSON_ID.test(id)) throw new Error('a lesson id looks like B1');
       const state = store.get();
       // The same lesson again keeps its step counts: the page does not load it again.
       const counts = id === state.lesson ? state.player.counts : initialPlayer().counts;

@@ -22,7 +22,8 @@
   const MARK = { legit: '', attack: '! ', safe: '✓ ' } as const;
 </script>
 
-<table data-testid="steps-table" data-defence={player.defence}>
+<!-- data-player-keys: Space here is play/pause (K69). -->
+<table data-testid="steps-table" data-defence={player.defence} data-player-keys>
   <thead>
     <tr>
       <th scope="col">№</th>
@@ -34,7 +35,9 @@
     </tr>
   </thead>
   <tbody>
-    {#each steps as step, i (step.id)}
+    <!-- Rows are keyed by their number, not by the step id: after D the step with the same
+         number is another step, but its button stays the same element and keeps the focus. -->
+    {#each steps as step, i (i)}
       {@const n = i + 1}
       {@const paint = step.stopped ? 'stopped' : step.kind}
       <tr

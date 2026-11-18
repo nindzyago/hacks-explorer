@@ -19,7 +19,13 @@
   const nextSpeed = $derived(SPEEDS[(SPEEDS.indexOf(player.speed) + 1) % SPEEDS.length] ?? 1);
 </script>
 
-<div class="controls" data-testid="player" role="group" aria-label="Управление уроком">
+<div
+  class="controls"
+  data-testid="player"
+  data-player-keys
+  role="group"
+  aria-label="Управление уроком"
+>
   <p class="status" data-testid="player-status">
     <span>Шаг {player.step}{count > 0 ? ` из ${String(count)}` : ''}</span>
     <span class="mode" data-testid="player-mode" data-defence={player.defence}

@@ -9,6 +9,8 @@ const press = (key: string, over: Partial<KeyPress> = {}): KeyPress => ({
   ctrlKey: false,
   metaKey: false,
   altKey: false,
+  repeat: false,
+  isComposing: false,
   target: BODY,
   ...over,
 });
@@ -52,7 +54,7 @@ describe('keyCommand', () => {
     }
   });
 
-  it('leaves Space to a focused control, but arrows and D still work there', () => {
+  it('leaves Space to a focused control elsewhere, but arrows and D still work there', () => {
     const button: KeyTarget = { tag: 'button', type: 'button', editable: false, role: '' };
     const roleButton: KeyTarget = { tag: 'span', type: '', editable: false, role: 'button' };
     for (const target of [button, roleButton]) {
@@ -60,7 +62,45 @@ describe('keyCommand', () => {
       expect(keyCommand(press('ArrowRight', { target }), false)).toBe('player.step');
       expect(keyCommand(press('d', { target }), false)).toBe('defence.toggle');
     }
-    const checkbox: KeyTarget = { tag: 'input', type: 'checkbox', editable: false, role: '' };
-    expect(keyCommand(press('ArrowLeft', { target: checkbox }), false)).toBe('player.back');
+  });
+
+  // Verifier M1.3 (S6: Space = play/pause): on the player's own buttons Space plays or pauses;
+  // Enter still presses the focused button.
+  it('Space on the player’s own controls plays or pauses', () => {
+    const own: KeyTarget = {
+      tag: 'button',
+      type: 'button',
+      editable: false,
+      role: '',
+      player: true,
+    };
+    expect(keyCommand(press(' ', { code: 'Space', target: own }), false)).toBe('player.play');
+    expect(keyCommand(press(' ', { code: 'Space', target: own }), true)).toBe('player.pause');
+    expect(keyCommand(press('Enter', { target: own }), false)).toBeNull();
+  });
+
+  it('a held Space or D does not toggle again; held arrows keep stepping', () => {
+    expect(keyCommand(press(' ', { code: 'Space', repeat: true }), false)).toBeNull();
+    expect(keyCommand(press('d', { repeat: true }), false)).toBeNull();
+    expect(keyCommand(press('ArrowRight', { repeat: true }), false)).toBe('player.step');
+    expect(keyCommand(press('ArrowLeft', { repeat: true }), false)).toBe('player.back');
+  });
+
+  it('ignores keys while an input method composes text', () => {
+    expect(keyCommand(press('d', { isComposing: true }), false)).toBeNull();
+    expect(keyCommand(press('ArrowRight', { isComposing: true }), false)).toBeNull();
+    expect(keyCommand(press('Process', { code: 'KeyD' }), false)).toBeNull();
+  });
+
+  it('never takes arrows from a form control of any kind', () => {
+    for (const type of ['checkbox', 'radio', 'range', 'button', 'color', 'file']) {
+      const target: KeyTarget = { tag: 'input', type, editable: false, role: '' };
+      expect(keyCommand(press('ArrowLeft', { target }), false), type).toBeNull();
+      expect(keyCommand(press('ArrowRight', { target }), false), type).toBeNull();
+    }
+    for (const role of ['slider', 'listbox', 'radiogroup', 'textbox', 'spinbutton', 'tablist']) {
+      const target: KeyTarget = { tag: 'div', type: '', editable: false, role };
+      expect(keyCommand(press('ArrowRight', { target }), false), role).toBeNull();
+    }
   });
 });

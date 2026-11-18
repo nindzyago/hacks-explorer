@@ -343,7 +343,7 @@ test('the scene commands reject hostile parameters and keep the state', async ({
     'invalid-params',
     'invalid-params',
     'invalid-params',
-    'failed',
+    'invalid-params',
   ]);
   await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'B1');
 });

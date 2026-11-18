@@ -120,17 +120,17 @@ export function setDefence(state: PlayerState, on: boolean, nowMs: number): Play
 }
 
 /**
- * Starts autoplay. A message still on its way finishes first; one that has arrived goes on to the
- * next step at once; on the last step the lesson starts again from the first (as the prototype).
+ * Starts autoplay. A message still on its way finishes first (on the last step too: then playing
+ * stops when it arrives); one that has arrived goes on to the next step at once, and after the
+ * last step the lesson starts again from the first (as the prototype). Without steps (no lesson
+ * shown) nothing changes.
  */
 export function play(state: PlayerState, nowMs: number): PlayerState {
   if (state.playing) return state;
   const count = stepCount(state);
-  if (count > 0 && state.step >= count) {
-    return freeze({ ...state, step: 1, startedMs: nowMs, playing: true });
-  }
-  if (count === 0 || elapsedMs(state, nowMs) < TRAVEL_MS)
-    return freeze({ ...state, playing: true });
+  if (count === 0) return state;
+  if (elapsedMs(state, nowMs) < TRAVEL_MS) return freeze({ ...state, playing: true });
+  if (state.step >= count) return freeze({ ...state, step: 1, startedMs: nowMs, playing: true });
   return freeze({ ...state, step: state.step + 1, startedMs: nowMs, playing: true });
 }
 
@@ -168,7 +168,11 @@ export function advance(state: PlayerState, nowMs: number): PlayerState {
   return freeze({ ...state, step, startedMs, playing: !ended });
 }
 
-/** Whether the player clock has to run: autoplay is on, or the message is still on its way. */
+/**
+ * Whether the player clock has to run: the lesson has steps, and autoplay is on or the message is
+ * still on its way. Without steps nothing is shown, so nothing needs time.
+ */
 export function needsTime(state: PlayerState, nowMs: number): boolean {
+  if (stepCount(state) === 0) return false;
   return state.playing || elapsedMs(state, nowMs) < TRAVEL_MS;
 }

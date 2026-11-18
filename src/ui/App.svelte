@@ -93,18 +93,26 @@
         ctrlKey: event.ctrlKey,
         metaKey: event.metaKey,
         altKey: event.altKey,
+        repeat: event.repeat,
+        isComposing: event.isComposing,
         target: keyTarget(event.target),
       },
       player.playing,
     );
     if (id === null) return;
-    // Space and the arrows would scroll the page.
+    // Space and the arrows would scroll the page; Space on a player button would press it.
     event.preventDefault();
     run(id);
   }
+
+  /** A button is pressed by Space on key up: on the player's own buttons Space was play/pause. */
+  function onkeyup(event: KeyboardEvent): void {
+    if (event.key !== ' ' && event.code !== 'Space') return;
+    if (keyTarget(event.target).player === true) event.preventDefault();
+  }
 </script>
 
-<svelte:window {onkeydown} />
+<svelte:window {onkeydown} {onkeyup} />
 
 <main data-testid="app">
   <header class="top" data-testid="topbar">

@@ -170,12 +170,25 @@ describe('play and pause', () => {
     });
   });
 
-  it('play on the last step starts the lesson from the first', () => {
-    expect(play(ready({ step: 5, startedMs: 0 }), 5000)).toMatchObject({
+  it('play on the last step starts the lesson from the first once its message arrived', () => {
+    expect(play(ready({ step: 5, startedMs: 0 }), TRAVEL_MS)).toMatchObject({
       step: 1,
-      startedMs: 5000,
+      startedMs: TRAVEL_MS,
       playing: true,
     });
+  });
+
+  // Verifier M1.3: a last message still on its way finishes first, then playing stops.
+  it('play on the last step while its message travels lets it finish', () => {
+    const p = play(ready({ step: 5, startedMs: 0 }), 100);
+    expect(p).toMatchObject({ step: 5, startedMs: 0, playing: true });
+    expect(advance(p, TRAVEL_MS)).toMatchObject({ step: 5, playing: false });
+  });
+
+  // Verifier M1.3: with no steps known (no lesson shown) play must not start the clock.
+  it('play does nothing while the lesson has no steps', () => {
+    const none = initialPlayer();
+    expect(play(none, 5000)).toBe(none);
   });
 
   it('play while playing and pause while paused change nothing', () => {
@@ -241,5 +254,10 @@ describe('needsTime', () => {
     expect(needsTime(ready({ startedMs: 0 }), TRAVEL_MS - 10)).toBe(true);
     expect(needsTime(ready({ startedMs: 0 }), TRAVEL_MS)).toBe(false);
     expect(needsTime(ready({ startedMs: 0, speed: 2 }), TRAVEL_MS / 2)).toBe(false);
+  });
+
+  it('never without steps: nothing is shown, so nothing moves', () => {
+    expect(needsTime({ ...initialPlayer(), playing: true }, 100_000)).toBe(false);
+    expect(needsTime(initialPlayer(), 0)).toBe(false);
   });
 });

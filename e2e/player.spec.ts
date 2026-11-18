@@ -49,6 +49,16 @@ async function freshB1(page: Page): Promise<void> {
   await run(page, 'player.goto', { step: 1 });
 }
 
+/** Outline style and width of the focused element: «solid 3px» is the visible ring. */
+async function ring(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const el = document.activeElement;
+    if (el === null || el === document.body) return 'no focus';
+    const s = getComputedStyle(el);
+    return `${s.outlineStyle} ${s.outlineWidth}`;
+  });
+}
+
 async function centreX(page: Page, selector: string): Promise<number> {
   const box = await page.locator(selector).first().boundingBox();
   if (box === null) throw new Error(`${selector} is not drawn`);
@@ -235,6 +245,72 @@ test.describe('S6: the keyboard', () => {
     expect([...seen].sort()).toEqual([...ids].sort());
   });
 
+  // Verifier M1.3: D re-drew the table and focus on a step number dropped to <body>.
+  test('D keeps the focus on a step number of the table', async ({ page }) => {
+    await freshB1(page);
+    for (const n of [3, 4, 5]) {
+      const button = page.getByTestId(`step-goto-${String(n)}`);
+      await button.focus();
+      await page.keyboard.press('d');
+      await expect(button, `step-goto-${String(n)} after D`).toBeFocused();
+      expect(await ring(page)).toBe('solid 3px');
+    }
+  });
+
+  test('every control keeps a visible focus after Space, →, ← and D', async ({ page }) => {
+    await freshB1(page);
+    const ids = [
+      'player-back',
+      'player-play',
+      'player-next',
+      'player-restart',
+      'player-speed',
+      ...[1, 2, 3, 4, 5].map((n) => `step-goto-${String(n)}`),
+    ];
+    for (const id of ids) {
+      await run(page, 'player.pause');
+      await run(page, 'defence.set', { on: false });
+      await run(page, 'player.goto', { step: 3 });
+      await page.getByTestId(id).focus();
+      for (const key of ['Space', 'ArrowRight', 'ArrowLeft', 'd', 'Space', 'd']) {
+        await page.keyboard.press(key);
+        await expect(page.getByTestId(id), `${id} after ${key}`).toBeFocused();
+        expect(await ring(page), `${id} after ${key}`).toBe('solid 3px');
+      }
+    }
+  });
+
+  // S6: Space is play/pause even on the player's own buttons; Enter presses the button.
+  test('Space on a player button plays and pauses; Enter presses it', async ({ page }) => {
+    await freshB1(page);
+    const next = page.getByTestId('player-next');
+    await next.focus();
+    await page.keyboard.press('Space');
+    expect(await player(page)).toMatchObject({ step: 1, playing: true });
+    await page.keyboard.press('Space');
+    expect(await player(page)).toMatchObject({ step: 1, playing: false });
+    await page.keyboard.press('Enter');
+    expect(await player(page)).toMatchObject({ step: 2, playing: false });
+  });
+
+  test('a held D or Space does not toggle again and again', async ({ page }) => {
+    await freshB1(page);
+    await page.locator('body').click({ position: { x: 2, y: 2 } });
+    await page.keyboard.down('d');
+    for (let i = 0; i < 3; i += 1) {
+      await page.evaluate(() => {
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'd', code: 'KeyD', repeat: true }),
+        );
+        window.dispatchEvent(
+          new KeyboardEvent('keydown', { key: ' ', code: 'Space', repeat: true }),
+        );
+      });
+    }
+    await page.keyboard.up('d');
+    expect(await player(page)).toMatchObject({ defence: true, playing: false });
+  });
+
   test('keys are ignored with Ctrl or ⌘ and while typing in a field', async ({ page }) => {
     await freshB1(page);
     await page.keyboard.press('Control+ArrowRight');
@@ -253,6 +329,45 @@ test.describe('S6: the keyboard', () => {
     expect(await player(page)).toMatchObject({ step: 1, defence: false, playing: false });
     await expect(page.getByTestId('probe')).toHaveValue(' d');
   });
+});
+
+test.describe('S6 on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test('a tapped step number keeps a visible focus after D', async ({ page }) => {
+    await freshB1(page);
+    const button = page.getByTestId('step-goto-3');
+    await button.tap();
+    expect(await player(page)).toMatchObject({ step: 3 });
+    await page.keyboard.press('d');
+    await expect(button).toBeFocused();
+    expect(await ring(page)).toBe('solid 3px');
+    expect(await player(page)).toMatchObject({ step: 3, defence: true });
+  });
+});
+
+// Verifier M1.3: on the error page `player.play` started the real-time driver for good.
+test('no lesson on the page: play is refused and nothing asks for frames', async ({ page }) => {
+  await page.addInitScript(() => {
+    const counter = { frames: 0 };
+    Object.defineProperty(window, '__frames', { get: () => counter.frames });
+    const request = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = (callback) => {
+      counter.frames += 1;
+      return request(callback);
+    };
+  });
+  await openApp(page);
+  await run(page, 'lesson.open', { id: 'Z999' });
+  await expect(page.getByTestId('lesson-error')).toBeVisible();
+  await expect(page.getByTestId('player')).toHaveCount(0);
+  const result = await page.evaluate(() => window.__app?.commands.run('player.play'));
+  expect(result).toMatchObject({ ok: false, error: { code: 'disabled' } });
+  await page.waitForTimeout(200);
+  const frames = () => page.evaluate(() => Number(Reflect.get(window, '__frames')));
+  const before = await frames();
+  await page.waitForTimeout(500);
+  expect((await frames()) - before).toBe(0);
 });
 
 for (const viewport of [
