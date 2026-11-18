@@ -1,7 +1,7 @@
 // Acceptance for M0.4, browser half (oracle level A): the same scenario run twice gives an
 // identical state dump and an identical screenshot, byte for byte.
 import { stableDump } from '../src/core/dump';
-import { expect, openApp, test } from './support';
+import { expect, openApp, sceneReady, test } from './support';
 import type { Page } from '@playwright/test';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
@@ -32,12 +32,13 @@ async function runScenario(page: Page) {
 
   const dumped = stableDump(await page.evaluate(() => window.__app?.state.get()));
   if (!dumped.ok) throw new Error(dumped.error.message);
+  await sceneReady(page);
   return { dump: dumped.text, png: await page.screenshot(SHOT) };
 }
 
 test('the same scenario twice gives the same dump and the same screenshot', async ({ page }) => {
   const first = await runScenario(page);
-  await page.reload();
+  // openApp loads the page again: a second, fresh run of the same scenario.
   const second = await runScenario(page);
 
   expect(second.dump).toBe(first.dump);

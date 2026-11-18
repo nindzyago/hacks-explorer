@@ -23,27 +23,27 @@ test('runs a command, reads the state and takes a PNG', async ({ page }, testInf
   expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'dark' });
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
-  const path = testInfo.outputPath('theme-dark.png');
+  const path = testInfo.outputPath('after-command.png');
   await page.screenshot({ path });
-  const dark = readFileSync(path);
-  expect(pngSize(dark)).toEqual({ width: 1280, height: 720 });
-  expect(dark.length).toBeGreaterThan(2000);
-  expect(dark.equals(light), 'the command changed what is on the screen').toBe(false);
-  await testInfo.attach('theme-dark', { path, contentType: 'image/png' });
+  const after = readFileSync(path);
+  expect(pngSize(after)).toEqual({ width: 1280, height: 720 });
+  expect(pngSize(light)).toEqual({ width: 1280, height: 720 });
+  expect(after.length).toBeGreaterThan(2000);
+  await testInfo.attach('after-command', { path, contentType: 'image/png' });
 });
 
-test('the button and the channel run the same command', async ({ page }) => {
+// K43: no dark theme for now. The button left the page; the command and the attribute stay,
+// so the dark theme of M2.6 is tokens only.
+test('theme.set changes the theme attribute without a button on the page', async ({ page }) => {
   await openApp(page);
-  const toggle = page.getByTestId('theme-toggle');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'dark' });
-
-  await page.evaluate(() => window.__app?.commands.run('theme.set', { theme: 'light' }));
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.getByTestId('theme-toggle')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+
+  await page.evaluate(() => window.__app?.commands.run('theme.set', { theme: 'dark' }));
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.evaluate(() => window.__app?.commands.run('theme.set', { theme: 'light' }));
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'light' });
 });
 
 test('hostile calls get an error as data and change nothing', async ({ page }) => {
