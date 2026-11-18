@@ -5,11 +5,12 @@
 текущего шага, которое едет по часам плеера (M1.2b).
 
 ```svelte
-<Scene lesson={siteLesson} scene={$store.scene} clock={app.clock} />
+<Scene lesson={siteLesson} scene={$store.player} clock={app.clock} />
 ```
 
-`scene` — `{ step, defence, startedMs }` из состояния приложения (команды `scene.step`,
-`scene.defence`, до плеера M1.3); `clock` — часы плеера (K17).
+`scene` — `{ step, defence, startedMs, speed }` из состояния плеера (`src/core/player`, M1.3);
+`clock` — часы плеера (K17). Время урока для сообщения — `elapsedMs` плеера: (часы − начало) ×
+скорость.
 
 ## Поведение
 
@@ -43,7 +44,8 @@
   Chromium центрирует такую строку по её естественной ширине и сдвигал её на 1,5 px (M1.2d).
 - Доступность: `<svg role="img">` с заголовком «Схема урока «…»» и описанием
   (`data-testid="scene-description"`): участники слева направо и состав зон. Под схемой —
-  подпись текущего шага (`figcaption`, `aria-live="polite"`, `data-testid="scene-step"`):
+  подпись текущего шага, с M1.3 только для экранного диктора (видимый шаг — таблица «Ход атаки»)
+  (`figcaption`, `aria-live="polite"`, `data-testid="scene-step"`):
   «Шаг 3 из 5. Сервер склеивает запрос: Веб-сервер → База данных, вредное сообщение «SELECT ...».»
 - Строки одной подписи разделены пробелом между `<tspan>`: текст читается словами. Адрес,
   перенесённый после точки (`glued`, M1.2d), склеен без пробела: «bank-login.example».

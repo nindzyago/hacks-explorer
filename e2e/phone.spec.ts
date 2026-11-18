@@ -29,8 +29,8 @@ async function show(page: Page, defence: boolean, step: number, ms: number): Pro
   await page.evaluate(
     ([on, n, t]) => {
       window.__app?.clock.set(0);
-      window.__app?.commands.run('scene.defence', { on });
-      window.__app?.commands.run('scene.step', { step: n });
+      window.__app?.commands.run('defence.set', { on });
+      window.__app?.commands.run('player.goto', { step: n });
       window.__app?.clock.set(t);
     },
     [defence, step, ms] as const,

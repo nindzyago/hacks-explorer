@@ -53,7 +53,14 @@ describe('initialState', () => {
     expect(state).toEqual({
       theme: 'light',
       lesson: 'B1',
-      scene: { step: 1, defence: false, startedMs: 0 },
+      player: {
+        step: 1,
+        defence: false,
+        startedMs: 0,
+        playing: false,
+        speed: 1,
+        counts: { without: 0, with: 0 },
+      },
     });
     expect(Object.isFrozen(state)).toBe(true);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);

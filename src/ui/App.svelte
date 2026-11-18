@@ -1,11 +1,16 @@
 <script lang="ts">
   import type { AppContext } from '../commands/app';
   import type { SiteLesson } from '../core/lesson/site';
+  import { stepCount } from '../core/player/player';
   import { PROJECT } from '../core/project';
+  import { currentStep, stepsInMode } from '../core/scene-layout/message';
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
+  import { keyCommand, keyTarget } from './keyboard';
   import { loadErrorText, type ShownErrorCode } from './load-error';
+  import PlayerControls from './PlayerControls.svelte';
+  import StepsTable from './StepsTable.svelte';
 
   const {
     app,
@@ -13,6 +18,12 @@
     home = '/',
   }: { app: AppContext; loader: LessonLoader; home?: string } = $props();
   const store = $derived(app.store);
+  const player = $derived($store.player);
+
+  /** Buttons and keys run commands by id (K13), the same way the control channel does. */
+  const run = (id: string, params?: Readonly<Record<string, unknown>>) => {
+    app.registry.run(id, params);
+  };
 
   // The theme stays an attribute of the page root (K43): no dark tokens and no button yet, the
   // `theme.set` command still sets it, so M2.6 adds a dark theme with tokens alone.
@@ -57,12 +68,54 @@
       current = false;
     };
   });
+
+  // The player learns how many steps the loaded lesson has in each mode (M1.3).
+  $effect(() => {
+    if (shown.state !== 'ready') return;
+    const { id, steps } = shown.lesson;
+    app.lessonLoaded(id, {
+      without: stepsInMode(steps, false).length,
+      with: stepsInMode(steps, true).length,
+    });
+  });
+
+  const step = $derived(
+    shown.state === 'ready' ? currentStep(shown.lesson.steps, player.defence, player.step) : null,
+  );
+
+  /** S6: Space, ← →, D. Keys are ignored while typing and with Ctrl, ⌘ or Alt. */
+  function onkeydown(event: KeyboardEvent): void {
+    if (shown.state !== 'ready' || event.defaultPrevented) return;
+    const id = keyCommand(
+      {
+        key: event.key,
+        code: event.code,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        altKey: event.altKey,
+        target: keyTarget(event.target),
+      },
+      player.playing,
+    );
+    if (id === null) return;
+    // Space and the arrows would scroll the page.
+    event.preventDefault();
+    run(id);
+  }
 </script>
 
+<svelte:window {onkeydown} />
+
 <main data-testid="app">
-  <header>
-    <h1>{PROJECT.name}</h1>
-    <p class="tagline">{PROJECT.tagline.ru}</p>
+  <header class="top" data-testid="topbar">
+    <h1 class="brand">{PROJECT.name}</h1>
+    {#if shown.state === 'ready'}
+      <h2 class="lesson-title" id="lesson-title" data-testid="lesson-title">
+        {shown.lesson.title}
+      </h2>
+    {:else}
+      <p class="tagline">{PROJECT.tagline.ru}</p>
+    {/if}
   </header>
 
   {#if shown.state === 'loading'}
@@ -83,44 +136,78 @@
       </div>
     </div>
   {:else}
-    <section class="lesson" aria-labelledby="lesson-title">
-      <h2 id="lesson-title">{shown.lesson.title}</h2>
-      {#key shown.lesson}
-        <Scene lesson={shown.lesson} scene={$store.scene} clock={app.clock} />
-      {/key}
-    </section>
+    <div class="work" data-testid="lesson" aria-labelledby="lesson-title" role="region">
+      <div class="scene-area">
+        {#key shown.lesson}
+          <Scene lesson={shown.lesson} scene={player} clock={app.clock} />
+        {/key}
+      </div>
+
+      <div class="controls-area">
+        <PlayerControls {player} {run} />
+      </div>
+
+      <!-- M1.4 fills this panel: the step at three depths and the lesson passport. -->
+      <section class="panel explain" data-testid="explain" aria-labelledby="explain-title">
+        <h2 id="explain-title">Объяснение</h2>
+        {#if step !== null}
+          <p class="explain-step" data-testid="explain-step">
+            Шаг {step.number} из {step.count}. {step.step.title}
+          </p>
+          <p class="muted">{step.step.result}</p>
+        {:else}
+          <p class="muted">В этом режиме у урока нет шагов.</p>
+        {/if}
+      </section>
+
+      <section class="panel log" data-testid="log" aria-labelledby="log-title">
+        <h2 id="log-title">Ход атаки</h2>
+        {#if stepCount(player) > 0}
+          <StepsTable lesson={shown.lesson} {player} {run} />
+        {/if}
+        <!-- M1.5 fills this: the event feed, one line per step played. -->
+        <section class="feed" data-testid="feed" aria-label="Лента событий"></section>
+      </section>
+    </div>
   {/if}
 </main>
 
 <style>
   main {
     box-sizing: border-box;
-    max-width: 60rem;
+    max-width: 90rem;
     margin: 0 auto;
-    padding: var(--space-4);
+    padding: var(--space-3) var(--space-4);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
   }
 
-  /* A phone (S10, M1.2c): 12 px at the sides leave the scene 8 px more for its columns. */
-  @media (max-width: 480px) {
-    main {
-      padding: var(--space-3);
-    }
-  }
-
-  header {
+  .top {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     gap: var(--space-1) var(--space-3);
   }
 
-  h1 {
+  .brand {
     margin: 0;
-    font-size: var(--text-lg);
+    font-family: var(--font-sans);
+    font-size: var(--text-sm);
+    font-weight: 700;
     letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+
+  .top .lesson-title {
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--ink);
   }
 
   .tagline {
@@ -129,17 +216,86 @@
     font-size: var(--text-sm);
   }
 
-  .lesson {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
+  /*
+   * One screen (K7): the scene on the left, the explanation on the right, the «Ход атаки» table
+   * with the player controls across the bottom.
+   */
+  .work {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas:
+      'scene explain'
+      'controls controls'
+      'log log';
+    gap: var(--space-3);
     min-width: 0;
   }
 
-  h2 {
+  .scene-area {
+    grid-area: scene;
+    min-width: 0;
+  }
+
+  .controls-area {
+    grid-area: controls;
+    min-width: 0;
+  }
+
+  .explain {
+    grid-area: explain;
+  }
+
+  .log {
+    grid-area: log;
+  }
+
+  .panel {
+    box-sizing: border-box;
+    min-width: 0;
+    padding: var(--space-3);
+    background: var(--panel);
+    border: var(--line-width) solid var(--line);
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .panel h2 {
     margin: 0;
-    font-size: var(--text-xl);
-    line-height: 1.2;
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+
+  .explain-step {
+    margin: 0;
+    font-weight: 700;
+  }
+
+  .muted {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+
+  .feed:empty {
+    display: none;
+  }
+
+  /* Phone (S10): one column — scene, controls, explanation, then the table and the feed. */
+  @media (max-width: 760px) {
+    main {
+      padding: var(--space-3);
+    }
+
+    .work {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'scene' 'controls' 'explain' 'log';
+    }
   }
 
   .status {
@@ -169,7 +325,7 @@
     gap: var(--space-2) var(--space-4);
   }
 
-  button {
+  .actions button {
     min-height: 44px;
     padding: 0 var(--space-4);
     border: var(--line-width) solid var(--legit);

@@ -7,7 +7,7 @@
   import { MediaQuery, SvelteSet } from 'svelte/reactivity';
   import type { Clock } from '../core/clock';
   import type { SiteLesson } from '../core/lesson/site';
-  import type { SceneState } from '../core/state';
+  import { elapsedMs, type PlayerState } from '../core/player/player';
   import { describeScene, describeStep, sceneTitle } from '../core/scene-layout/describe';
   import { layoutScene, RING_STROKE, type TextBlock } from '../core/scene-layout/layout';
   import { currentStep, layoutMessage, type MessageSign } from '../core/scene-layout/message';
@@ -17,7 +17,12 @@
     lesson,
     scene,
     clock,
-  }: { lesson: SiteLesson; scene: SceneState; clock: Pick<Clock, 'now' | 'subscribe'> } = $props();
+  }: {
+    lesson: SiteLesson;
+    /** What the player says (M1.3): step, mode, start of the step on the clock, speed. */
+    scene: Pick<PlayerState, 'step' | 'defence' | 'startedMs' | 'speed'>;
+    clock: Pick<Clock, 'now' | 'subscribe'>;
+  } = $props();
   const uid = $props.id();
 
   /** The width the scene is drawn for; follows the width of its box. */
@@ -45,7 +50,7 @@
   const message = $derived(
     current === null
       ? null
-      : layoutMessage(layout, current.step, timeMs - scene.startedMs, reduced.current),
+      : layoutMessage(layout, current.step, elapsedMs(scene, timeMs), reduced.current),
   );
   const tokenIcon = $derived(message?.token?.icon ?? null);
   // A token whose icon is unknown or failed to load shows only its paper and ring.
@@ -291,11 +296,14 @@
       </g>
     {/if}
   </svg>
+  <!-- M1.3: the «Ход атаки» table shows the step to the eye; the caption stays for screen
+       readers only (announced on every step change). -->
   <figcaption class="step" data-testid="scene-step" aria-live="polite">{stepText}</figcaption>
 </figure>
 
 <style>
   .scene {
+    position: relative;
     margin: 0;
     min-width: 0;
     background: var(--scene-paper);
@@ -310,14 +318,17 @@
     height: auto;
   }
 
+  /* Visible to screen readers only (M1.3): the table under the scene shows the step. */
   .step {
-    margin: 0;
-    padding: var(--space-2) var(--space-3);
-    border-top: var(--line-width) solid var(--line);
-    background: var(--panel);
-    color: var(--ink);
-    font-size: var(--text-sm);
-    line-height: var(--leading);
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   .paper {
