@@ -4,8 +4,10 @@
 // Rules (AGENTS.md, "Инварианты архитектуры" and L6):
 //   layers            core < services < commands < adapters (ui, scene, control, time) < entry;
 //                     a file may import its own layer or a lower one.
-//   content-is-data   nothing executable under content/.
-//   no-external-urls  site code never points at another server.
+//   content-is-data   content/ holds Markdown and images only; nothing executable. Links inside
+//                     lessons are checked by the lesson checker (src/core/lesson), not here.
+//   no-external-urls  site code never points at another server. Test files (*.test.ts) are not
+//                     site code: they never reach the reader and may quote links as data.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +23,9 @@ const DIR_LAYER = {
   time: 'adapters',
 };
 const CODE = /\.(ts|js|mjs|cjs|svelte)$/;
+const CONTENT_DATA = /\.(md|jpg|jpeg|png|webp)$/;
 const SITE = /\.(ts|js|svelte|css|html)$/;
+const TEST = /\.test\.(ts|js)$/;
 const IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
 const URL = /https?:\/\/[^\s'"`<>)]+/g;
 const ALLOWED_URL = /^http:\/\/www\.w3\.org\//;
@@ -52,12 +56,14 @@ export function checkFiles(files) {
     }
     const { path, text } = file;
 
-    if (path.startsWith('content/') && CODE.test(path)) {
+    if (path.startsWith('content/') && !CONTENT_DATA.test(path)) {
       problems.push({
         rule: 'content-is-data',
         path,
         line: 1,
-        message: 'content/ holds data only (YAML, images); move code to src/',
+        message: CODE.test(path)
+          ? 'content/ holds data only (Markdown, images); move code to src/'
+          : 'content/ holds Markdown (.md) and images (.jpg, .png, .webp) only',
       });
     }
 
@@ -78,7 +84,7 @@ export function checkFiles(files) {
       }
     }
 
-    if ((path === 'index.html' || path.startsWith('src/')) && SITE.test(path)) {
+    if ((path === 'index.html' || path.startsWith('src/')) && SITE.test(path) && !TEST.test(path)) {
       for (const match of text.matchAll(URL)) {
         if (ALLOWED_URL.test(match[0])) continue;
         problems.push({
@@ -114,6 +120,11 @@ function main() {
   }
   const files = [];
   for (const path of paths) {
+    if (path.startsWith('content/')) {
+      // Only the name matters here; the lesson checker reads the text.
+      files.push({ path, text: '' });
+      continue;
+    }
     if (!CODE.test(path) && !SITE.test(path)) continue;
     try {
       files.push({ path, text: readFileSync(join(root, path), 'utf8') });
