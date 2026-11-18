@@ -70,6 +70,11 @@ export interface Passport {
   readonly impact: string | null;
   /** Text in the lesson's language: the name of the defence shown on the switch. */
   readonly defence: string | null;
+  /**
+   * Text in the lesson's language: the class of the attack («Социальная инженерия»), optional
+   * (K71). The passport falls back to the CWE name when it is absent.
+   */
+  readonly class: string | null;
 }
 
 export interface Source {
@@ -122,7 +127,7 @@ export interface Step {
   readonly message: string;
   /** Short plain text: what came of the step. */
   readonly result: string;
-  /** The step's code, shown at every depth; placed before the first level heading. */
+  /** The step's code, shown at «Глубже» (K72); placed before the first level heading. */
   readonly code: CodeBlock | null;
   readonly levels: Levels;
   /** The heading `### `id` Title`. */

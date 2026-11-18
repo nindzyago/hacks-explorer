@@ -215,6 +215,7 @@ function passport(input: unknown, path: string): SitePassport {
     severity: severity === null ? null : oneOf(o, 'severity', path, SEVERITIES),
     impact: strOrNull(o, 'impact', path),
     defence: strOrNull(o, 'defence', path),
+    class: strOrNull(o, 'class', path),
   };
 }
 

@@ -12,7 +12,9 @@
  * (auto-repeat would toggle again and again); a key while an input method composes text; every
  * key in a text field or an editable element; arrows in any form control or widget that uses
  * them itself (a checkbox, a slider, a list); Space on a button, link or control that is not the
- * player's — there Space presses the control itself, as everywhere on the web.
+ * player's — there Space presses the control itself, as everywhere on the web; Space and the
+ * arrows in a focusable scroll region marked `data-own-keys` (the explanation panel, a code box):
+ * there they scroll.
  */
 
 /** What the decision needs to know about the element that has focus. */
@@ -26,6 +28,11 @@ export interface KeyTarget {
   readonly role: string;
   /** Inside the player's own controls (`data-player-keys`): Space there is play/pause. */
   readonly player?: boolean;
+  /**
+   * A focusable scroll region of the page (`data-own-keys`: the explanation panel, a code box).
+   * Space and the arrows scroll it, as everywhere on the web; the player leaves them alone.
+   */
+  readonly scroll?: boolean;
 }
 
 export interface KeyPress {
@@ -104,6 +111,11 @@ function control(target: KeyTarget): boolean {
   return CONTROL_ROLES.has(target.role);
 }
 
+/** The keys a scroll region uses itself: Space and the arrows (K69, M1.4). */
+function isScrollKey(press: KeyPress): boolean {
+  return press.key === ' ' || press.code === 'Space' || press.key.startsWith('Arrow');
+}
+
 function usesArrows(target: KeyTarget): boolean {
   return target.tag === 'input' || ARROW_ROLES.has(target.role);
 }
@@ -112,6 +124,7 @@ export function keyCommand(press: KeyPress, playing: boolean): KeyCommand | null
   if (press.ctrlKey || press.metaKey || press.altKey) return null;
   if (press.isComposing || press.key === 'Process') return null;
   if (typing(press.target)) return null;
+  if (press.target.scroll === true && isScrollKey(press)) return null;
   if (press.key === ' ' || press.code === 'Space') {
     if (press.repeat) return null;
     if (control(press.target) && press.target.player !== true) return null;
@@ -138,5 +151,6 @@ export function keyTarget(target: EventTarget | null): KeyTarget {
     editable,
     role: (target.getAttribute('role') ?? '').toLowerCase(),
     player: target.closest('[data-player-keys]') !== null,
+    scroll: target.hasAttribute('data-own-keys'),
   };
 }

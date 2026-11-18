@@ -54,6 +54,7 @@ test('the same scenario twice gives the same dump and the same screenshot', asyn
       '    "stepMs": 10,',
       '    "timeMs": 1540',
       '  },',
+      '  "depth": "simple",',
       '  "lesson": "B1",',
       '  "player": {',
       '    "counts": {',

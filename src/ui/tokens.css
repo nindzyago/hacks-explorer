@@ -44,6 +44,14 @@
   /* A participant without an icon of its own (unknown icon name). */
   --scene-placeholder: #dde3e9;
 
+  /*
+   * Lesson code in the explanation panel (M1.4): the harmful part ⟦…⟧ is a <mark> in the dark
+   * attack red, bold and underlined so that it does not rest on colour alone.
+   */
+  --code-paper: var(--paper);
+  --code-ink: var(--ink);
+  --code-mark: var(--scene-attack-text);
+
   /* Type */
   --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;

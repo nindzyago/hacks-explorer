@@ -103,4 +103,15 @@ describe('keyCommand', () => {
       expect(keyCommand(press('ArrowRight', { target }), false), role).toBeNull();
     }
   });
+
+  it('leaves Space and the arrows to a focused scroll region (the panel, a code box)', () => {
+    for (const tag of ['section', 'pre']) {
+      const target: KeyTarget = { tag, type: '', editable: false, role: '', scroll: true };
+      expect(keyCommand(press(' ', { code: 'Space', target }), false), tag).toBeNull();
+      expect(keyCommand(press('ArrowLeft', { target }), false), tag).toBeNull();
+      expect(keyCommand(press('ArrowRight', { target }), true), tag).toBeNull();
+      // D is not a scrolling key: the defence still toggles.
+      expect(keyCommand(press('d', { target }), false), tag).toBe('defence.toggle');
+    }
+  });
 });
