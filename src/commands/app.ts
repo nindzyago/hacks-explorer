@@ -8,6 +8,7 @@ import type { StepCounts } from '../core/player/player';
 import { initialState, type AppState } from '../core/state';
 import { createStore, type Store } from '../core/store';
 import { registerClockCommands } from './clock';
+import { registerDepthCommands } from './depth';
 import { registerPlayerCommands } from './player';
 import { createRegistry, type CommandRegistry } from './registry';
 import { registerThemeCommands } from './theme';
@@ -49,6 +50,7 @@ export function createApp(options: AppOptions = {}): AppContext {
   const registry = createRegistry(() => store.get());
   // Every group of commands is registered here, one line per group.
   registerThemeCommands(registry, store);
+  registerDepthCommands(registry, store);
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
   const player = registerPlayerCommands(registry, store, clock, {
     onTimeNeeded: options.onTimeNeeded,

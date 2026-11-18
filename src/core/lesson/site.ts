@@ -57,6 +57,8 @@ export interface SitePassport {
   readonly severity: Severity | null;
   readonly impact: string | null;
   readonly defence: string | null;
+  /** The class of the attack as text (K71), or null: the passport then names the CWE. */
+  readonly class: string | null;
 }
 
 export interface SiteSource {
@@ -185,6 +187,7 @@ export function toSiteLesson(lesson: Lesson): SiteLesson {
       severity: p.severity,
       impact: p.impact,
       defence: p.defence,
+      class: p.class,
     },
     sources: lesson.sources.map((s) => ({ title: s.title, url: s.url })),
     participants: lesson.participants.map((x) => ({

@@ -28,6 +28,7 @@ describe('player state', () => {
         speed: 1,
         counts: { without: 0, with: 0 },
       },
+      depth: 'simple',
     });
   });
 

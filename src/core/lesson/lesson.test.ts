@@ -573,3 +573,62 @@ describe('translations (K21)', () => {
     expect(result.errors[0]).toMatchObject({ file: 'content/sources.md', code: 'bad-line' });
   });
 });
+
+describe('passport class (K71): optional text, present in every language or in none', () => {
+  const withClass = (text: string, from: string, value: string) =>
+    edit(text, from, `${from}\n- \`class\` ${value}`);
+  const ruClass = withClass(validRu, '- `defence` Проверка на сервере', 'Инъекция');
+  const enClass = withClass(validEn, '- `defence` Server-side check', 'Injection');
+  const sources = { path: 'content/sources.md', text: '- `owasp.org` OWASP\n' };
+
+  it('reads the class as text in the lesson language', () => {
+    const result = check(ruClass);
+    expect(result.errors).toEqual([]);
+    expect(result.lesson?.passport.class).toBe('Инъекция');
+  });
+
+  it('is null when the line is absent', () => {
+    expect(check(validRu).lesson?.passport.class).toBeNull();
+  });
+
+  it('rejects a second class line', () => {
+    const twice = withClass(ruClass, '- `class` Инъекция', 'Ещё одна');
+    expect(codes(check(twice).errors)).toEqual(['duplicate']);
+  });
+
+  it('rejects markup in the class', () => {
+    const marked = edit(ruClass, '`class` Инъекция', '`class` Инъекция <br>');
+    expect(codes(check(marked).errors)).toEqual(['html']);
+  });
+
+  it('accepts translations that both have a class', () => {
+    const result = checkContent(
+      [
+        { path: 'content/lessons/X1/ru.md', text: ruClass },
+        { path: 'content/lessons/X1/en.md', text: enClass },
+      ],
+      sources,
+    );
+    expect(result.errors).toEqual([]);
+  });
+
+  it.each([
+    ['only ru.md', ruClass, validEn],
+    ['only en.md', validRu, enClass],
+  ])('rejects a class present in %s', (_name, ru, en) => {
+    const result = checkContent(
+      [
+        { path: 'content/lessons/X1/ru.md', text: ru },
+        { path: 'content/lessons/X1/en.md', text: en },
+      ],
+      sources,
+    );
+    expect(result.errors).toEqual([
+      expect.objectContaining({
+        file: 'content/lessons/X1/en.md',
+        code: 'translation-mismatch',
+        path: 'passport.class',
+      }),
+    ]);
+  });
+});

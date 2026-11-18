@@ -106,6 +106,10 @@ describe('tokens', () => {
     ['--scene-message-safe', '--panel'],
     ['--scene-message-safe', '--paper'],
     ['--panel', '--ink'],
+    // M1.4: lesson code and its harmful part, and links of the sources.
+    ['--code-ink', '--code-paper'],
+    ['--code-mark', '--code-paper'],
+    ['--code-mark', '--panel'],
   ];
 
   it('paint a stopped message in the defence green, never in red (M1.2d)', () => {

@@ -217,7 +217,17 @@ const LIST_VALUE: Readonly<Record<string, { re: RegExp; hint: string }>> = {
   cves: { re: /^CVE-\d{4}-\d{4,7}$/, hint: 'CVE ids: CVE-2021-44228' },
 };
 const CVSS = /^CVSS:(3\.[01]|4\.0)(\/[A-Z]{1,3}:[A-Z]{1,2}){4,32}$/;
-const PASSPORT_WORDS = ['cwe', 'owasp', 'attack', 'cvss', 'cves', 'severity', 'impact', 'defence'];
+const PASSPORT_WORDS = [
+  'class',
+  'cwe',
+  'owasp',
+  'attack',
+  'cvss',
+  'cves',
+  'severity',
+  'impact',
+  'defence',
+];
 
 function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
   const passport: { -readonly [K in keyof Passport]: Passport[K] } = {
@@ -229,6 +239,7 @@ function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
     severity: null,
     impact: null,
     defence: null,
+    class: null,
   };
   const seen = new Set<string>();
   for (const item of listItems(ctx, nodes, 'passport')) {
@@ -298,6 +309,7 @@ function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
         );
       } else passport.severity = severity;
     } else if (word === 'impact') passport.impact = value;
+    else if (word === 'class') passport.class = value;
     else passport.defence = value;
   }
   return passport;

@@ -8,6 +8,7 @@
   import type { LessonLoader } from '../services/catalog/catalog';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
+  import ExplainPanel from './ExplainPanel.svelte';
   import { loadErrorText, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
   import StepsTable from './StepsTable.svelte';
@@ -155,18 +156,10 @@
         <PlayerControls {player} {run} />
       </div>
 
-      <!-- M1.4 fills this panel: the step at three depths and the lesson passport. -->
-      <section class="panel explain" data-testid="explain" aria-labelledby="explain-title">
-        <h2 id="explain-title">Объяснение</h2>
-        {#if step !== null}
-          <p class="explain-step" data-testid="explain-step">
-            Шаг {step.number} из {step.count}. {step.step.title}
-          </p>
-          <p class="muted">{step.step.result}</p>
-        {:else}
-          <p class="muted">В этом режиме у урока нет шагов.</p>
-        {/if}
-      </section>
+      <!-- M1.4: the step at three depths, the passport, «Как защититься», the sources. -->
+      <div class="explain-area">
+        <ExplainPanel lesson={shown.lesson} current={step} depth={$store.depth} {run} />
+      </div>
 
       <section class="panel log" data-testid="log" aria-labelledby="log-title">
         <h2 id="log-title">Ход атаки</h2>
@@ -249,8 +242,22 @@
     min-width: 0;
   }
 
-  .explain {
+  /*
+   * K73: on a wide screen the scene sets the height of the top row and the explanation scrolls
+   * inside it, so the controls stay right under the scene; on a phone it is a plain block.
+   */
+  .explain-area {
     grid-area: explain;
+    min-width: 0;
+    min-height: 18rem;
+    position: relative;
+  }
+
+  .explain-area > :global(.explain) {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .log {
@@ -279,17 +286,6 @@
     color: var(--muted);
   }
 
-  .explain-step {
-    margin: 0;
-    font-weight: 700;
-  }
-
-  .muted {
-    margin: 0;
-    color: var(--muted);
-    font-size: var(--text-sm);
-  }
-
   .feed:empty {
     display: none;
   }
@@ -303,6 +299,16 @@
     .work {
       grid-template-columns: minmax(0, 1fr);
       grid-template-areas: 'scene' 'controls' 'explain' 'log';
+    }
+
+    .explain-area {
+      min-height: 0;
+      position: static;
+    }
+
+    .explain-area > :global(.explain) {
+      position: static;
+      overflow-y: visible;
     }
   }
 

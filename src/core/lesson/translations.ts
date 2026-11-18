@@ -35,12 +35,14 @@ export function compareTranslation(
       differ(where.passport, `passport.${key}`, `passport \`${key}\` differs from ${ru}`);
     }
   }
-  if ((base.passport.defence === null) !== (other.passport.defence === null)) {
-    differ(
-      where.passport,
-      'passport.defence',
-      `passport \`defence\` is present in only one of this file and ${ru}`,
-    );
+  for (const key of ['defence', 'class'] as const) {
+    if ((base.passport[key] === null) !== (other.passport[key] === null)) {
+      differ(
+        where.passport,
+        `passport.${key}`,
+        `passport \`${key}\` is present in only one of this file and ${ru}`,
+      );
+    }
   }
 
   const shape = (l: Lesson) => l.participants.map((p) => `${p.id}:${p.icon}`);
