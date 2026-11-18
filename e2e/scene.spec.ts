@@ -2,9 +2,12 @@
 // site's real CSP, with no console errors; nothing leaves the scene or overlaps at 1280 and
 // 390 px, no sideways scroll, text at least 11 px; screenshots are byte-identical across
 // reloads; loading and broken data show a message, an unknown icon a placeholder (L0.1).
+// M1.2c: the message too — ring, plaque or token, word and trail — at both ends of every step of
+// B1 and I1 in both modes, with no slack.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, Route } from '@playwright/test';
+import { layoutProblems, messageProblems, sceneBoxes } from './scene-boxes';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
@@ -12,88 +15,6 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 720 },
   { name: 'phone', width: 390, height: 844 },
 ] as const;
-
-interface Box {
-  readonly what: string;
-  readonly owner: string;
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-  readonly fontSize: number;
-  /** For the parts of a zone: owners (`participant-<id>`) of its members. */
-  readonly members?: readonly string[];
-}
-
-/** The real boxes of everything drawn in the scene, as the browser lays them out. */
-async function sceneBoxes(page: Page): Promise<{ scene: Box; boxes: Box[] }> {
-  return page.evaluate(() => {
-    const svg = document.querySelector('[data-testid="scene"] svg');
-    if (svg === null) throw new Error('no scene');
-    const box = (element: Element, what: string, owner: string) => {
-      const r = element.getBoundingClientRect();
-      const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
-      return { what, owner, x: r.x, y: r.y, width: r.width, height: r.height, fontSize };
-    };
-    const boxes = [];
-    for (const g of svg.querySelectorAll('[data-testid^="participant-"]')) {
-      const owner = g.getAttribute('data-testid') ?? '';
-      for (const el of g.querySelectorAll('[data-part]')) {
-        boxes.push(box(el, el.getAttribute('data-part') ?? '', owner));
-      }
-    }
-    for (const g of svg.querySelectorAll('[data-testid^="zone-"]')) {
-      const owner = g.getAttribute('data-testid') ?? '';
-      const members = (g.getAttribute('data-members') ?? '')
-        .split(' ')
-        .filter((m) => m !== '')
-        .map((m) => `participant-${m}`);
-      for (const el of g.querySelectorAll('[data-part]')) {
-        boxes.push({ ...box(el, el.getAttribute('data-part') ?? '', owner), members });
-      }
-    }
-    return { scene: box(svg, 'scene', 'scene'), boxes };
-  });
-}
-
-/**
- * Everything wrong with the boxes: a box outside the scene; two drawn things on top of each
- * other; and, for zone frames (M1.2b), a frame over another zone, a member outside its frame or
- * a stranger inside it.
- */
-function layoutProblems(scene: Box, boxes: readonly Box[]): string[] {
-  const out = boxes.filter((b) => !inside(b, scene)).map((b) => `${b.owner} ${b.what} outside`);
-  const drawn = boxes.filter((b) => b.what !== 'frame');
-  for (let i = 0; i < drawn.length; i += 1) {
-    for (let j = i + 1; j < drawn.length; j += 1) {
-      const a = drawn[i];
-      const b = drawn[j];
-      if (a !== undefined && b !== undefined && overlap(a, b)) {
-        out.push(`${a.owner} ${a.what} × ${b.owner} ${b.what}`);
-      }
-    }
-  }
-  for (const frame of boxes.filter((b) => b.what === 'frame')) {
-    for (const b of boxes) {
-      if (b === frame) continue;
-      const own = b.owner === frame.owner || (frame.members ?? []).includes(b.owner);
-      if (own && !inside(b, frame)) out.push(`${b.owner} ${b.what} leaves ${frame.owner}`);
-      if (!own && overlap(b, frame)) out.push(`${b.owner} ${b.what} × ${frame.owner} frame`);
-    }
-  }
-  return out;
-}
-
-const inside = (a: Box, b: Box) =>
-  a.x >= b.x - 0.5 &&
-  a.y >= b.y - 0.5 &&
-  a.x + a.width <= b.x + b.width + 0.5 &&
-  a.y + a.height <= b.y + b.height + 0.5;
-const overlap = (a: Box, b: Box) =>
-  a.x < b.x + b.width - 0.5 &&
-  b.x < a.x + a.width - 0.5 &&
-  a.y < b.y + b.height - 0.5 &&
-  b.y < a.y + a.height - 0.5;
 
 test('the B1 scene is on the page with its participants and zones', async ({ page }) => {
   await openApp(page);
@@ -163,6 +84,132 @@ for (const viewport of VIEWPORTS) {
           await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
         ).toBe(true);
       }
+    });
+
+    test('the message at rest covers nothing: every step of B1 and I1, both modes (M1.2c)', async ({
+      page,
+    }) => {
+      await openApp(page);
+      const seen: string[] = [];
+      for (const lesson of ['B1', 'I1']) {
+        await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
+        await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
+        await sceneReady(page);
+        for (const on of [false, true]) {
+          await page.evaluate((v) => window.__app?.commands.run('scene.defence', { on: v }), on);
+          const count = Number(
+            /из (\d+)/.exec((await page.getByTestId('scene-step').textContent()) ?? '')?.[1],
+          );
+          expect(count).toBeGreaterThanOrEqual(5);
+          for (let step = 1; step <= count; step += 1) {
+            await page.evaluate((n) => {
+              window.__app?.clock.set(0);
+              window.__app?.commands.run('scene.step', { step: n });
+            }, step);
+            for (const [ms, progress] of [
+              [0, '0'],
+              [900, '1'],
+            ] as const) {
+              await page.evaluate((t) => window.__app?.clock.set(t), ms);
+              const message = page.getByTestId('message');
+              // A step from a participant to itself is there at once.
+              const still =
+                (await message.getAttribute('data-from')) ===
+                (await message.getAttribute('data-to'));
+              await expect(message).toHaveAttribute('data-progress', still ? '1' : progress);
+              const { scene, boxes, message: m } = await sceneBoxes(page);
+              if (m === null) throw new Error('no message');
+              const where = `${lesson} ${on ? 'defence' : 'attack'} step ${String(step)} at ${progress}`;
+              seen.push(`${where} ${String(await message.getAttribute('data-step'))}`);
+              expect(layoutProblems(scene, boxes), where).toEqual([]);
+              expect(messageProblems(scene, boxes, m), where).toEqual([]);
+              // Text of the message is not below 11 px either.
+              expect(m.word.fontSize, where).toBeGreaterThanOrEqual(11);
+            }
+          }
+        }
+      }
+      // Every step of both lessons in both modes, at both ends.
+      expect(seen).toHaveLength(2 * 2 * 5 * 2);
+      for (const id of ['glue', 'param', 'autofill', 'leak', 'bait', 'refuse']) {
+        expect(seen.some((s) => s.endsWith(` ${id}`))).toBe(true);
+      }
+    });
+
+    test('the message check sees a hidden ring, a hidden word and a plaque on a frame (M1.2c)', async ({
+      page,
+    }) => {
+      await openApp(page);
+      await page.evaluate(() => {
+        window.__app?.clock.set(0);
+        window.__app?.commands.run('scene.step', { step: 3 });
+        window.__app?.clock.set(900);
+      });
+      await expect(page.getByTestId('message')).toHaveAttribute('data-progress', '1');
+      await sceneReady(page);
+      const clean = await sceneBoxes(page);
+      if (clean.message === null) throw new Error('no message');
+      expect(messageProblems(clean.scene, clean.boxes, clean.message)).toEqual([]);
+      const broken = async (change: () => void) => {
+        await page.evaluate(change);
+        const { scene, boxes, message } = await sceneBoxes(page);
+        if (message === null) throw new Error('no message');
+        return messageProblems(scene, boxes, message);
+      };
+      expect(
+        await broken(() =>
+          document.querySelector('[data-testid="message-ring"]')?.setAttribute('display', 'none'),
+        ),
+      ).toContain('ring: display none');
+      await page.evaluate(() =>
+        document.querySelector('[data-testid="message-ring"]')?.removeAttribute('display'),
+      );
+      expect(
+        await broken(() =>
+          // Through the CSSOM: the component's class sets the opacity, beating an attribute.
+          document
+            .querySelector('[data-testid="message-ring"]')
+            ?.parentElement?.style.setProperty('opacity', '0'),
+        ),
+      ).toContain('ring: opacity 0');
+      await page.evaluate(() =>
+        document
+          .querySelector('[data-testid="message-ring"]')
+          ?.parentElement?.style.removeProperty('opacity'),
+      );
+      expect(
+        await broken(() =>
+          document.querySelector('[data-testid="message-ring"]')?.setAttribute('stroke-width', '0'),
+        ),
+      ).toContain('ring: stroke 0px');
+      await page.evaluate(() =>
+        document.querySelector('[data-testid="message-ring"]')?.setAttribute('stroke-width', '2'),
+      );
+      expect(
+        await broken(() =>
+          document
+            .querySelector('[data-testid="message-word"]')
+            ?.setAttribute('visibility', 'hidden'),
+        ),
+      ).toContain('word: visibility hidden');
+      await page.evaluate(() =>
+        document.querySelector('[data-testid="message-word"]')?.removeAttribute('visibility'),
+      );
+      // The ring pulled onto the database's note; the plaque moved onto the internet zone.
+      const cut = await broken(() => {
+        const r = document.querySelector('[data-testid="message-ring"]');
+        r?.setAttribute('height', String(Number(r.getAttribute('height')) - 12));
+      });
+      expect(cut.some((p) => p.startsWith('ring × participant-db'))).toBe(true);
+      const moved = await broken(() => {
+        // Onto the right edge of the internet zone's frame, at the same height.
+        const frame = document.querySelector('[data-testid="zone-internet"] [data-part="frame"]');
+        const edge = Number(frame?.getAttribute('x')) + Number(frame?.getAttribute('width'));
+        const g = document.querySelector('[data-testid="message-plaque"]')?.parentElement;
+        const y = /translate\(\S+ (\S+)\)/.exec(g?.getAttribute('transform') ?? '')?.[1] ?? '0';
+        g?.setAttribute('transform', `translate(${String(edge)} ${y})`);
+      });
+      expect(moved.some((p) => p.startsWith('plaque crosses zone-'))).toBe(true);
     });
 
     test('the overlap check sees a zone frame moved onto another zone (M1.2b)', async ({

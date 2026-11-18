@@ -9,7 +9,7 @@
   import type { SiteLesson } from '../core/lesson/site';
   import type { SceneState } from '../core/state';
   import { describeScene, describeStep, sceneTitle } from '../core/scene-layout/describe';
-  import { layoutScene, type TextBlock } from '../core/scene-layout/layout';
+  import { layoutScene, RING_STROKE, type TextBlock } from '../core/scene-layout/layout';
   import { currentStep, layoutMessage, type MessageSign } from '../core/scene-layout/message';
   import { iconUrl } from './icons';
 
@@ -186,6 +186,8 @@
         class="message {message.kind}"
         data-testid="message"
         data-step={current.step.id}
+        data-from={current.step.from}
+        data-to={current.step.to}
         data-kind={message.kind}
         data-stopped={message.stopped}
         data-arrived={message.arrived}
@@ -198,6 +200,7 @@
           y={round(message.ring.y)}
           width={round(message.ring.width)}
           height={round(message.ring.height)}
+          stroke-width={RING_STROKE}
           rx="12"
         />
         {#if message.trail !== null}
@@ -216,29 +219,42 @@
             data-testid="message-word"
             y={round(message.wordY - message.y)}
             text-anchor="middle"
+            textLength={message.wordFit === null ? undefined : round(message.wordFit)}
+            lengthAdjust={message.wordFit === null ? undefined : 'spacingAndGlyphs'}
             font-size="11">{message.word}</text
           >
           {#if message.plaque !== null}
-            {@const w = message.plaque.width}
-            <g data-testid="message-plaque">
+            {@const plaque = message.plaque}
+            {@const w = plaque.width}
+            {@const h = plaque.height}
+            <g data-testid="message-plaque" data-lines={plaque.lines.length}>
               <rect
                 class="shadow"
                 x={round(-w / 2 + 3)}
-                y="-9"
+                y={round(-h / 2 + 3)}
                 width={round(w)}
-                height="24"
+                height={round(h)}
                 rx="5"
               />
-              <rect class="plaque" x={round(-w / 2)} y="-12" width={round(w)} height="24" rx="5" />
-              <g transform="translate({round(-w / 2 + 15)} 0)">
+              <rect
+                class="plaque"
+                x={round(-w / 2)}
+                y={round(-h / 2)}
+                width={round(w)}
+                height={round(h)}
+                rx="5"
+              />
+              <g transform="translate({round(-w / 2 + plaque.signX)} 0)">
                 {@render sign(message.sign, 'message-sign')}
               </g>
-              <text
-                class="label"
-                data-testid="message-label"
-                x={round(-w / 2 + 25)}
-                y="4"
-                font-size="11">{message.plaque.text}</text
+              <text class="label" data-testid="message-label" font-size="11"
+                >{#each plaque.lines as line, i (i)}{i > 0 ? ' ' : ''}<tspan
+                    x={round(-w / 2 + plaque.textX)}
+                    y={round(line.y)}
+                    textLength={line.fit === null ? undefined : round(line.fit)}
+                    lengthAdjust={line.fit === null ? undefined : 'spacingAndGlyphs'}
+                    >{line.text}</tspan
+                  >{/each}</text
               >
             </g>
           {:else if message.token !== null}
@@ -369,7 +385,6 @@
   .ring {
     fill: none;
     stroke: var(--kind);
-    stroke-width: 3;
     opacity: 0.9;
   }
 

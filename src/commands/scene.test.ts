@@ -30,6 +30,18 @@ describe('scene.step', () => {
     expect(Object.isFrozen(app.store.get().scene)).toBe(true);
   });
 
+  // M1.2c (a mutation the M1.2b verifier saw survive): choosing a step keeps the mode.
+  it('keeps the defence mode on and off', () => {
+    const app = createApp();
+    app.registry.run('scene.defence', { on: true });
+    app.clock.set(300);
+    app.registry.run('scene.step', { step: 4 });
+    expect(app.store.get().scene).toEqual({ step: 4, defence: true, startedMs: 300 });
+    app.registry.run('scene.defence', { on: false });
+    app.registry.run('scene.step', { step: 2 });
+    expect(app.store.get().scene.defence).toBe(false);
+  });
+
   it('starts the same step again when run again (a replay)', () => {
     const app = createApp();
     app.registry.run('scene.step', { step: 2 });

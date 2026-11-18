@@ -34,6 +34,35 @@ async function centreX(page: Page, selector: string): Promise<number> {
 const plaque = '[data-testid="message-plaque"] .plaque';
 const icon = (id: string) => `[data-testid="participant-${id}"] [data-part="icon"]`;
 
+/**
+ * The plaque rests at participant `id` (M1.2c, no slack): centred over its icon when it and its
+ * 3 px shadow fit inside the ring with room to spare at both sides, else over the icon's centre.
+ */
+async function restsAt(page: Page, id: string): Promise<void> {
+  const box = await page.locator(plaque).boundingBox();
+  const ring = await page.getByTestId('message-ring').boundingBox();
+  if (box === null || ring === null) throw new Error('no plaque or ring');
+  const centre = await centreX(page, icon(id));
+  if (box.width + 6 <= ring.width) {
+    expect(Math.abs(box.x + box.width / 2 - centre)).toBeLessThan(1);
+  } else {
+    expect(box.x).toBeLessThanOrEqual(centre);
+    expect(box.x + box.width).toBeGreaterThanOrEqual(centre);
+  }
+}
+
+/** Every box of `selectors` lies inside the frame of zone `zone`, with no slack. */
+async function inZone(page: Page, zone: string, selectors: readonly string[]): Promise<void> {
+  const frame = await page.getByTestId(`zone-${zone}`).locator('[data-part="frame"]').boundingBox();
+  if (frame === null) throw new Error(`no zone ${zone}`);
+  for (const selector of selectors) {
+    const box = await page.locator(selector).boundingBox();
+    if (box === null) throw new Error(`${selector} is not drawn`);
+    expect(box.x, selector).toBeGreaterThanOrEqual(frame.x);
+    expect(box.x + box.width, selector).toBeLessThanOrEqual(frame.x + frame.width);
+  }
+}
+
 /** Keeps a screenshot for a human look when SCENE_SHOTS names a folder. */
 async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   const path = testInfo.outputPath(`${name}.png`);
@@ -104,18 +133,12 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByTestId('message-word')).toHaveText('остановлено');
       await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'stopped');
       const stoppedAt = await centreX(page, plaque);
-      expect(Math.abs(stoppedAt - (await centreX(page, icon('db'))))).toBeLessThan(
-        viewport.width < 500 ? 60 : 1,
-      );
+      await restsAt(page, 'db');
       // The plaque and its word rest inside the database's zone, off the neighbour frames.
-      const zone = await page.getByTestId('zone-site').locator('[data-part="frame"]').boundingBox();
-      for (const part of [plaque, '[data-testid="message-word"]']) {
-        const box = await page.locator(part).boundingBox();
-        expect(box?.x ?? 0).toBeGreaterThanOrEqual(zone?.x ?? Infinity);
-        expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(
-          (zone?.x ?? 0) + (zone?.width ?? 0),
-        );
-      }
+      await inZone(page, 'site', [
+        '[data-testid="message-plaque"]',
+        '[data-testid="message-word"]',
+      ]);
       await expect(page.getByTestId('scene-step')).toHaveText(
         'Шаг 3 из 5. Запрос с параметром: Веб-сервер → База данных, вредное сообщение ' +
           "«параметр: admin' --» остановлено у участника «База данных».",
@@ -166,10 +189,11 @@ for (const viewport of VIEWPORTS) {
       await expect(message).toHaveAttribute('data-progress', '1');
       await expect(page.getByTestId('message-trail')).toHaveCount(0);
       await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'stopped');
-      const at = await centreX(page, plaque);
-      expect(Math.abs(at - (await centreX(page, icon('user'))))).toBeLessThan(
-        viewport.width < 500 ? 40 : 1,
-      );
+      await restsAt(page, 'user');
+      await inZone(page, 'office', [
+        '[data-testid="message-plaque"]',
+        '[data-testid="message-word"]',
+      ]);
       await expect(page.getByTestId('scene-step')).toHaveText(
         'Шаг 3 из 5. Менеджер паролей молчит: у участника «Сотрудник», безопасное сообщение ' +
           '«пароль не подставлен» остановлено.',
@@ -184,14 +208,11 @@ for (const viewport of VIEWPORTS) {
       await expect(message).toHaveAttribute('data-kind', 'attack');
       await expect(message).toHaveAttribute('data-stopped', 'true');
       await expect(page.getByTestId('message-word')).toHaveText('остановлено');
-      const bank = await page
-        .getByTestId('zone-bank-site')
-        .locator('[data-part="frame"]')
-        .boundingBox();
-      const box = await page.locator(plaque).boundingBox();
-      expect(box?.x ?? 0).toBeGreaterThanOrEqual(
-        (bank?.x ?? Infinity) - (viewport.width < 500 ? 80 : 0),
-      );
+      await restsAt(page, 'bank');
+      await inZone(page, 'bank-site', [
+        '[data-testid="message-plaque"]',
+        '[data-testid="message-word"]',
+      ]);
       await expect(page.getByTestId('scene-step')).toHaveText(
         'Шаг 4 из 5. Пароль утёк в другом месте: Атакующий → Банк, вредное сообщение ' +
           '«чужой пароль» остановлено у участника «Банк».',

@@ -15,6 +15,19 @@
 //                     fillStyle), nor inside a gradient or drop-shadow(). .svg files count.
 //                     Fragment links (`href="#add"`, `url(#cafe)`) and «Issue #123» in prose are
 //                     not colours. The one exception is src/ui/tokens.css.
+//                     M1.2c: in CSS (a .css file, a <style> block, a style="" attribute) every
+//                     hex is a colour, whatever word stands before it, hex-like id selectors
+//                     (`#cafe {`) included; in a script every hex in code is; in markup prose a
+//                     number after a word («Issue #123») is not. Comments never count. Also
+//                     `el.style['color'] = …` and a 0x number as the value of a colour property.
+//                     Not seen: a colour built at run time (`'#' + hex`, a variable).
+//   no-css-animation  time comes from the player clock (design M1.2 E4, gap G14): no CSS
+//                     `animation*`, `transition*`, `@keyframes`, view transitions or
+//                     `scroll-behavior: smooth` (a value of `none` is a reset and allowed), no
+//                     SMIL `<animate>`, `<animateTransform>`, `<animateMotion>`, `<set>`, no
+//                     Svelte `transition:`, `in:`, `out:`, `animate:` or `style:transition`
+//                     directives, no `style.transition`/`style.animation…` from a script. The
+//                     Web Animations API and svelte/transition are the ESLint timing rules'.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,12 +57,13 @@ const HEX_COLOUR = /(?<![&\w])#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})\b/gi;
 // `url(#cafe)`, `setAttribute('href', '#x')`, `.href = '#x'`).
 const FRAGMENT_BEFORE =
   /(?:(?:href|xlink:href)\s*=\s*\{?\s*['"]?|url\(\s*['"]?|['"]href['"]\s*,\s*['"]|\.href\s*=\s*['"])$/i;
-// A number in prose («Issue #123», «задача #456»): only digits, after a word of letters and a
-// space. CSS words that come before a colour (`solid #123`) do not count as prose.
-const PROSE_WORD = /(?<![\w-])(\p{L}+) $/u;
-const CSS_WORDS = new Set(
-  'solid dashed dotted double groove ridge inset outset none hidden and or to at in'.split(' '),
-);
+// A number in markup prose («Issue #123», «задача #456»): only digits, after a word of letters
+// and a space. In CSS and scripts a word before a hex does not make it a number (M1.2c).
+const PROSE_WORD = /(?<![\w-])\p{L}+ $/u;
+// A 0x number as the value of a colour property (`fill: 0xff0000`).
+const HEX_NUMBER = /(?<![\w.])0x[0-9a-f]{3,8}\b/gi;
+// `el.style['color'] = …`: the property is a string.
+const STYLE_INDEX = /\bstyle\s*\[\s*(['"])([\w-]+)\1\s*\]\s*=(?!=)\s*/g;
 const COLOUR_FUNCTION =
   /(?<![\w-])(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(|(?<![\w.$-])color\(\s*(?:srgb(?:-linear)?|display-p3|a98-rgb|prophoto-rgb|rec2020|xyz(?:-d50|-d65)?|from)\b/gi;
 // Any name followed by `:` or `=` (CSS `prop: value`, markup `attr="value"`, Svelte
@@ -155,13 +169,20 @@ export function checkFiles(files) {
       }
     }
 
-    if (
-      (path === 'index.html' || path.startsWith('src/')) &&
-      SITE.test(path) &&
-      !TEST.test(path) &&
-      path !== TOKENS_FILE
-    ) {
-      for (const [index, what] of literalColours(text)) {
+    const site = (path === 'index.html' || path.startsWith('src/')) && SITE.test(path);
+    if (site && !TEST.test(path)) {
+      for (const [index, what] of animations(path, text)) {
+        problems.push({
+          rule: 'no-css-animation',
+          path,
+          line: lineAt(text, index),
+          message: `${what}: time comes from the player clock (design M1.2 E4), not from CSS`,
+        });
+      }
+    }
+
+    if (site && !TEST.test(path) && path !== TOKENS_FILE) {
+      for (const [index, what] of literalColours(path, text)) {
         problems.push({
           rule: 'no-literal-colours',
           path,
@@ -174,14 +195,87 @@ export function checkFiles(files) {
   return problems;
 }
 
+/**
+ * The parts of a file of site code (M1.2c): `css` (a stylesheet, a <style> block, a style=""
+ * attribute), `script` (a script file or a <script> block) and `markup` (the rest of an HTML,
+ * SVG or Svelte file). `text` is the file with comments blanked out, keeping every index and
+ * line: CSS and script block comments, script line comments (outside strings), HTML comments.
+ * @returns {{ text: string, kindAt: (index: number) => 'css' | 'script' | 'markup' }}
+ */
+function parts(path, source) {
+  const ext = /\.(\w+)$/.exec(path)?.[1] ?? '';
+  /** @type {{ kind: 'css' | 'script', start: number, end: number }[]} */
+  const spans = [];
+  if (ext === 'css') spans.push({ kind: 'css', start: 0, end: source.length });
+  else if (ext === 'ts' || ext === 'js') {
+    spans.push({ kind: 'script', start: 0, end: source.length });
+  } else {
+    const lower = source.toLowerCase();
+    for (const m of source.matchAll(/<(script|style)\b[^>]*>/gi)) {
+      const name = (m[1] ?? '').toLowerCase();
+      const start = m.index + m[0].length;
+      const close = lower.indexOf(`</${name}`, start);
+      spans.push({
+        kind: name === 'style' ? 'css' : 'script',
+        start,
+        end: close === -1 ? source.length : close,
+      });
+    }
+    for (const m of source.matchAll(/(?<=\s)style\s*=\s*(["'])([^"']*)\1/gi)) {
+      const start = m.index + m[0].length - 1 - (m[2] ?? '').length;
+      if (!spans.some((sp) => start >= sp.start && start < sp.end)) {
+        spans.push({ kind: 'css', start, end: start + (m[2] ?? '').length });
+      }
+    }
+  }
+  const kindAt = (index) =>
+    spans.find((sp) => index >= sp.start && index < sp.end)?.kind ?? 'markup';
+  const out = source.split('');
+  const blank = (from, to) => {
+    for (let k = from; k < to; k += 1) if (out[k] !== '\n') out[k] = ' ';
+  };
+  let i = 0;
+  while (i < source.length) {
+    const kind = kindAt(i);
+    const c = source[i];
+    const two = source.slice(i, i + 2);
+    if (kind === 'script' && (c === "'" || c === '"' || c === '`')) {
+      let j = i + 1;
+      while (j < source.length && source[j] !== c && !(c !== '`' && source[j] === '\n')) {
+        j += source[j] === '\\' ? 2 : 1;
+      }
+      i = j + 1;
+      continue;
+    }
+    let stop = -1;
+    if (kind !== 'markup' && two === '/*') {
+      const end = source.indexOf('*/', i + 2);
+      stop = end === -1 ? source.length : end + 2;
+    } else if (kind === 'script' && two === '//') {
+      const end = source.indexOf('\n', i);
+      stop = end === -1 ? source.length : end;
+    } else if (kind === 'markup' && source.startsWith('<!--', i)) {
+      const end = source.indexOf('-->', i + 4);
+      stop = end === -1 ? source.length : end + 3;
+    }
+    if (stop === -1) i += 1;
+    else {
+      blank(i, stop);
+      i = stop;
+    }
+  }
+  return { text: out.join(''), kindAt };
+}
+
 /** Literal colours in one file of site code, as `[index, what]` pairs in file order. */
-function literalColours(text) {
+function literalColours(path, source) {
+  const { text, kindAt } = parts(path, source);
   const found = [];
   for (const m of text.matchAll(HEX_COLOUR)) {
     const before = text.slice(Math.max(0, m.index - 40), m.index);
     if (FRAGMENT_BEFORE.test(before)) continue;
-    const prose = PROSE_WORD.exec(before);
-    if (/^#\d+$/.test(m[0]) && prose?.[1] && !CSS_WORDS.has(prose[1].toLowerCase())) continue;
+    // Only in markup prose is «word #123» a number rather than a colour.
+    if (kindAt(m.index) === 'markup' && /^#\d+$/.test(m[0]) && PROSE_WORD.test(before)) continue;
     found.push([m.index, m[0]]);
   }
   for (const m of text.matchAll(COLOUR_FUNCTION)) found.push([m.index, `${m[0]}…)`]);
@@ -189,20 +283,29 @@ function literalColours(text) {
     for (const word of value.matchAll(WORD)) {
       if (NAMED_COLOURS.has(word[0].toLowerCase())) found.push([index, word[0]]);
     }
+    for (const hex of value.matchAll(HEX_COLOUR)) found.push([index, hex[0]]);
+    for (const hex of value.matchAll(HEX_NUMBER)) found.push([index, hex[0]]);
   };
-  for (const m of text.matchAll(NAME_VALUE)) {
-    if (!COLOUR_NAME.test(m[1] ?? '')) continue;
-    const start = m.index + m[0].length;
+  const valueAt = (index, start) => {
     const first = text[start];
     if (first === '{') {
       // A Svelte expression: only its string literals can be literal colours.
-      for (const q of enclosed(text, start, '{', '}').matchAll(QUOTED)) named(m.index, q[2] ?? '');
+      for (const q of enclosed(text, start, '{', '}').matchAll(QUOTED)) named(index, q[2] ?? '');
+      for (const hex of enclosed(text, start, '{', '}').matchAll(HEX_NUMBER)) {
+        found.push([index, hex[0]]);
+      }
     } else if (first === "'" || first === '"' || first === '`') {
       const end = text.indexOf(first, start + 1);
-      named(m.index, text.slice(start + 1, end === -1 ? undefined : end));
+      named(index, text.slice(start + 1, end === -1 ? undefined : end));
     } else {
-      named(m.index, /^[^;\n}>]*/.exec(text.slice(start))?.[0] ?? '');
+      named(index, /^[^;\n}>]*/.exec(text.slice(start))?.[0] ?? '');
     }
+  };
+  for (const m of text.matchAll(STYLE_INDEX)) {
+    if (COLOUR_NAME.test(m[2] ?? '')) valueAt(m.index, m.index + m[0].length);
+  }
+  for (const m of text.matchAll(NAME_VALUE)) {
+    if (COLOUR_NAME.test(m[1] ?? '')) valueAt(m.index, m.index + m[0].length);
   }
   for (const m of text.matchAll(COLOUR_ARGUMENTS)) {
     named(m.index, enclosed(text, m.index + m[0].length - 1, '(', ')'));
@@ -216,12 +319,79 @@ function literalColours(text) {
   const seen = new Set();
   return found
     .filter(([index, what]) => {
-      const key = `${String(index)} ${what}`;
+      // One report per colour and line: a hex in a colour value is found twice.
+      const key = `${String(lineAt(text, index))} ${what.toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     })
     .sort((a, b) => a[0] - b[0]);
+}
+
+// no-css-animation (M1.2c, design M1.2 E4, G14). A CSS property that animates: `animation…`,
+// `transition…` (also -webkit-/-moz-), a view transition. Not after `.`, `#` or a word
+// character: `.transition:hover` is a selector.
+const CSS_ANIMATED =
+  /(?<![\w.#-])((?:-webkit-|-moz-)?(?:animation|transition)(?:-[a-z-]+)?|view-transition(?:-[a-z]+)?)\s*:(?!:)\s*([^;}]*)/gi;
+const CSS_AT =
+  /@(?:-webkit-|-moz-)?keyframes\b|@view-transition\b|(?<![\w-])scroll-behavior\s*:\s*smooth\b/gi;
+const SMIL = /^<(animate|animateTransform|animateMotion|animateColor|set)(?=[\s/>])/;
+const DIRECTIVE =
+  /(?<=\s)(?:(?:transition|in|out|animate):[A-Za-z_$]|style:(?:-webkit-)?(?:animation|transition)\b)/g;
+const SCRIPT_STYLE = [
+  /\.style\s*\.\s*(?:webkit|moz)?(?:animation|transition)\w*\s*=(?!=)/gi,
+  /\.style\s*\[\s*(['"])(?:-webkit-)?(?:animation|transition)[\w-]*\1\s*\]\s*=(?!=)/gi,
+  /\bsetProperty\(\s*(['"])(?:-webkit-)?(?:animation|transition)[\w-]*\1/gi,
+];
+
+/** Animations in one file of site code, as `[index, what]` pairs in file order. */
+function animations(path, source) {
+  const { text, kindAt } = parts(path, source);
+  const found = [];
+  for (const m of text.matchAll(CSS_ANIMATED)) {
+    if (kindAt(m.index) !== 'css') continue;
+    if (/^none(\s*!important)?$/i.test((m[2] ?? '').trim())) continue;
+    found.push([m.index, m[1] ?? 'animation']);
+  }
+  for (const m of text.matchAll(CSS_AT)) {
+    if (kindAt(m.index) === 'css') found.push([m.index, m[0]]);
+  }
+  for (const [start, tag] of tags(text, kindAt)) {
+    const smil = SMIL.exec(tag);
+    if (smil !== null) found.push([start, `<${smil[1] ?? ''}>`]);
+    for (const d of tag.matchAll(DIRECTIVE)) found.push([start + d.index, d[0]]);
+  }
+  for (const pattern of SCRIPT_STYLE) {
+    for (const m of text.matchAll(pattern)) {
+      if (kindAt(m.index) === 'script') found.push([m.index, m[0]]);
+    }
+  }
+  return found.sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * The opening tags of the markup, as `[index, text]`: from `<name` to the `>` that ends the
+ * tag, past quoted values and `{…}` expressions (`onclick={() => a > b}`).
+ */
+function tags(text, kindAt) {
+  const out = [];
+  for (const m of text.matchAll(/<[A-Za-z]/g)) {
+    if (kindAt(m.index) !== 'markup') continue;
+    let depth = 0;
+    let quote = '';
+    let i = m.index + 1;
+    for (; i < text.length; i += 1) {
+      const c = text[i];
+      if (quote !== '') {
+        if (c === quote) quote = '';
+      } else if (c === '{') depth += 1;
+      else if (c === '}') depth = Math.max(0, depth - 1);
+      else if (depth === 0 && (c === '"' || c === "'")) quote = c;
+      else if (depth === 0 && c === '>') break;
+    }
+    out.push([m.index, text.slice(m.index, i + 1)]);
+  }
+  return out;
 }
 
 /** The text from `text[start]` (an `open` bracket) to its matching `close`, at most 2000 chars. */

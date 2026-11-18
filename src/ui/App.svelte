@@ -103,6 +103,13 @@
     gap: var(--space-3);
   }
 
+  /* A phone (S10, M1.2c): 12 px at the sides leave the scene 8 px more for its columns. */
+  @media (max-width: 480px) {
+    main {
+      padding: var(--space-3);
+    }
+  }
+
   header {
     display: flex;
     flex-wrap: wrap;

@@ -2,10 +2,11 @@
 // of the current step stands at a moment of the player clock, what it looks like, and which
 // step is current in each mode.
 import { describe, expect, it } from 'vitest';
-import { layoutScene, type SceneInput } from './layout';
+import { layoutScene, MIN_SQUEEZE, type Rect, type SceneInput, type SceneLayout } from './layout';
 import {
   currentStep,
   layoutMessage,
+  MESSAGE_FONT_SIZE,
   MESSAGE_HEIGHT,
   stepsInMode,
   TOKEN_RADIUS,
@@ -247,5 +248,171 @@ describe('layoutMessage', () => {
     const wordTop = (m?.wordY ?? 0) - 11 * 0.8;
     expect(wordTop).toBeGreaterThan(labelBottom);
     expect(m?.wordY ?? Infinity).toBeLessThan(scene.lane.y - TOKEN_RADIUS);
+  });
+});
+
+const I1: SceneInput = {
+  participants: [
+    { id: 'attacker', name: 'Атакующий', note: '203.0.113.66' },
+    { id: 'user', name: 'Сотрудник', note: '192.0.2.24' },
+    { id: 'fake', name: 'Поддельная страница', note: 'bank-login.example' },
+    { id: 'bank', name: 'Банк', note: 'bank.example' },
+  ],
+  zones: [
+    { id: 'internet', label: 'Интернет', members: ['attacker'], danger: false },
+    { id: 'office', label: 'Офис', members: ['user'], danger: false },
+    { id: 'forgery', label: 'Подделка', members: ['fake'], danger: true },
+    { id: 'bank-site', label: 'Банк', members: ['bank'], danger: false },
+  ],
+};
+
+/** The steps of I1 as the lesson file has them. */
+const I1_STEPS: readonly StepInput[] = [
+  step({ id: 'bait', to: 'user', kind: 'attack', icon: 'mail', message: 'письмо' }),
+  step({ id: 'click', from: 'user', to: 'fake', message: 'открыть ссылку' }),
+  step({
+    id: 'type',
+    from: 'user',
+    to: 'fake',
+    kind: 'attack',
+    mode: 'without-defence',
+    message: 'логин и пароль',
+  }),
+  step({
+    id: 'steal',
+    from: 'fake',
+    to: 'attacker',
+    kind: 'attack',
+    mode: 'without-defence',
+    message: 'пароль',
+  }),
+  step({ id: 'login', to: 'bank', kind: 'attack', mode: 'without-defence', message: 'вход' }),
+  step({
+    id: 'autofill',
+    from: 'user',
+    to: 'user',
+    kind: 'safe',
+    mode: 'with-defence',
+    stopped: true,
+    message: 'пароль не подставлен',
+  }),
+  step({
+    id: 'leak',
+    to: 'bank',
+    kind: 'attack',
+    mode: 'with-defence',
+    stopped: true,
+    message: 'чужой пароль',
+  }),
+  step({
+    id: 'second',
+    from: 'bank',
+    to: 'attacker',
+    kind: 'safe',
+    mode: 'with-defence',
+    message: 'нужен код',
+  }),
+];
+
+const inside = (r: Rect, outer: { x1: number; x2: number; y1: number; y2: number }) =>
+  r.x >= outer.x1 - 1e-6 &&
+  r.x + r.width <= outer.x2 + 1e-6 &&
+  r.y >= outer.y1 - 1e-6 &&
+  r.y + r.height <= outer.y2 + 1e-6;
+const overlap = (a: Rect, b: Rect) =>
+  a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+/**
+ * The room a message may take at participant `id`: its zone frame 2 px in, or its own column
+ * frame when it has no zone; from the scene top to its bottom.
+ */
+function room(layout: SceneLayout, id: string) {
+  const p = layout.participants.find((x) => x.id === id);
+  const zone = layout.zones.find((z) => z.members.includes(id))?.rect;
+  const x1 = zone === undefined ? (p?.span.x1 ?? 0) : zone.x;
+  const x2 = zone === undefined ? (p?.span.x2 ?? 0) : zone.x + zone.width;
+  return { x1: x1 + 2, x2: x2 - 2, y1: zone?.y ?? 0, y2: layout.height };
+}
+
+// M1.2c (carry-over of the M1.2b verifier): on a phone the stopped plaque «чужой пароль» stuck
+// out of the bank zone over the «Подделка» frame, «остановлено» crossed the bank frame and
+// «пароль не подставлен» spanned three zones. At both ends of every step, in both modes, the
+// plaque or token and its word stay in the zone of the participant they stand at, off every
+// text and off the icons of the others; nothing is shrunk below 85% or 11 px.
+describe('the message at rest fits its zone (M1.2c)', () => {
+  for (const [name, input, steps] of [
+    ['B1', B1, B1_STEPS],
+    ['I1', I1, I1_STEPS],
+  ] as const) {
+    for (const width of [356, 364, 390, 760, 926]) {
+      it(`${name} at ${String(width)} px`, () => {
+        const layout = layoutScene({ ...input, width });
+        const texts = [
+          ...layout.participants.flatMap((p) => [
+            { what: `${p.id} name`, box: p.name.box },
+            ...(p.note === null ? [] : [{ what: `${p.id} note`, box: p.note.box }]),
+          ]),
+          ...layout.zones.map((z) => ({ what: `${z.id} label`, box: z.label.box })),
+        ];
+        for (const s of steps) {
+          for (const [t, at] of [
+            [0, s.from],
+            [TRAVEL_MS, s.to],
+          ] as const) {
+            const m = layoutMessage(layout, s, t, false);
+            if (m === null) throw new Error(`no message for ${s.id}`);
+            const where = `${s.id} at ${at}, ${String(width)} px`;
+            const icons = layout.participants
+              .filter((p) => p.id !== s.from && p.id !== s.to)
+              .map((p) => ({ what: `${p.id} icon`, box: p.icon }));
+            for (const [part, box] of [
+              ['body', m.body],
+              ['word', m.wordBox],
+            ] as const) {
+              expect(inside(box, room(layout, at)), `${where}: ${part} in its zone`).toBe(true);
+              for (const other of [...texts, ...icons]) {
+                expect(overlap(box, other.box), `${where}: ${part} × ${other.what}`).toBe(false);
+              }
+            }
+            expect(overlap(m.body, m.wordBox), `${where}: body × word`).toBe(false);
+            const natural = Array.from(m.word).length * (MESSAGE_FONT_SIZE * 0.6 + 0.5);
+            expect(m.wordBox.width).toBeGreaterThanOrEqual(natural * MIN_SQUEEZE - 1e-6);
+            for (const line of m.plaque?.lines ?? []) {
+              const full = Array.from(line.text).length * MESSAGE_FONT_SIZE * 0.6;
+              expect(line.fit ?? full).toBeGreaterThanOrEqual(full * MIN_SQUEEZE - 1e-6);
+            }
+            expect(m.plaque?.lines.length ?? 1).toBeLessThanOrEqual(2);
+          }
+        }
+      });
+    }
+  }
+
+  it('keeps the whole words of the I1 stopped plaques on a phone, in two lines', () => {
+    // A real phone: 390 px less the page padding (12 px on a phone, M1.2c) and border.
+    const phone = layoutScene({ ...I1, width: 364 });
+    const leak = layoutMessage(phone, I1_STEPS[6] ?? step({ id: 'x' }), TRAVEL_MS, false);
+    expect(leak?.plaque?.lines.map((l) => l.text)).toEqual(['чужой', 'пароль']);
+    expect(leak?.plaque?.cut).toBe(false);
+    const autofill = layoutMessage(phone, I1_STEPS[5] ?? step({ id: 'x' }), 0, false);
+    expect(autofill?.plaque?.lines.map((l) => l.text)).toEqual(['пароль не', 'подставлен']);
+    expect(autofill?.word).toBe('остановлено');
+    // On a wide scene the same plaque is one line, as before.
+    const wide = layoutScene({ ...I1, width: 926 });
+    expect(
+      layoutMessage(wide, I1_STEPS[6] ?? step({ id: 'x' }), TRAVEL_MS, false)?.plaque?.lines,
+    ).toHaveLength(1);
+  });
+
+  it('starts the trail where the message starts, also when that is off the column centre', () => {
+    for (const width of [356, 926]) {
+      const layout = layoutScene({ ...B1, width });
+      const param = B1_STEPS[5] ?? step({ id: 'x' });
+      const start = layoutMessage(layout, param, 1, false);
+      const later = layoutMessage(layout, param, TRAVEL_MS, false);
+      expect(start?.trail?.x1).toBeCloseTo(layoutMessage(layout, param, 0, false)?.x ?? NaN, 1);
+      expect(later?.trail?.x1).toBe(start?.trail?.x1);
+      expect(later?.trail?.x2).toBe(later?.x);
+    }
   });
 });

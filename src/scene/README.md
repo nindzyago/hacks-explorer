@@ -25,12 +25,15 @@
   урок с неизвестной иконкой (`scripts/content.test.mjs`).
 - Время: сцена подписана на часы плеера и знает только их время. Положение сообщения — чистая
   функция `layoutMessage(раскладка, шаг, время часов − startedMs, reducedMotion)`: один и тот же
-  момент часов даёт один и тот же кадр, без CSS-анимаций и `requestAnimationFrame`. На сайте
+  момент часов даёт один и тот же кадр, без CSS-анимаций и `requestAnimationFrame` (CSS-анимации,
+  переходы, SMIL и переходы Svelte в `src/` запрещает gate, правило `no-css-animation`, M1.2c). На сайте
   часы идут от реального времени (`src/time`); первая ручная команда часов их останавливает.
 - `prefers-reduced-motion: reduce` (`MediaQuery` из `svelte/reactivity`) — сообщение сразу у
   цели (S11); меняется на лету.
-- Сообщение: кольцо вокруг получателя, след за сообщением (толщина 3), плашка или жетон с
-  тенью, знак (контур, не символ шрифта) и слово вида над сообщением. Цвета вида —
+- Сообщение: кольцо вокруг получателя (линия 2 px, `RING_STROKE`, не задевает ни текст, ни
+  рамку зоны — M1.2c), след за сообщением (толщина 3), плашка (одна строка или компактная в
+  две, M1.2c) или жетон с тенью, знак (контур, не символ шрифта) и слово вида над сообщением.
+  На покое всё это остаётся в зоне участника, у которого стоит сообщение. Цвета вида —
   `--scene-message-attack | safe | legit`; белый текст плашки держит 4,5:1 на каждом.
 - Доступность: `<svg role="img">` с заголовком «Схема урока «…»» и описанием
   (`data-testid="scene-description"`): участники слева направо и состав зон. Под схемой —
@@ -38,9 +41,9 @@
   «Шаг 3 из 5. Сервер склеивает запрос: Веб-сервер → База данных, вредное сообщение «SELECT ...».»
 - Строки одной подписи разделены пробелом между `<tspan>`: текст читается словами.
 - `data-testid`: `scene` (с `data-lesson`), `participant-<id>`, `zone-<id>` (с `data-members`),
-  `scene-description`, `scene-step`, `icon-placeholder`, `message` (`data-step`, `data-kind`,
+  `scene-description`, `scene-step`, `icon-placeholder`, `message` (`data-step`, `data-from`, `data-to`, `data-kind`,
   `data-stopped`, `data-arrived`, `data-progress` до тысячных), `message-ring`,
-  `message-trail`, `message-plaque`, `message-label`, `message-token` (`data-icon`),
+  `message-trail`, `message-plaque` (`data-lines`), `message-label`, `message-token` (`data-icon`),
   `message-sign` (`data-sign`: `attack | safe | stopped | right | left | here`),
   `message-word`. Части участников и зон помечены `data-part` (`icon`, `name`, `note`, `frame`,
   `label`) — по ним e2e проверяет, что ничего не выходит за сцену, не накладывается и не
