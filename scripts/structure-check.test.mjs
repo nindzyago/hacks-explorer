@@ -54,6 +54,32 @@ describe('checkFiles', () => {
     ]);
   });
 
+  it('accepts Markdown lessons with source links and images in content (M1.1a)', () => {
+    const lesson =
+      '## Источники\n\n- [CWE-89](https://cwe.mitre.org/data/definitions/89.html)\n\n' +
+      'Текст со ссылкой [OWASP](https://owasp.org) — дело проверки уроков, не этой.';
+    const problems = checkFiles([
+      file('content/lessons/B1/ru.md', lesson),
+      file('content/sources.md', '- `owasp.org` OWASP'),
+      file('content/icons/server.jpg', ''),
+      file('content/icons/db.png', ''),
+      file('content/icons/user.webp', ''),
+    ]);
+    expect(problems).toEqual([]);
+  });
+
+  it.each([
+    'content/lessons/B1/lesson.yaml',
+    'content/lessons/B1/page.html',
+    'content/icons/x.svg',
+    'content/run.sh',
+    'content/lessons/B1/ru.md.js',
+  ])('rejects %s in content: Markdown and images only', (path) => {
+    expect(checkFiles([file(path, '')])).toEqual([
+      expect.objectContaining({ rule: 'content-is-data', path }),
+    ]);
+  });
+
   it('rejects requests to other servers in site code (L6)', () => {
     const problems = checkFiles([
       file('index.html', '<link href="https://fonts.example.com/a.css" rel="stylesheet">'),
@@ -61,6 +87,16 @@ describe('checkFiles', () => {
     ]);
     expect(problems).toEqual([
       expect.objectContaining({ rule: 'no-external-urls', path: 'index.html', line: 1 }),
+    ]);
+  });
+
+  it('lets test files quote links as data, but not the code next to them', () => {
+    const problems = checkFiles([
+      file('src/core/lesson/lesson.test.ts', "const url = 'https://owasp.org';"),
+      file('src/core/lesson/parse.ts', "const url = 'https://owasp.org';"),
+    ]);
+    expect(problems).toEqual([
+      expect.objectContaining({ rule: 'no-external-urls', path: 'src/core/lesson/parse.ts' }),
     ]);
   });
 

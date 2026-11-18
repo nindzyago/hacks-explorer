@@ -20,7 +20,8 @@
     "test": "vitest run",
     "structure": "node scripts/structure-check.mjs",
     "e2e": "npm run build && npm run build:e2e && playwright test",
-    "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run e2e"
+    "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run e2e",
+    "content": "vitest run scripts/content.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -30,6 +31,7 @@
     "eslint": "^10.15.0",
     "eslint-plugin-svelte": "^3.24.1",
     "globals": "^17.14.0",
+    "mdast-util-from-markdown": "^2.1.0",
     "prettier": "^3.10.1",
     "prettier-plugin-svelte": "^4.1.1",
     "svelte": "^5.57.3",
