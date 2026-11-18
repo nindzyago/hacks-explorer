@@ -1,33 +1,91 @@
 <script lang="ts">
   // The lesson scene (design M1.2 E1): an SVG drawn from the lesson data and the layout of
-  // src/core/scene-layout. Still in M1.2a; the message and its movement come in M1.2b.
-  // Geometry is in SVG attributes, colours and fonts in classes from tokens (CSP has no
-  // 'unsafe-inline' for styles, so no style= anywhere).
+  // src/core/scene-layout. The message of the current step stands where the player clock says
+  // (E2): its place is a pure function of the clock time since the step started, so the same
+  // moment gives the same frame. Geometry is in SVG attributes, colours and fonts in classes
+  // from tokens (CSP has no 'unsafe-inline' for styles, so no style= anywhere).
+  import { MediaQuery, SvelteSet } from 'svelte/reactivity';
+  import type { Clock } from '../core/clock';
   import type { SiteLesson } from '../core/lesson/site';
-  import { describeScene, sceneTitle } from '../core/scene-layout/describe';
+  import type { SceneState } from '../core/state';
+  import { describeScene, describeStep, sceneTitle } from '../core/scene-layout/describe';
   import { layoutScene, type TextBlock } from '../core/scene-layout/layout';
+  import { currentStep, layoutMessage, type MessageSign } from '../core/scene-layout/message';
   import { iconUrl } from './icons';
 
-  const { lesson }: { lesson: SiteLesson } = $props();
+  const {
+    lesson,
+    scene,
+    clock,
+  }: { lesson: SiteLesson; scene: SceneState; clock: Pick<Clock, 'now' | 'subscribe'> } = $props();
   const uid = $props.id();
 
   /** The width the scene is drawn for; follows the width of its box. */
   let width = $state(760);
+  /** Time of the player clock: the only time the scene knows. */
+  let timeMs = $state(0);
+  $effect(() => {
+    timeMs = clock.now();
+    return clock.subscribe((event) => {
+      timeMs = event.timeMs;
+    });
+  });
+  // S11: with reduced motion the message is at its target at once.
+  const reduced = new MediaQuery('prefers-reduced-motion: reduce', false);
+  /** Participants whose icon file failed to load: they get the placeholder too. */
+  const failed = new SvelteSet<string>();
+
   const input = $derived({ participants: lesson.participants, zones: lesson.zones });
   const layout = $derived(layoutScene({ ...input, width }));
   const icons = $derived(new Map(lesson.participants.map((p) => [p.id, iconUrl(p.icon)])));
   const title = $derived(sceneTitle(lesson.title));
   const description = $derived(describeScene(input));
+  const current = $derived(currentStep(lesson.steps, scene.defence, scene.step));
+  const stepText = $derived(describeStep(lesson.participants, current));
+  const message = $derived(
+    current === null
+      ? null
+      : layoutMessage(layout, current.step, timeMs - scene.startedMs, reduced.current),
+  );
+  const tokenIcon = $derived(message?.token?.icon ?? null);
+  // A token whose icon is unknown or failed to load shows only its paper and ring.
+  const tokenUrl = $derived(
+    tokenIcon === null || failed.has(`token:${tokenIcon}`) ? null : iconUrl(tokenIcon),
+  );
   const round = (n: number) => Math.round(n * 10) / 10;
+
+  /** The sign that doubles the colour, drawn as a path (no font has to have the glyph). */
+  const SIGNS: Readonly<Record<MessageSign, string>> = {
+    attack: 'M0 -4.5 V0.8 M0 3.6 V3.7',
+    safe: 'M-4 0.2 L-1.2 3 L4 -2.8',
+    right: 'M-4 0 H4 M1 -3 L4 0 L1 3',
+    left: 'M4 0 H-4 M-1 -3 L-4 0 L-1 3',
+    here: 'M0 0 V0.1',
+    stopped: 'M0 -5.5 L4.5 -3.6 V0 C4.5 2.8 2.6 4.7 0 5.7 C-2.6 4.7 -4.5 2.8 -4.5 0 V-3.6 Z',
+  };
 </script>
 
 {#snippet lines(block: TextBlock)}
-  {#each block.lines as line, i (i)}
-    <tspan x={round(block.x)} y={round(line.y)}>{line.text}</tspan>
-  {/each}
+  <!-- A space between lines, so the text reads as words (textContent, screen readers). -->
+  {#each block.lines as line, i (i)}{i > 0 ? ' ' : ''}<tspan
+      x={round(block.x)}
+      y={round(line.y)}
+      textLength={line.fit === null ? undefined : round(line.fit)}
+      lengthAdjust={line.fit === null ? undefined : 'spacingAndGlyphs'}>{line.text}</tspan
+    >{/each}
 {/snippet}
 
-<figure class="scene" data-testid="scene" bind:clientWidth={width}>
+{#snippet sign(kind: MessageSign, testid: string)}
+  <path
+    class="sign"
+    class:shield={kind === 'stopped'}
+    data-testid={testid}
+    data-sign={kind}
+    d={SIGNS[kind]}
+  />
+{/snippet}
+
+<figure class="scene" data-testid="scene" data-lesson={lesson.id} bind:clientWidth={width}>
   <svg
     viewBox="0 0 {round(layout.width)} {round(layout.height)}"
     role="img"
@@ -35,10 +93,18 @@
   >
     <title id="{uid}-title">{title}</title>
     <desc id="{uid}-desc" data-testid="scene-description">{description}</desc>
+    <defs>
+      <clipPath id="{uid}-token"><circle r="21" /></clipPath>
+    </defs>
     <rect class="paper" width={round(layout.width)} height={round(layout.height)} />
 
     {#each layout.zones as zone (zone.id)}
-      <g class="zone" class:danger={zone.danger} data-testid="zone-{zone.id}">
+      <g
+        class="zone"
+        class:danger={zone.danger}
+        data-testid="zone-{zone.id}"
+        data-members={zone.members.join(' ')}
+      >
         <rect
           class="frame"
           data-part="frame"
@@ -65,7 +131,7 @@
     {/if}
 
     {#each layout.participants as p (p.id)}
-      {@const url = icons.get(p.id) ?? null}
+      {@const url = failed.has(p.id) ? null : (icons.get(p.id) ?? null)}
       <g class="participant" data-testid="participant-{p.id}">
         <line
           class="lane"
@@ -83,6 +149,7 @@
             width={round(p.icon.width)}
             height={round(p.icon.height)}
             preserveAspectRatio="xMidYMid meet"
+            onerror={() => failed.add(p.id)}
           />
         {:else}
           <g data-testid="icon-placeholder" data-part="icon">
@@ -113,7 +180,95 @@
         {/if}
       </g>
     {/each}
+
+    {#if message !== null && current !== null}
+      <g
+        class="message {message.kind}"
+        data-testid="message"
+        data-step={current.step.id}
+        data-kind={message.kind}
+        data-stopped={message.stopped}
+        data-arrived={message.arrived}
+        data-progress={Math.round(message.progress * 1000) / 1000}
+      >
+        <rect
+          class="ring"
+          data-testid="message-ring"
+          x={round(message.ring.x)}
+          y={round(message.ring.y)}
+          width={round(message.ring.width)}
+          height={round(message.ring.height)}
+          rx="12"
+        />
+        {#if message.trail !== null}
+          <line
+            class="trail"
+            data-testid="message-trail"
+            x1={round(message.trail.x1)}
+            y1={round(message.trail.y)}
+            x2={round(message.trail.x2)}
+            y2={round(message.trail.y)}
+          />
+        {/if}
+        <g transform="translate({round(message.x)} {round(message.y)})">
+          <text
+            class="word"
+            data-testid="message-word"
+            y={round(message.wordY - message.y)}
+            text-anchor="middle"
+            font-size="11">{message.word}</text
+          >
+          {#if message.plaque !== null}
+            {@const w = message.plaque.width}
+            <g data-testid="message-plaque">
+              <rect
+                class="shadow"
+                x={round(-w / 2 + 3)}
+                y="-9"
+                width={round(w)}
+                height="24"
+                rx="5"
+              />
+              <rect class="plaque" x={round(-w / 2)} y="-12" width={round(w)} height="24" rx="5" />
+              <g transform="translate({round(-w / 2 + 15)} 0)">
+                {@render sign(message.sign, 'message-sign')}
+              </g>
+              <text
+                class="label"
+                data-testid="message-label"
+                x={round(-w / 2 + 25)}
+                y="4"
+                font-size="11">{message.plaque.text}</text
+              >
+            </g>
+          {:else if message.token !== null}
+            <g data-testid="message-token" data-icon={message.token.icon}>
+              <circle class="shadow" cx="2" cy="2" r="21" />
+              <g clip-path="url(#{uid}-token)">
+                <rect class="token-paper" x="-22" y="-22" width="44" height="44" />
+                {#if tokenUrl !== null}
+                  <image
+                    href={tokenUrl}
+                    x="-24"
+                    y="-22"
+                    width="48"
+                    height="43"
+                    onerror={() => failed.add(`token:${tokenIcon ?? ''}`)}
+                  />
+                {/if}
+              </g>
+              <circle class="token-ring" r="21" />
+              <circle class="badge" cx="16" cy="-15" r="8" />
+              <g transform="translate(16 -15)">
+                {@render sign(message.sign, 'message-sign')}
+              </g>
+            </g>
+          {/if}
+        </g>
+      </g>
+    {/if}
   </svg>
+  <figcaption class="step" data-testid="scene-step" aria-live="polite">{stepText}</figcaption>
 </figure>
 
 <style>
@@ -130,6 +285,16 @@
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  .step {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-top: var(--line-width) solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-size: var(--text-sm);
+    line-height: var(--leading);
   }
 
   .paper {
@@ -186,5 +351,77 @@
     fill: var(--scene-ink);
     font-family: var(--font-sans);
     font-weight: 700;
+  }
+
+  /* The message: one colour per kind, always with a sign and a word (E8). */
+  .message {
+    --kind: var(--scene-message-legit);
+  }
+
+  .message.attack {
+    --kind: var(--scene-message-attack);
+  }
+
+  .message.safe {
+    --kind: var(--scene-message-safe);
+  }
+
+  .ring {
+    fill: none;
+    stroke: var(--kind);
+    stroke-width: 3;
+    opacity: 0.9;
+  }
+
+  .trail {
+    stroke: var(--kind);
+    stroke-width: 3;
+    stroke-linecap: round;
+  }
+
+  .shadow {
+    fill: var(--scene-ink);
+    opacity: 0.3;
+  }
+
+  .plaque,
+  .badge {
+    fill: var(--kind);
+  }
+
+  .label {
+    fill: var(--scene-message-text);
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  .word {
+    fill: var(--kind);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .sign {
+    fill: none;
+    stroke: var(--scene-message-text);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .sign.shield {
+    fill: var(--scene-message-text);
+    stroke: none;
+  }
+
+  .token-paper {
+    fill: var(--scene-paper);
+  }
+
+  .token-ring {
+    fill: none;
+    stroke: var(--kind);
+    stroke-width: 3;
   }
 </style>

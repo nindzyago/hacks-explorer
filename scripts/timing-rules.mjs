@@ -4,8 +4,10 @@
 // real-time driver. Used by eslint.config.js; tested by scripts/timing-lint.test.mjs.
 // What these rules cannot see is listed in src/time/README.md.
 
-/** The only site file these rules do not apply to. */
+/** The site files these rules do not apply to: the driver and the loading timer. */
 export const REAL_TIME_DRIVER = 'src/time/real-time-driver.ts';
+/** The loading timeout of lesson data (M1.2b): a network deadline, not animation time. */
+export const LOAD_TIMER = 'src/time/load-timer.ts';
 
 const WHY =
   'Site code runs from the player clock (src/core/clock.ts), so that a scenario repeats ' +
@@ -73,7 +75,7 @@ const timingRules = {
 export const timingConfig = {
   files: ['src/**/*.ts', 'src/**/*.js', 'src/**/*.mjs', 'src/**/*.cjs', 'src/**/*.svelte'],
   // Tests are not site code: they may build a Date as hostile input.
-  ignores: [REAL_TIME_DRIVER, 'src/**/*.test.*'],
+  ignores: [REAL_TIME_DRIVER, LOAD_TIMER, 'src/**/*.test.*'],
   // An exception is made here, in the config, where a reviewer sees it — not by a comment.
   linterOptions: { noInlineConfig: true },
   rules: timingRules,

@@ -28,11 +28,20 @@ driver.running; // boolean
 - Когда часы дошли до своего предела (24 часа), драйвер останавливается сам.
 - Подписчик часов может остановить драйвер изнутри шага.
 
+## Срок загрузки урока (`load-timer.ts`, M1.2b)
+
+`withDeadline(работа, мс, приТаймауте)` — результат работы или `приТаймауте()`, если работа не
+кончилась за `мс`; таймер снимается, когда работа кончилась раньше. `App.svelte` ждёт урок
+`LOAD_TIMEOUT_MS` = 15 с и показывает «Урок загружается слишком долго» с кнопкой «Попробовать
+снова». Это сетевой срок по стенным часам, а не время анимации, поэтому файлу разрешён
+`setTimeout` (второе исключение в `scripts/timing-rules.mjs`); на сцену он не влияет.
+
 ## Запрет в остальном коде
 
 Правила ESLint лежат в `scripts/timing-rules.mjs`, тест — `scripts/timing-lint.test.mjs`.
 Действуют на весь код сайта: `src/**` с расширениями `.ts`, `.js`, `.mjs`, `.cjs`, `.svelte`
-(значит, и `.svelte.ts`, `.svelte.js`), кроме файла драйвера и тестов `*.test.*`. Запрещено:
+(значит, и `.svelte.ts`, `.svelte.js`), кроме файла драйвера, `load-timer.ts` и тестов
+`*.test.*`. Запрещено:
 
 - `Date`, `performance`, `setTimeout`, `setInterval`, `setImmediate`, `requestAnimationFrame`,
   `cancelAnimationFrame`, `requestIdleCallback`, `Animation`, `KeyframeEffect`,

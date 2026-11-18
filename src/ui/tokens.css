@@ -27,6 +27,15 @@
   --scene-attack-text: #b5361f;
   --scene-safe: var(--defence);
   --scene-legit: var(--legit);
+  /*
+   * Messages (M1.2b): the plaque, its trail, the ring around the receiver and the word above.
+   * Darker than the interface palette so that white 11 px text on a plaque and the word on the
+   * scene paper both keep 4.5:1. Red stays with attack only (E7).
+   */
+  --scene-message-attack: var(--scene-attack-text);
+  --scene-message-safe: #087a6a;
+  --scene-message-legit: var(--legit);
+  --scene-message-text: #ffffff;
   /* A participant without an icon of its own (unknown icon name). */
   --scene-placeholder: #dde3e9;
 

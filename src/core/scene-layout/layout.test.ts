@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   layoutScene,
   MIN_FONT_SIZE,
+  MIN_SQUEEZE,
   MIN_WIDTH,
   MAX_WIDTH,
   type Rect,
@@ -95,6 +96,14 @@ function problems(layout: SceneLayout): string[] {
       const b = boxes[j];
       if (a === undefined || b === undefined) continue;
       if (overlap(a.box, b.box)) out.push(`${a.owner} ${a.what} overlaps ${b.owner} ${b.what}`);
+    }
+  }
+  // Frames (M1.2b): a participant's parts stay inside its own zone and out of every other.
+  for (const z of layout.zones) {
+    for (const b of participantBoxes(layout)) {
+      const member = z.members.includes(b.owner);
+      if (member && !inside(b.box, z.rect)) out.push(`${b.owner} ${b.what} leaves zone ${z.id}`);
+      if (!member && overlap(b.box, z.rect)) out.push(`${b.owner} ${b.what} is in zone ${z.id}`);
     }
   }
   for (let i = 0; i < layout.zones.length; i += 1) {
@@ -188,8 +197,59 @@ describe('layoutScene', () => {
     const layout = layoutScene({ ...I1, width: 390 });
     const fake = layout.participants.find((p) => p.id === 'fake');
     expect(fake?.name.lines.map((l) => l.text)).toEqual(['Поддельная', 'страница']);
-    expect(fake?.note?.lines.length).toBeGreaterThan(1);
-    expect(fake?.note?.lines.map((l) => l.text).join('')).toBe('bank-login.example');
+    // An address never breaks inside: far too long for the column, it loses its middle and
+    // keeps its zone (M1.2b).
+    expect(fake?.note?.lines.map((l) => l.text)).toEqual(['bank-l…example']);
+    expect(fake?.note?.cut).toBe(true);
+  });
+
+  it('draws a word a little too wide narrower instead of cutting it (M1.2b)', () => {
+    // A real phone: 390 px less the page padding and border.
+    const layout = layoutScene({ ...I1, width: 356 });
+    const attacker = layout.participants.find((p) => p.id === 'attacker');
+    const line = attacker?.note?.lines[0];
+    expect(line?.text).toBe('203.0.113.66');
+    expect(line?.fit).not.toBeNull();
+    const natural = 12 * 11 * 0.6;
+    expect(line?.fit ?? 0).toBeLessThan(natural);
+    expect(line?.fit ?? 0).toBeGreaterThanOrEqual(natural * MIN_SQUEEZE);
+    expect(attacker?.note?.cut).toBe(false);
+    expect(problems(layout)).toEqual([]);
+    // A line that fits is drawn as it is.
+    expect(layoutScene({ ...I1, width: 760 }).participants[0]?.note?.lines[0]?.fit).toBeNull();
+  });
+
+  it('breaks names and notes only between words, never inside an address (M1.2b)', () => {
+    for (const input of [B1, I1, SIX]) {
+      for (const width of [280, 390, 760]) {
+        for (const p of layoutScene({ ...input, width }).participants) {
+          const source = input.participants.find((x) => x.id === p.id);
+          for (const [block, text] of [
+            [p.name, source?.name ?? ''],
+            [p.note, source?.note ?? ''],
+          ] as const) {
+            if (block === null) continue;
+            const words = text.split(/\s+/);
+            for (const line of block.lines) {
+              for (const word of line.text.split(' ')) {
+                // Each word on a line is a whole word of the text, or one cut with «…».
+                if (!word.includes('…')) expect(words).toContain(word);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it('keeps the addresses of B1 and I1 whole on a phone (M1.2b)', () => {
+    for (const input of [B1, I1]) {
+      for (const p of layoutScene({ ...input, width: 356 }).participants) {
+        const note = input.participants.find((x) => x.id === p.id)?.note ?? '';
+        if (note === 'bank-login.example') continue;
+        expect(p.note?.lines.map((l) => l.text).join(' ')).toBe(note);
+      }
+    }
   });
 
   it('has no note block for an empty note', () => {

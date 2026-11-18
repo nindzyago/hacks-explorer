@@ -50,7 +50,11 @@ describe('createStore', () => {
 describe('initialState', () => {
   it('is frozen plain data that survives JSON', () => {
     const state = initialState();
-    expect(state).toEqual({ theme: 'light' });
+    expect(state).toEqual({
+      theme: 'light',
+      lesson: 'B1',
+      scene: { step: 1, defence: false, startedMs: 0 },
+    });
     expect(Object.isFrozen(state)).toBe(true);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);
     expect(initialState()).not.toBe(initialState());

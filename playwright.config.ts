@@ -20,6 +20,11 @@ const chromium = {
   ...devices['Desktop Chrome'],
   viewport: { width: 1280, height: 720 },
   deviceScaleFactor: 1,
+  // M1.2b: with partial raster Chromium re-draws only the changed part of a tile, so after a
+  // moving message the antialiasing at the edge of that part depends on the paint history and
+  // a byte-for-byte screenshot comparison flakes. Full re-raster makes a frame depend on the
+  // DOM alone.
+  launchOptions: { args: ['--disable-partial-raster'] },
 };
 
 export default defineConfig({

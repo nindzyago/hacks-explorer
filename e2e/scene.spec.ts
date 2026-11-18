@@ -21,6 +21,8 @@ interface Box {
   readonly width: number;
   readonly height: number;
   readonly fontSize: number;
+  /** For the parts of a zone: owners (`participant-<id>`) of its members. */
+  readonly members?: readonly string[];
 }
 
 /** The real boxes of everything drawn in the scene, as the browser lays them out. */
@@ -42,12 +44,44 @@ async function sceneBoxes(page: Page): Promise<{ scene: Box; boxes: Box[] }> {
     }
     for (const g of svg.querySelectorAll('[data-testid^="zone-"]')) {
       const owner = g.getAttribute('data-testid') ?? '';
+      const members = (g.getAttribute('data-members') ?? '')
+        .split(' ')
+        .filter((m) => m !== '')
+        .map((m) => `participant-${m}`);
       for (const el of g.querySelectorAll('[data-part]')) {
-        boxes.push(box(el, el.getAttribute('data-part') ?? '', owner));
+        boxes.push({ ...box(el, el.getAttribute('data-part') ?? '', owner), members });
       }
     }
     return { scene: box(svg, 'scene', 'scene'), boxes };
   });
+}
+
+/**
+ * Everything wrong with the boxes: a box outside the scene; two drawn things on top of each
+ * other; and, for zone frames (M1.2b), a frame over another zone, a member outside its frame or
+ * a stranger inside it.
+ */
+function layoutProblems(scene: Box, boxes: readonly Box[]): string[] {
+  const out = boxes.filter((b) => !inside(b, scene)).map((b) => `${b.owner} ${b.what} outside`);
+  const drawn = boxes.filter((b) => b.what !== 'frame');
+  for (let i = 0; i < drawn.length; i += 1) {
+    for (let j = i + 1; j < drawn.length; j += 1) {
+      const a = drawn[i];
+      const b = drawn[j];
+      if (a !== undefined && b !== undefined && overlap(a, b)) {
+        out.push(`${a.owner} ${a.what} × ${b.owner} ${b.what}`);
+      }
+    }
+  }
+  for (const frame of boxes.filter((b) => b.what === 'frame')) {
+    for (const b of boxes) {
+      if (b === frame) continue;
+      const own = b.owner === frame.owner || (frame.members ?? []).includes(b.owner);
+      if (own && !inside(b, frame)) out.push(`${b.owner} ${b.what} leaves ${frame.owner}`);
+      if (!own && overlap(b, frame)) out.push(`${b.owner} ${b.what} × ${frame.owner} frame`);
+    }
+  }
+  return out;
 }
 
 const inside = (a: Box, b: Box) =>
@@ -112,35 +146,73 @@ for (const viewport of VIEWPORTS) {
       page,
     }) => {
       await openApp(page);
-      await sceneReady(page);
-      const { scene, boxes } = await sceneBoxes(page);
-      expect(boxes.length).toBeGreaterThanOrEqual(3 * 3 + 2 * 2);
-      expect(scene.width).toBeLessThanOrEqual(viewport.width);
-      expect(boxes.filter((b) => !inside(b, scene)).map((b) => `${b.owner} ${b.what}`)).toEqual([]);
-      const clashes: string[] = [];
-      const drawn = boxes.filter((b) => b.what !== 'frame');
-      for (let i = 0; i < drawn.length; i += 1) {
-        for (let j = i + 1; j < drawn.length; j += 1) {
-          const a = drawn[i];
-          const b = drawn[j];
-          if (a !== undefined && b !== undefined && overlap(a, b)) {
-            clashes.push(`${a.owner} ${a.what} × ${b.owner} ${b.what}`);
-          }
-        }
+      for (const lesson of [
+        { id: 'B1', parts: 3 * 3 + 2 * 2 },
+        { id: 'I1', parts: 4 * 3 + 4 * 2 },
+      ]) {
+        await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson.id);
+        await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson.id);
+        await sceneReady(page);
+        const { scene, boxes } = await sceneBoxes(page);
+        expect(boxes.length).toBeGreaterThanOrEqual(lesson.parts);
+        expect(scene.width).toBeLessThanOrEqual(viewport.width);
+        expect(layoutProblems(scene, boxes), lesson.id).toEqual([]);
+        const texts = boxes.filter((b) => b.what !== 'icon' && b.what !== 'frame');
+        expect(Math.min(...texts.map((b) => b.fontSize))).toBeGreaterThanOrEqual(11);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        ).toBe(true);
       }
-      expect(clashes).toEqual([]);
-      const texts = boxes.filter((b) => b.what !== 'icon' && b.what !== 'frame');
-      expect(Math.min(...texts.map((b) => b.fontSize))).toBeGreaterThanOrEqual(11);
-      expect(
-        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-      ).toBe(true);
+    });
+
+    test('the overlap check sees a zone frame moved onto another zone (M1.2b)', async ({
+      page,
+    }) => {
+      await openApp(page);
+      await sceneReady(page);
+      const before = await sceneBoxes(page);
+      expect(layoutProblems(before.scene, before.boxes)).toEqual([]);
+      // Move the frame of the internet zone to the right, onto the site zone.
+      await page.evaluate(() => {
+        const frame = document.querySelector('[data-testid="zone-internet"] [data-part="frame"]');
+        const x = Number(frame?.getAttribute('x'));
+        const width = Number(frame?.getAttribute('width'));
+        frame?.setAttribute('x', String(x + width * 1.5));
+      });
+      const after = await sceneBoxes(page);
+      const found = layoutProblems(after.scene, after.boxes);
+      expect(found).toContain('zone-internet frame × zone-site frame');
+      expect(found.some((p) => p.startsWith('participant-attacker') && p.includes('leaves'))).toBe(
+        true,
+      );
+    });
+
+    test('addresses and names do not break inside a word (M1.2b)', async ({ page }) => {
+      await openApp(page);
+      await page.evaluate(() => window.__app?.commands.run('lesson.open', { id: 'I1' }));
+      await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'I1');
+      const notes = await page
+        .locator('[data-testid^="participant-"] [data-part="note"]')
+        .allTextContents();
+      const names = await page
+        .locator('[data-testid^="participant-"] [data-part="name"]')
+        .allTextContents();
+      const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
+      expect(notes.map(squash)).toEqual([
+        '203.0.113.66',
+        '192.0.2.24',
+        viewport.width < 500 ? 'bank-…example' : 'bank-login.example',
+        'bank.example',
+      ]);
+      // Lines of one label are separate words: a space between them, never a word cut in two.
+      expect(names.map(squash)).toEqual(['Атакующий', 'Сотрудник', 'Поддельная страница', 'Банк']);
     });
 
     test('the screenshot is the same byte for byte after a reload', async ({ page }, testInfo) => {
       const shoot = async () => {
         await openApp(page);
         await page.evaluate(() => window.__app?.clock.set(0));
-        await expect(page.getByTestId('clock-readout')).toHaveText('Часы плеера: 0 мс');
+        await expect(page.getByTestId('message')).toHaveAttribute('data-progress', '0');
         await sceneReady(page);
         return {
           page: await page.screenshot(SHOT),
@@ -198,10 +270,80 @@ test('broken lesson data is a message with a way out, not an empty page', async 
     route.fulfill({ status: 200, contentType: 'application/json', body: '{"format": 1, "les' }),
   );
   await page.goto('/');
-  await expect(page.getByTestId('lesson-error')).toContainText('Не удалось открыть урок');
+  const error = page.getByTestId('lesson-error');
+  await expect(error).toContainText('Не удалось открыть урок');
+  // Russian for the reader (M1.2b); the loader's code stays on the element for tests.
+  await expect(error).toHaveAttribute('data-code', 'bad-data');
+  await expect(page.getByTestId('lesson-error-text')).toHaveText(
+    'Файл урока повреждён или устарел. Попробуйте снова; если не поможет — обновите страницу.',
+  );
+  expect(await error.innerText()).not.toMatch(/[A-Za-z]{3,}/);
   await expect(page.getByTestId('lesson-error-home')).toHaveAttribute('href', '/');
   await expect(page.getByTestId('scene')).toHaveCount(0);
+  // The data is fixed (a new deploy): «Попробовать снова» opens the lesson without a reload.
+  await page.unroute('**/data/catalog.json');
+  await page.getByRole('button', { name: 'Попробовать снова' }).click();
+  await expect(page.getByTestId('scene')).toBeVisible();
+  await expect(page.getByTestId('lesson-error')).toHaveCount(0);
 });
+
+test('a lesson that never arrives becomes a message with a retry after 15 s (M1.2b)', async ({
+  page,
+}) => {
+  await page.clock.install();
+  let release: () => void = () => undefined;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/data/catalog.json', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto('/');
+  await expect(page.getByTestId('lesson-loading')).toBeVisible();
+  await page.clock.runFor(10_000);
+  await expect(page.getByTestId('lesson-loading')).toBeVisible();
+  await page.clock.runFor(6_000);
+  await expect(page.getByTestId('lesson-error')).toHaveAttribute('data-code', 'timeout');
+  await expect(page.getByTestId('lesson-error-text')).toHaveText(
+    'Урок загружается слишком долго. Проверьте подключение и попробуйте снова.',
+  );
+  release();
+  await page.getByRole('button', { name: 'Попробовать снова' }).click();
+  await expect(page.getByTestId('scene')).toBeVisible();
+});
+
+test('an unknown lesson is a Russian message, not an empty page (M1.2b)', async ({ page }) => {
+  await openApp(page);
+  await page.evaluate(() => window.__app?.commands.run('lesson.open', { id: 'Z9' }));
+  await expect(page.getByTestId('lesson-error')).toHaveAttribute('data-code', 'not-found');
+  await expect(page.getByTestId('lesson-error-text')).toHaveText(
+    'Такого урока нет или он ещё не переведён на этот язык.',
+  );
+});
+
+test('an icon that fails to download gets the placeholder too (M1.2b)', async ({ page }) => {
+  const icon = await iconPath(page, 'attacker');
+  await page.route(`**${icon}`, (route) =>
+    route.fulfill({ status: 200, contentType: 'image/webp', body: 'not an image' }),
+  );
+  await page.goto('/');
+  const attacker = page.getByTestId('participant-attacker');
+  await expect(attacker.getByTestId('icon-placeholder')).toBeVisible();
+  await expect(attacker.locator('image')).toHaveCount(0);
+  await expect(page.getByTestId('participant-server').locator('image')).toHaveCount(1);
+});
+
+/** The path of a participant's icon in the build, read from a fresh page. */
+async function iconPath(page: Page, participant: string): Promise<string> {
+  await openApp(page);
+  const href = await page
+    .getByTestId(`participant-${participant}`)
+    .locator('image')
+    .getAttribute('href');
+  if (href === null) throw new Error('no icon');
+  return href;
+}
 
 test('while the lesson loads the page says so', async ({ page }) => {
   let release: () => void = () => undefined;

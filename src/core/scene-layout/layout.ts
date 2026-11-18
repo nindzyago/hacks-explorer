@@ -19,6 +19,11 @@ export interface TextLine {
   readonly text: string;
   /** Baseline. */
   readonly y: number;
+  /**
+   * A word a little too wide for the line is drawn narrower to this width (SVG `textLength`)
+   * instead of breaking inside it (M1.2b); null when the line fits as it is.
+   */
+  readonly fit: number | null;
 }
 
 export interface TextBlock {
@@ -47,6 +52,8 @@ export interface ParticipantLayout {
 export interface ZoneLayout {
   readonly id: string;
   readonly danger: boolean;
+  /** The members the scene has, in lesson order. */
+  readonly members: readonly string[];
   readonly rect: Rect;
   readonly label: TextBlock;
 }
@@ -94,6 +101,8 @@ const ZONE_LABEL_LINE = 14;
 const NOTE_SIZE = 11;
 const NOTE_LINE = 14;
 const MAX_LINES = 3;
+/** A long word may be drawn down to 85% of its width rather than cut (M1.2b). */
+export const MIN_SQUEEZE = 0.85;
 
 function clampWidth(width: number): number {
   if (Number.isNaN(width)) return MIN_WIDTH;
@@ -113,19 +122,24 @@ function textWidth(text: string, fontSize: number, spacing = 0): number {
 }
 
 /**
- * Pieces of text that may end a line: a break after a space (the space is dropped), and after
- * `.`, `-`, `/`, `:`, `@`, `·`, `_` (they stay). A piece wider than the line is cut by characters.
+ * A word wider than the line, shortened with «…» (M1.2b: a word never breaks inside). An
+ * address (`bank-login.example`, `203.0.113.66`) keeps its end after the first dot, where the
+ * zone is, and loses its middle; any other word keeps its start.
  */
-function pieces(text: string): string[] {
-  const out: string[] = [];
-  for (const word of text.split(/\s+/).filter((w) => w !== '')) {
-    const parts = word.match(/[^./:@·_-]*[./:@·_-]+|[^./:@·_-]+$/g) ?? [word];
-    parts.forEach((part, i) => out.push(i === parts.length - 1 ? `${part} ` : part));
+function shorten(word: string[], maxChars: number): string {
+  if (maxChars <= 1) return '…';
+  const dot = word.indexOf('.');
+  const tail = dot > 0 ? word.slice(dot + 1) : [];
+  if (tail.length > 0 && tail.length <= maxChars - 2) {
+    return `${word.slice(0, maxChars - 1 - tail.length).join('')}…${tail.join('')}`;
   }
-  return out;
+  return `${word.slice(0, maxChars - 1).join('')}…`;
 }
 
-/** Greedy line breaking; at most `MAX_LINES`, the last cut with «…» when the text is longer. */
+/**
+ * Greedy line breaking at spaces only; at most `MAX_LINES`, the last cut with «…» when the text
+ * is longer. A word longer than a line gets a line of its own, shortened with «…».
+ */
 function wrap(
   text: string,
   maxWidth: number,
@@ -134,27 +148,32 @@ function wrap(
 ): { lines: string[]; cut: boolean } {
   const perChar = fontSize * CHAR_EM + spacing;
   const maxChars = Math.max(1, Math.floor(maxWidth / perChar));
+  // A word alone on its line may be drawn narrower, down to MIN_SQUEEZE of its width.
+  const squeezedChars = Math.max(maxChars, Math.floor(maxWidth / (perChar * MIN_SQUEEZE)));
   const lines: string[] = [];
   let line = '';
+  let shortened = false;
   const push = () => {
-    if (line.trim() !== '') lines.push(line.trimEnd());
+    if (line !== '') lines.push(line);
     line = '';
   };
-  for (const piece of pieces(text)) {
-    if (chars(`${line}${piece}`.trimEnd()).length <= maxChars) {
-      line += piece;
+  for (const word of text.split(/\s+/).filter((w) => w !== '')) {
+    const joined = line === '' ? word : `${line} ${word}`;
+    if (chars(joined).length <= maxChars) {
+      line = joined;
       continue;
     }
     push();
-    let rest = chars(piece.trimEnd());
-    while (rest.length > maxChars) {
-      lines.push(rest.slice(0, maxChars).join(''));
-      rest = rest.slice(maxChars);
+    const letters = chars(word);
+    if (letters.length <= maxChars) line = word;
+    else if (letters.length <= squeezedChars) lines.push(word);
+    else {
+      lines.push(shorten(letters, squeezedChars));
+      shortened = true;
     }
-    line = rest.join('') + (piece.endsWith(' ') ? ' ' : '');
   }
   push();
-  if (lines.length <= MAX_LINES) return { lines, cut: false };
+  if (lines.length <= MAX_LINES) return { lines, cut: shortened };
   const kept = lines.slice(0, MAX_LINES);
   const last = chars(kept[MAX_LINES - 1] ?? '');
   kept[MAX_LINES - 1] = `${last.slice(0, Math.max(0, maxChars - 1)).join('')}…`;
@@ -186,7 +205,11 @@ function block(
     anchor,
     x,
     fontSize,
-    lines: lines.map((t, i) => ({ text: t, y: firstBaseline + i * lineHeight })),
+    lines: lines.map((t, i) => ({
+      text: t,
+      y: firstBaseline + i * lineHeight,
+      fit: textWidth(t, fontSize, spacing) > maxWidth ? maxWidth : null,
+    })),
     box: { x: anchor === 'middle' ? x - width / 2 : x, y: top, width, height },
     cut,
   };
@@ -234,11 +257,14 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
   });
   const labelBottom = Math.max(zoneTop + 8 + ZONE_LABEL_SIZE, ...labels.map((l) => bottom(l.box)));
 
-  const laneY = labelBottom + 22;
+  // Room above the lane for the word over a message (M1.2b): 11 px text over a 21 px token.
+  const laneY = labelBottom + 38;
   const iconWidth = Math.min(MAX_ICON_WIDTH, Math.max(0, 2 * half - 16));
   const iconHeight = iconWidth * ICON_ASPECT;
   const iconTop = laneY + 16;
-  const textWidthMax = Math.max(0, 2 * half - 8);
+  // Text may use the whole frame of the column but 2 px at each side (an address of 12
+  // characters fits a phone column of four participants, M1.2b).
+  const textWidthMax = Math.max(0, 2 * half - 4);
 
   const participants = input.participants.map((p, i): ParticipantLayout => {
     const x = cx(i);
@@ -281,6 +307,7 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
     return {
       id: zone.id,
       danger: zone.danger,
+      members: zone.members.filter((m) => index.has(m)),
       rect: { x, y: zoneTop, width: w, height: zoneBottom - zoneTop },
       label,
     };

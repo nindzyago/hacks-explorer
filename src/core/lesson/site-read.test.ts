@@ -93,6 +93,42 @@ describe('readSiteLesson', () => {
         zones[0]?.members.push('ghost');
       }),
     ],
+    // M1.2b: the scene draws a zone as one frame over neighbours, so nested, overlapping and
+    // gapped zones are bad data here as they are in the lesson checker.
+    [
+      'a zone nested in another (one member in two zones)',
+      broken((d) => {
+        const zones = d['zones'] as { members: unknown[] }[];
+        zones[0]?.members.push('user');
+      }),
+    ],
+    [
+      'zones that overlap',
+      broken((d) => {
+        const zones = d['zones'] as Record<string, unknown>[];
+        zones.push({ id: 'third', label: 'Третья', members: ['attacker', 'user'], danger: false });
+        if (zones[0]) zones[0]['members'] = ['attacker'];
+      }),
+    ],
+    [
+      'a zone whose members are not neighbours',
+      broken((d) => {
+        const zones = d['zones'] as Record<string, unknown>[];
+        zones.splice(0, zones.length, {
+          id: 'gap',
+          label: 'Дыра',
+          members: ['attacker', 'site'],
+          danger: false,
+        });
+      }),
+    ],
+    [
+      'a zone with a member twice',
+      broken((d) => {
+        const zones = d['zones'] as { members: unknown[] }[];
+        zones[0]?.members.push('attacker');
+      }),
+    ],
     [
       'a source that is not https',
       broken((d) => {

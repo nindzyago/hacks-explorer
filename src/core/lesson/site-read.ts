@@ -253,6 +253,27 @@ function unique<T extends { readonly id: string }>(
   return items;
 }
 
+/**
+ * The scene draws a zone as one frame over neighbouring participants (M1.2b, K19): a member
+ * given twice, a participant in two zones (nested or overlapping zones) and members with a gap
+ * between them are bad data, as the lesson checker already says for the source files.
+ */
+function oneFrameEach(zones: readonly SiteZone[], order: readonly string[]): readonly SiteZone[] {
+  const taken = new Set<string>();
+  zones.forEach((z, i) => {
+    const path = `zones.${String(i)}.members`;
+    const places = z.members.map((m) => order.indexOf(m)).sort((a, b) => a - b);
+    if (new Set(places).size !== places.length) fail(path, 'each member once');
+    const first = places[0] ?? 0;
+    if (places.some((place, k) => place !== first + k)) fail(path, 'neighbours in the line');
+    for (const m of z.members) {
+      if (taken.has(m)) fail(path, 'participants in no other zone');
+      taken.add(m);
+    }
+  });
+  return zones;
+}
+
 function known(id: string, path: string, ids: ReadonlySet<string>): string {
   if (!ids.has(id)) fail(path, 'the id of a participant');
   return id;
@@ -325,9 +346,12 @@ function lesson(input: unknown, want: { id: string; language: string }): SiteLes
     passport: passport(field(o, 'passport'), 'passport'),
     sources: list(field(o, 'sources'), 'sources', source),
     participants,
-    zones: unique(
-      list(field(o, 'zones'), 'zones', (v, p) => zone(v, p, ids)),
-      'zones',
+    zones: oneFrameEach(
+      unique(
+        list(field(o, 'zones'), 'zones', (v, p) => zone(v, p, ids)),
+        'zones',
+      ),
+      participants.map((p) => p.id),
     ),
     steps: unique(
       list(field(o, 'steps'), 'steps', (v, p) => step(v, p, ids)),

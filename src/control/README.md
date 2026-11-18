@@ -9,7 +9,7 @@
 ```ts
 window.__app.commands.list(); // [{ id, titleKey, params, enabled }]
 window.__app.commands.run('theme.set', { theme: 'dark' }); // { ok: true } | { ok: false, error }
-window.__app.state.get(); // { theme: 'dark', clock: { timeMs, pendingMs, stepMs } }
+window.__app.state.get(); // { theme, lesson, scene: { step, defence, startedMs }, clock: { timeMs, pendingMs, stepMs } }
 window.__app.clock.set(1234); // то же, что commands.run('clock.set', { ms: 1234 })
 window.__app.clock.tick(40); // то же, что commands.run('clock.tick', { ms: 40 })
 ```
@@ -26,7 +26,7 @@ import { expect, openApp, test } from './support'; // e2e/support.ts
 test('…', async ({ page }) => {
   await openApp(page); // открыть страницу, дождаться приложения и канала
   await page.evaluate(() => window.__app?.commands.run('theme.set', { theme: 'dark' }));
-  expect(await page.evaluate(() => window.__app?.state.get())).toEqual({ theme: 'dark' });
+  expect(await page.evaluate(() => window.__app?.state.get())).toMatchObject({ theme: 'dark' });
   await page.screenshot({ path: test.info().outputPath('dark.png') });
 });
 ```
@@ -48,10 +48,9 @@ test('…', async ({ page }) => {
   останавливает драйвер реального времени, и дальше время движется только вызовами канала.
   Сценарий, которому нужна повторяемость, начинается с `clock.set(…)`: до него часы успели
   уйти на неизвестное время.
-- В dev-сервере и в сборке для тестов на странице есть строка «Часы плеера: N мс»
-  (`data-testid="clock-readout"`); в рабочей сборке её нет. Сцена M1.2a неподвижна, поэтому это
-  пока единственное на странице, что зависит от времени часов; строка уйдёт, когда от часов
-  начнёт зависеть сцена (M1.2b).
+- Время часов видно на странице через сцену: сообщение текущего шага стоит там, где велит
+  время (M1.2b; строка «Часы плеера» из M0.4 убрана). Шаг и режим — команды `scene.step`,
+  `scene.defence`, урок — `lesson.open` (`src/commands/README.md`).
 - Повторяемость проверяет `e2e/determinism.spec.ts`: один сценарий дважды даёт одинаковый дамп
   (`stableDump` из `src/core/dump.ts`) и одинаковый PNG байт в байт. Снимки для сравнения
   делаются с `{ animations: 'disabled', caret: 'hide' }` и после `sceneReady(page)` из
