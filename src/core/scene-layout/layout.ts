@@ -45,8 +45,14 @@ export interface ParticipantLayout {
   readonly icon: Rect;
   readonly name: TextBlock;
   readonly note: TextBlock | null;
-  /** The area of the participant: icon and labels, for a frame or a hit target. */
+  /**
+   * The area of the participant: icon and labels, for a hit target. The receiver ring is drawn
+   * on its edge with a `RING_STROKE` line, which stays clear of the text and of the zone frame
+   * (M1.2c).
+   */
   readonly area: Rect;
+  /** The edges of the participant's own frame (its column less the gap to a neighbour zone). */
+  readonly span: { readonly x1: number; readonly x2: number };
 }
 
 export interface ZoneLayout {
@@ -89,11 +95,20 @@ export const MAX_WIDTH = 1600;
 export const ICON_ASPECT = 275 / 310;
 export const MAX_ICON_WIDTH = 150;
 
-const PAD = 8;
+const PAD = 4;
 /** Half width of a zone around one participant, at most (the prototype: 85). */
 const MAX_HALF = 85;
-/** The least space between two neighbouring zones. */
-const ZONE_GAP = 8;
+/** The least space between two neighbouring zones (M1.2c: 6, for a wider phone column). */
+const ZONE_GAP = 6;
+/** Width of the receiver ring's line (M1.2c). */
+export const RING_STROKE = 2;
+/**
+ * Room between the column frame and its text, at each side (M1.2c): the zone frame's line
+ * (0.75 px in), the ring's line (1.5…3.5 px in) and 1 px of air.
+ */
+const TEXT_INSET = 4.5;
+/** Where the middle of the ring's line stands inside the column frame. */
+const RING_INSET = 2.5;
 const CHAR_EM = 0.6;
 const ZONE_LABEL_SIZE = 11;
 const ZONE_LABEL_SPACING = 1;
@@ -117,7 +132,7 @@ function chars(text: string): string[] {
   return Array.from(text);
 }
 
-function textWidth(text: string, fontSize: number, spacing = 0): number {
+export function textWidth(text: string, fontSize: number, spacing = 0): number {
   return chars(text).length * (fontSize * CHAR_EM + spacing);
 }
 
@@ -140,11 +155,13 @@ function shorten(word: string[], maxChars: number): string {
  * Greedy line breaking at spaces only; at most `MAX_LINES`, the last cut with «…» when the text
  * is longer. A word longer than a line gets a line of its own, shortened with «…».
  */
-function wrap(
+export function wrap(
   text: string,
   maxWidth: number,
   fontSize: number,
   spacing: number,
+  maxLines = MAX_LINES,
+  squeezeJoined = false,
 ): { lines: string[]; cut: boolean } {
   const perChar = fontSize * CHAR_EM + spacing;
   const maxChars = Math.max(1, Math.floor(maxWidth / perChar));
@@ -159,7 +176,8 @@ function wrap(
   };
   for (const word of text.split(/\s+/).filter((w) => w !== '')) {
     const joined = line === '' ? word : `${line} ${word}`;
-    if (chars(joined).length <= maxChars) {
+    // A plaque (M1.2c) may draw a line of several words narrower too; names and notes may not.
+    if (chars(joined).length <= (squeezeJoined && line !== '' ? squeezedChars : maxChars)) {
       line = joined;
       continue;
     }
@@ -173,10 +191,10 @@ function wrap(
     }
   }
   push();
-  if (lines.length <= MAX_LINES) return { lines, cut: shortened };
-  const kept = lines.slice(0, MAX_LINES);
-  const last = chars(kept[MAX_LINES - 1] ?? '');
-  kept[MAX_LINES - 1] = `${last.slice(0, Math.max(0, maxChars - 1)).join('')}…`;
+  if (lines.length <= maxLines) return { lines, cut: shortened };
+  const kept = lines.slice(0, maxLines);
+  const last = chars(kept[maxLines - 1] ?? '');
+  kept[maxLines - 1] = `${last.slice(0, Math.max(0, maxChars - 1)).join('')}…`;
   return { lines: kept, cut: true };
 }
 
@@ -262,9 +280,9 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
   const iconWidth = Math.min(MAX_ICON_WIDTH, Math.max(0, 2 * half - 16));
   const iconHeight = iconWidth * ICON_ASPECT;
   const iconTop = laneY + 16;
-  // Text may use the whole frame of the column but 2 px at each side (an address of 12
-  // characters fits a phone column of four participants, M1.2b).
-  const textWidthMax = Math.max(0, 2 * half - 4);
+  // Text may use the whole frame of the column but TEXT_INSET at each side, where the ring
+  // runs (M1.2c); an address of 12 characters still fits a phone column of four participants.
+  const textWidthMax = Math.max(0, 2 * half - 2 * TEXT_INSET);
 
   const participants = input.participants.map((p, i): ParticipantLayout => {
     const x = cx(i);
@@ -291,12 +309,12 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
           });
     const last = note ?? name;
     const area = {
-      x: x - half + 4,
+      x: x - half + RING_INSET,
       y: iconTop - 2,
-      width: 2 * half - 8,
+      width: 2 * half - 2 * RING_INSET,
       height: bottom(last.box) - iconTop + 6,
     };
-    return { id: p.id, cx: x, icon, name, note, area };
+    return { id: p.id, cx: x, icon, name, note, area, span: { x1: x - half, x2: x + half } };
   });
 
   const contentBottom = Math.max(iconTop + iconHeight, ...participants.map((p) => bottom(p.area)));

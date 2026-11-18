@@ -67,12 +67,14 @@ driver.running; // boolean
 - `import()` с вычисляемым адресом модуля;
 - время из других источников: `Intl.DateTimeFormat().format()` без аргумента, `event.timeStamp`,
   `document.lastModified`, заголовки ответа сети, `AudioContext.currentTime`, время видео;
-- анимации в CSS (`transition`, `animation`, `@keyframes`) и директивы Svelte `transition:`,
-  `in:`, `out:`, `animate:` с собственной функцией — они идут от системного времени;
 - случайность из других источников: порядок ответов сети, `crypto.subtle.generateKey`;
 - код зависимостей в `node_modules`.
 
-Для сцены (M1.2) анимации в CSS использовать нельзя; проверка стилей появится вместе со сценой.
+Анимации в CSS (`transition`, `animation`, `@keyframes`, переходы вида, плавная прокрутка), SMIL
+(`<animate>` и родня) и директивы Svelte `transition:`, `in:`, `out:`, `animate:` идут от
+системного времени; их ловит не ESLint, а правило `no-css-animation` в
+`scripts/structure-check.mjs` (M1.2c, G14). Мимо него проходят стили, собранные строкой во время
+работы (`el.setAttribute('style', s)`, `el.style.cssText = s`), и CSS из зависимостей.
 Снимки в тестах делаются с `animations: 'disabled'`.
 
 ## Ограничения

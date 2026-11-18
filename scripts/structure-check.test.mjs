@@ -242,3 +242,151 @@ describe('no-literal-colours', () => {
     expect(rules([file('src/ui/tokens.test.ts', "expect(x).toBe('#f3f5f7');")])).toEqual([]);
   });
 });
+
+// M1.2c (carry-over of the M1.2b verifier): what slipped past the colour rule. In CSS — a .css
+// file, a <style> block, a style="" attribute — any hex colour is an error whatever word stands
+// before it; comments do not count. Hex-like id selectors in CSS count too (decided: rename the
+// id). In markup prose «Issue #123» stays allowed.
+describe('no-literal-colours, M1.2c', () => {
+  const rules = (files) => checkFiles(files).map((p) => `${p.rule} ${p.path}:${String(p.line)}`);
+
+  it.each([
+    ['a hex after a border style', 'src/ui/a.css', 'p { border: 1px solid #123; }'],
+    ['a hex after a dashed style', 'src/ui/a.css', 'p { outline: 2px dashed #456; }'],
+    ['a hex after a border width word', 'src/ui/a.css', 'p { border: thin #000000; }'],
+    ['a hex after a decoration line', 'src/ui/a.css', 'p { text-decoration: underline #000000; }'],
+    ['a hex after a background keyword', 'src/ui/a.css', 'p { background: fixed #111; }'],
+    [
+      'a hex after a word in a style block',
+      'src/ui/A.svelte',
+      '<style>p { outline: medium #808; }</style>',
+    ],
+    [
+      'a hex after a word in a style attribute',
+      'src/ui/A.svelte',
+      '<p style="border: thin #000">x</p>',
+    ],
+    ['a hex-like id selector in CSS', 'src/ui/a.css', '#cafe { margin: 0; }'],
+    ['a colour set through style[]', 'src/scene/s.ts', "el.style['color'] = 'red';"],
+    ['a colour set through style[""]', 'src/scene/s.ts', 'el.style["background-color"] = "navy";'],
+    ['a 0x colour in a colour property', 'src/scene/s.ts', 'const a = { fill: 0xff0000 };'],
+    ['a 0x colour in a canvas style', 'src/scene/s.ts', 'ctx.fillStyle = 0xff0000;'],
+    ['a hex in a script string after a word', 'src/scene/s.ts', "const b = 'thin #000000';"],
+    ['a hex in an attribute value after a word', 'src/scene/S.svelte', '<rect fill="x #123" />'],
+  ])('rejects %s', (_name, path, text) => {
+    expect(new Set(rules([file(path, text)]))).toEqual(new Set([`no-literal-colours ${path}:1`]));
+  });
+
+  it('does not count comments, prose numbers or fragment links', () => {
+    expect(
+      rules([
+        file('src/ui/a.css', '/* issue #123: was #fff, solid #000 */\np { color: var(--ink); }'),
+        file('src/ui/b.css', 'p { clip-path: url(#cafe); mask: url("#bad"); }'),
+        file('src/scene/s.ts', "// issue #123, once #fff\n/* #abc */ const a = 'b'; // #def"),
+        file(
+          'src/ui/A.svelte',
+          '<!-- #fff -->\n<p>Issue #123, задача #456</p>\n<a href="#add">x</a>',
+        ),
+        file(
+          'src/ui/B.svelte',
+          '<script lang="ts">\n  // #fff\n  const s = "a//b" + `c//d`;\n</script>\n<p>{s}</p>',
+        ),
+        file('src/scene/t.ts', 'const n = 0xff;\nconst big = { width: 0xff0000 };'),
+      ]),
+    ).toEqual([]);
+  });
+});
+
+// M1.2c, design M1.2 E4 (gap G14): time on the page comes from the player clock only, so CSS
+// animations and transitions, keyframes, SMIL and Svelte transition directives are not allowed
+// in site code. `none` (a reset) is.
+describe('no-css-animation', () => {
+  const rules = (files) =>
+    checkFiles(files)
+      .filter((p) => p.rule === 'no-css-animation')
+      .map((p) => `${p.path}:${String(p.line)}`);
+
+  it.each([
+    ['a transition', 'src/ui/a.css', 'p {\n  transition: opacity 0.2s;\n}', 2],
+    ['a transition longhand', 'src/ui/a.css', 'p { transition-duration: 1s; }', 1],
+    ['a prefixed transition', 'src/ui/a.css', 'p { -webkit-transition: all 1s; }', 1],
+    ['an animation', 'src/ui/a.css', 'p { animation: spin 1s infinite; }', 1],
+    [
+      'an animation longhand in a style block',
+      'src/ui/A.svelte',
+      '<style>\n.a { animation-name: x; }\n</style>',
+      2,
+    ],
+    ['keyframes', 'src/ui/a.css', '@keyframes spin {\n  to { opacity: 0; }\n}', 1],
+    ['prefixed keyframes', 'src/ui/a.css', '@-webkit-keyframes spin {}', 1],
+    ['a view transition', 'src/ui/a.css', 'main { view-transition-name: page; }', 1],
+    ['smooth scrolling', 'src/ui/a.css', 'html { scroll-behavior: smooth; }', 1],
+    [
+      'a transition in a style attribute',
+      'src/ui/A.svelte',
+      '<p style="transition: all 1s">x</p>',
+      1,
+    ],
+    ['a style directive', 'src/ui/A.svelte', '<p style:transition="opacity 1s">x</p>', 1],
+    ['SMIL animate', 'src/scene/S.svelte', '<rect><animate attributeName="x" to="5" /></rect>', 1],
+    [
+      'SMIL animateTransform',
+      'src/scene/s.svg',
+      '<svg><g><animateTransform type="rotate" /></g></svg>',
+      1,
+    ],
+    ['SMIL animateMotion', 'src/scene/S.svelte', '<g>\n<animateMotion path="M0 0" />\n</g>', 2],
+    ['SMIL set', 'src/scene/S.svelte', '<rect><set attributeName="x" to="5" /></rect>', 1],
+    ['a Svelte transition', 'src/ui/A.svelte', '{#if a}<p transition:fade>x</p>{/if}', 1],
+    ['a Svelte in', 'src/ui/A.svelte', '<p\n  in:fly={{ y: 10 }}>x</p>', 2],
+    ['a Svelte out', 'src/ui/A.svelte', '<p class="x" out:fade>x</p>', 1],
+    [
+      'a Svelte animate',
+      'src/ui/A.svelte',
+      '{#each xs as x (x)}<li animate:flip>{x}</li>{/each}',
+      1,
+    ],
+    [
+      'a directive after an arrow',
+      'src/ui/A.svelte',
+      '<p onclick={() => go(a > b)} in:fade>x</p>',
+      1,
+    ],
+    ['style.transition', 'src/ui/s.ts', "el.style.transition = 'opacity 1s';", 1],
+    ['style.animationDuration', 'src/ui/s.ts', "el.style.animationDuration = '1s';", 1],
+    ['style[transition]', 'src/ui/s.ts', "el.style['transition'] = 'x';", 1],
+    ['setProperty(animation)', 'src/ui/s.ts', "el.style.setProperty('animation', 'x 1s');", 1],
+  ])('rejects %s', (_name, path, text, line) => {
+    expect(rules([file(path, text)])).toEqual([`${path}:${String(line)}`]);
+  });
+
+  it('keeps resets, prose, names and other attributes allowed', () => {
+    expect(
+      rules([
+        file(
+          'src/ui/a.css',
+          '/* no transition: 1s */\n@media (prefers-reduced-motion: reduce) {\n' +
+            '  * { animation: none !important; transition: none; }\n}',
+        ),
+        file('src/ui/b.css', '.transition:hover { color: var(--ink); }\n#animation { margin: 0; }'),
+        file(
+          'src/ui/A.svelte',
+          '<p>The animation of a transition; log in: now</p>\n' +
+            '<p data-transition="x" class="in">x</p>\n<Set />',
+        ),
+        file(
+          'src/scene/s.ts',
+          '// no animation here\nconst transition = 1;\nconst animate = { in: 2 };',
+        ),
+        file(
+          'src/ui/B.svelte',
+          '<script>\n  const transition = (a) => a;\n</script>\n<p>{transition(1)}</p>',
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('applies to site code only, not to tests', () => {
+    expect(rules([file('src/ui/a.test.ts', "el.style.transition = 'x';")])).toEqual([]);
+  });
+});

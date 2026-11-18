@@ -8,6 +8,7 @@ import {
   MIN_SQUEEZE,
   MIN_WIDTH,
   MAX_WIDTH,
+  RING_STROKE,
   type Rect,
   type SceneInput,
   type SceneLayout,
@@ -248,6 +249,45 @@ describe('layoutScene', () => {
         const note = input.participants.find((x) => x.id === p.id)?.note ?? '';
         if (note === 'bank-login.example') continue;
         expect(p.note?.lines.map((l) => l.text).join(' ')).toBe(note);
+      }
+    }
+  });
+
+  // M1.2c (carry-over of the M1.2b verifier): on a phone the receiver ring cut through the
+  // addresses. The ring is the participant's area drawn with a RING_STROKE line: the
+  // participant's icon and text stay inside the line, the line stays inside its zone frame
+  // (clear of the frame's own 1.5 px line) and off everything of the others.
+  it('draws the ring around icon and text without cutting them, inside the zone (M1.2c)', () => {
+    const grow = (r: Rect, d: number): Rect => ({
+      x: r.x - d,
+      y: r.y - d,
+      width: r.width + 2 * d,
+      height: r.height + 2 * d,
+    });
+    for (const input of [B1, I1, SIX]) {
+      for (const width of [280, 356, 390, 760, 926]) {
+        const layout = layoutScene({ ...input, width });
+        const all = participantBoxes(layout);
+        for (const p of layout.participants) {
+          const inner = grow(p.area, -RING_STROKE / 2);
+          const outer = grow(p.area, RING_STROKE / 2);
+          const where = `${p.id} at ${String(width)}`;
+          for (const b of all) {
+            if (b.owner === p.id) {
+              expect(inside(b.box, inner), `${where}: ${b.what} inside the ring`).toBe(true);
+            } else {
+              expect(overlap(b.box, outer), `${where}: ring × ${b.owner} ${b.what}`).toBe(false);
+            }
+          }
+          for (const z of layout.zones) {
+            if (z.members.includes(p.id)) {
+              expect(inside(outer, grow(z.rect, -0.75)), `${where}: ring in ${z.id}`).toBe(true);
+            } else {
+              expect(overlap(outer, z.rect), `${where}: ring × zone ${z.id}`).toBe(false);
+            }
+            expect(overlap(outer, z.label.box), `${where}: ring × label ${z.id}`).toBe(false);
+          }
+        }
       }
     }
   });
