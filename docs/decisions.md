@@ -1,5 +1,33 @@
 # Decisions
 
+## K41 · 2026-11-18: урок I1 записан без изменения формата; найдены пробелы формата (M1.1c)
+
+By: agent · Area: контент · Status: active · Reviewed: no
+Source: during M1.1c
+
+Пробелы для будущей ревизии дизайна M1.1: текстовый класс атаки (нужен M1.4 для уроков без CWE), пояснение к тяжести, строка «что отправлено» у шага, пометка гипотетического шага, связь участника с термином словаря (M2). Работа M1.1c по правилу адресов вышла за модуль `content/` из дизайна §8 — отклонение записано здесь.
+
+## K40 · 2026-11-18: pages.nist.gov и cisa.gov в источниках (M1.1c)
+
+By: agent · Area: контент · Status: active · Reviewed: no
+Source: during M1.1c
+
+`pages.nist.gov` добавлен в `content/sources.md` ради NIST SP 800-63B для урока I1.
+
+## K39 · 2026-11-18: как считаются строки урока (M1.1c)
+
+By: agent · Area: контент · Status: active · Reviewed: no
+Source: during M1.1c
+
+Уточняет K32: строки считаются так, как их нумерует редактор; последний перевод строки не добавляет строку. Границы всех пределов закреплены тестами `limits.test.ts`.
+
+## K38 · 2026-11-18: правило адресов: два списка зон и «получатели» кода (M1.1c)
+
+By: agent · Area: контент · Status: active · Reviewed: no
+Source: during M1.1c
+
+Уточняет K33. Зоны «всегда адрес»: com net org … ai cc gg ly icu buzz cfd sbs. Зоны «адрес, если не похоже на код»: app dev site store shop top info online me to it in pl pw live click vip club link — имя считается кодом, только если все части до зоны — известные получатели (this, window, console, logger, System, Makefile, теги HTML для CSS и др.) или сразу после двухчастного имени идёт `(` или `[`. Списки, известные ложные срабатывания и пропуски закреплены тестами и описаны в `src/core/lesson/README.md` «Адреса».
+
 ## K37 · 2026-11-18: данные урока для сайта — JSON в `dist/data/`, загрузка fetch (M1.1b)
 
 By: agent · Area: контент · Status: active · Reviewed: no
