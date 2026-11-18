@@ -99,7 +99,8 @@ describe('speed: any input up to 64 KB is checked well under a second', () => {
   });
 
   it(`accepts ${String(MAX_LINES)} lines and rejects one more`, () => {
-    const lines = validRu.split('\n').length;
+    // validRu ends with a newline: its last line is complete, the split's empty tail is no line.
+    const lines = validRu.split('\n').length - 1;
     const at = (n: number) => validRu + '\n'.repeat(n - lines);
     expect(check(at(MAX_LINES)).errors).toEqual([]);
     expect(codes(check(at(MAX_LINES + 1)).errors)).toEqual(['too-large']);

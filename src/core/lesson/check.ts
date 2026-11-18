@@ -53,11 +53,13 @@ function preflight(
     };
   }
   const lines = text.split('\n');
-  if (lines.length > MAX_LINES) {
+  // A final newline ends the last line; it does not start one more.
+  const lineCount = lines.length - (text.endsWith('\n') ? 1 : 0);
+  if (lineCount > MAX_LINES) {
     return {
       code: 'too-large',
       line: 1,
-      message: `the file has ${String(lines.length)} lines; a lesson has at most ${String(MAX_LINES)}`,
+      message: `the file has ${String(lineCount)} lines; a lesson has at most ${String(MAX_LINES)}`,
     };
   }
   const delimiters = text.match(/[*_[]/g)?.length ?? 0;

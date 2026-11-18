@@ -139,3 +139,93 @@ describe('addresses that try to slip through', () => {
     expect(values('shop\uFF0Eexample 2001:db8::1 addr:2001:db8::5')).toEqual([]);
   });
 });
+
+// M1.1c: phishing-style hosts written bare in prose. Endings that rarely name a field or a file
+// are hosts on their own; those that do (`window.top`, `this.store`) are hosts unless the name
+// looks like code: a known receiver such as `this` or `window` first, or a call or index after it.
+describe('phishing-style hosts written bare', () => {
+  it.each([
+    ['bit.ly', 'bit.ly'],
+    ['t.me', 't.me'],
+    ['paypal.me', 'paypal.me'],
+    ['evil.info', 'evil.info'],
+    ['bank.online', 'bank.online'],
+    ['evil.top', 'evil.top'],
+    ['login.site', 'login.site'],
+    ['evil.store', 'evil.store'],
+    ['cheap.shop', 'cheap.shop'],
+    ['evil.app', 'evil.app'],
+    ['evil.dev', 'evil.dev'],
+    ['chat.ai', 'chat.ai'],
+    ['evil.cc', 'evil.cc'],
+    ['evil.pw', 'evil.pw'],
+    ['short.to', 'short.to'],
+    ['evil.gg', 'evil.gg'],
+    ['evil.it', 'evil.it'],
+    ['evil.pl', 'evil.pl'],
+    ['evil.in', 'evil.in'],
+    ['x.vercel.app', 'x.vercel.app'],
+    ['evil.pages.dev', 'evil.pages.dev'],
+    [
+      '\u041F\u0435\u0440\u0435\u0439\u0434\u0438\u0442\u0435 \u043D\u0430 bank-secure.online, \u0441\u0440\u043E\u0447\u043D\u043E.',
+      'bank-secure.online',
+    ],
+  ])('rejects %s', (text, value) => {
+    expect(values(text)).toEqual([value]);
+  });
+
+  it.each([
+    'this.app',
+    'window.app',
+    'process.app',
+    'self.app',
+    'this.store',
+    'vm.store',
+    'window.top',
+    'rect.top',
+    'style.top',
+    'stack.top',
+    'console.info',
+    'logger.info',
+    'log.info',
+    'logging.info("x")',
+    'user.info',
+    'navigator.onLine',
+    'config.site',
+    'settings.site',
+    'request.site',
+    'config.dev',
+    'Makefile.in',
+    'config.h.in',
+    'this.me',
+    'tensor.to(device)',
+    'path.to',
+    'items.shop[0]',
+    'expect(x).to.equal(1)',
+  ])('accepts code %s', (text) => {
+    expect(values(text)).toEqual([]);
+  });
+
+  it.each([
+    ['a C++ file', 'main.cc'],
+    ['a Perl script', 'run.pl'],
+    ['a field of an unknown receiver', 'cart.store'],
+    ['another unknown receiver', 'game.top'],
+    ['a receiver with a digit', 'user2.info'],
+    ['and another', 'ctx2.app'],
+  ])('known collision: takes %s for a host (README «Адреса»)', (_name, text) => {
+    expect(values(text)).toEqual([text]);
+  });
+
+  it.each(['cart.store()', 'app.store', 'user.me'])(
+    'known limit: takes %s for code (README «Адреса»)',
+    (text) => {
+      expect(values(text)).toEqual([]);
+    },
+  );
+
+  it('still takes a code-looking name for a host in an address position', () => {
+    expect(values('https://window.top/x')).toEqual(['window.top']);
+    expect(values('anna@this.app')).toEqual(['this.app']);
+  });
+});

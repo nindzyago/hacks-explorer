@@ -8,7 +8,9 @@
  * - IP addresses are checked everywhere;
  * - a dotted name is a host when it is URL-like (after `scheme://` or `@`, starting with `www.`,
  *   followed by `:port` or `/path`), has a punycode label, mixes Latin and Cyrillic letters, or
- *   ends with a well-known host TLD. Other dotted names (`users.id`, `file.py`) are identifiers.
+ *   ends with a well-known host TLD, or with a phishing-popular TLD that is also a common field
+ *   name (`top`, `store`, `info`…) and does not look like code. Other dotted names (`users.id`,
+ *   `file.py`) are identifiers.
  */
 
 export interface ForeignAddress {
@@ -35,15 +37,38 @@ const DOC_SECOND_LEVEL = new Set(['example.com', 'example.net', 'example.org']);
 
 /**
  * Endings that are hosts on their own. Endings that are also common identifiers or file
- * extensions (id, py, md, so, sh, rs, in, js, name, email, date, info, top, app, store, site…)
- * count only in a URL-like place.
+ * extensions (id, py, md, so, sh, rs, js, name, email, date…) count only in a URL-like place.
+ * `cc` also names C++ files (`main.cc`): a known collision, see README «Адреса».
  */
 const HOST_TLDS = new Set(
   (
     'com net org edu gov mil biz ru su рф рус ua by kz uk de fr cn jp kr br ca au nl es se ch eu ' +
-    'us io co tv xyz tech zip mov'
+    'us io co tv xyz tech zip mov ai cc gg ly'
   ).split(' '),
 );
+
+/**
+ * Endings popular with phishing hosts that also name fields in code (`window.top`, `this.store`,
+ * `logger.info`, `Makefile.in`). They are hosts unless the name looks like code: its first label
+ * is a usual receiver (`CODE_RECEIVERS`) or a call or an index follows it.
+ */
+const CODE_LIKE_TLDS = new Set(
+  'app dev site store shop top info online me to it in pl pw'.split(' '),
+);
+
+/** First labels that mark `x.y` as a field of an object or a build file, not a host. */
+const CODE_RECEIVERS = new Set(
+  (
+    'this self cls super window document navigator globalthis process module exports console ' +
+    'logger log logging req res request response ctx context app config settings options opts ' +
+    'props state store vm os sys path event err error el elem element node style rect box stack ' +
+    'parent item items data user status makefile configure setup'
+  ).split(' '),
+);
+
+function looksLikeCode(labels: readonly string[], after: string): boolean {
+  return CODE_RECEIVERS.has(labels[0] ?? '') || /^[([]/.test(after);
+}
 
 interface Normalised {
   readonly text: string;
@@ -128,7 +153,9 @@ function isHost(name: string, before: string, after: string): boolean {
   if (hasLatinAndCyrillic(name)) return true;
   if (/[a-z][a-z0-9+.-]*:\/\/$/i.test(before) || before.endsWith('@')) return true;
   if (labels[0] === 'www' || /^:\d/.test(after) || after.startsWith('/')) return true;
-  return HOST_TLDS.has(labels.at(-1) ?? '');
+  const tld = labels.at(-1) ?? '';
+  if (HOST_TLDS.has(tld)) return true;
+  return CODE_LIKE_TLDS.has(tld) && !looksLikeCode(labels, after);
 }
 
 /** Every IP address and domain in `text` that is not from a documentation range. */

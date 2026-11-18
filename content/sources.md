@@ -7,6 +7,7 @@ request: одна строка — домен в обратных кавычка
 - `owasp.org` OWASP
 - `mitre.org` MITRE: CWE, CVE, ATT&CK
 - `nvd.nist.gov` NVD
+- `pages.nist.gov` NIST: SP 800-63 (цифровая идентичность)
 - `rfc-editor.org` RFC Editor
 - `first.org` FIRST: CVSS, EPSS
 - `cisa.gov` CISA
