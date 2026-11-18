@@ -115,3 +115,59 @@ describe('checkFiles', () => {
     expect(() => checkFiles([{ path: 42, text: null }])).toThrow(TypeError);
   });
 });
+
+// M1.2a (design M1.2 E3): colours come from tokens only. The one file with literal colours is
+// src/ui/tokens.css; anywhere else in src/ a hex, rgb()/hsl() or a named colour is a problem.
+describe('no-literal-colours', () => {
+  const rules = (files) => checkFiles(files).map((p) => `${p.rule} ${p.path}:${String(p.line)}`);
+
+  it('lets tokens.css hold colours and the rest use them', () => {
+    expect(
+      rules([
+        file('src/ui/tokens.css', ':root {\n  --ink: #15212c;\n  --x: rgb(1 2 3);\n}'),
+        file(
+          'src/ui/App.svelte',
+          '<style>\n  p { color: var(--ink); border: 1px solid var(--line); }\n</style>',
+        ),
+        file('src/scene/Scene.svelte', '<rect class="zone" fill="none" stroke="currentColor" />'),
+        file('src/main.ts', "document.getElementById('app');\nconst t = 'transparent';"),
+      ]),
+    ).toEqual([]);
+  });
+
+  it.each([
+    ['a hex colour in CSS', 'src/ui/App.svelte', '<style>\n  p { color: #15212c; }\n</style>', 2],
+    ['a short hex colour', 'src/ui/a.css', 'p {\n  background: #fff;\n}', 2],
+    ['a hex colour in an SVG attribute', 'src/scene/S.svelte', '<rect fill="#EDF0F3" />', 1],
+    ['a hex colour with alpha in TS', 'src/scene/colours.ts', "export const c = '#1f2a4480';", 1],
+    ['rgb()', 'src/ui/a.css', 'p { color: rgb(21 33 44); }', 1],
+    ['rgba()', 'src/ui/a.css', 'p { box-shadow: 0 0 2px rgba(0, 0, 0, 0.3); }', 1],
+    ['hsl()', 'src/scene/S.svelte', '<rect fill="hsl(10 50% 50%)" />', 1],
+    ['oklch()', 'src/ui/a.css', 'p { color: oklch(0.5 0.1 30); }', 1],
+    ['a named colour in CSS', 'src/ui/a.css', 'p {\n  color: red;\n}', 2],
+    ['a named colour in a border', 'src/ui/a.css', 'p { border: 1px solid DarkSlateGray; }', 1],
+    ['a named colour in an SVG attribute', 'src/scene/S.svelte', '<circle stroke="white" />', 1],
+    ['a named colour in a style attribute', 'src/ui/A.svelte', '<p style="color:navy">x</p>', 1],
+    ['a named colour in a TS object', 'src/scene/s.ts', "const a = { fill: 'tomato' };", 1],
+    ['a colour in index.html', 'index.html', '<meta name="theme-color" content="#f3f5f7" />', 1],
+  ])('rejects %s', (_name, path, text, line) => {
+    expect(rules([file(path, text)])).toEqual([`no-literal-colours ${path}:${String(line)}`]);
+  });
+
+  it('does not take ids, entities, Svelte blocks or words for colours', () => {
+    expect(
+      rules([
+        file(
+          'src/ui/App.svelte',
+          '{#if ok}<a href="#main">&#123;</a>{/if}\n{#each xs as x}{x}{/each}\n<use href="#ic-db" />',
+        ),
+        file('src/core/a.ts', "// the red team; a white list\nconst colour = 'blue-ish';"),
+        file('src/scene/s.ts', "const fill = 'url(#feather)';\nconst label = 'Red: attack';"),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('lets test files hold colours as data', () => {
+    expect(rules([file('src/ui/tokens.test.ts', "expect(x).toBe('#f3f5f7');")])).toEqual([]);
+  });
+});

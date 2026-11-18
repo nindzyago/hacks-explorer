@@ -1,0 +1,53 @@
+/*
+ * Design tokens (style guide R9, design M1.2 E3). The only file in src/ that may hold literal
+ * colours: scripts/structure-check.mjs rejects them everywhere else. Light palette only (K43);
+ * a dark theme (M2.6) will redefine these names under :root[data-theme='dark'].
+ * Text pairs keep a contrast of at least 4.5:1: src/ui/tokens.test.ts.
+ */
+:root {
+  color-scheme: light;
+
+  /* Interface palette (reference/style-guide.md) */
+  --paper: #f3f5f7;
+  --panel: #ffffff;
+  --ink: #15212c;
+  --muted: #5e6c7a;
+  --line: #c7d0d9;
+  --attack: #d8432b;
+  --defence: #0b8a78;
+  --legit: #2b67d6;
+  --caution: #b97a00;
+
+  /* Scene (prototype look, K5): paper of the icon sheets, navy ink of the outlines. */
+  --scene-paper: #edf0f3;
+  --scene-ink: #1f2a44;
+  --scene-muted: #5e6c7a;
+  /* Red of the danger zone frame (a line, 3:1 is enough) and of its label (text, 4.5:1). */
+  --scene-attack: var(--attack);
+  --scene-attack-text: #b5361f;
+  --scene-safe: var(--defence);
+  --scene-legit: var(--legit);
+  /* A participant without an icon of its own (unknown icon name). */
+  --scene-placeholder: #dde3e9;
+
+  /* Type */
+  --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --text-xs: 0.6875rem; /* 11 px: the smallest text anywhere, scene labels included */
+  --text-sm: 0.8125rem; /* 13 px */
+  --text-md: 0.9375rem; /* 15 px */
+  --text-lg: 1.125rem; /* 18 px */
+  --text-xl: 1.5rem; /* 24 px */
+  --leading: 1.45;
+
+  /* Shape and space */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --line-width: 1px;
+}

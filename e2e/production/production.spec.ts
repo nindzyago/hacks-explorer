@@ -28,8 +28,9 @@ test('no file of the production build mentions __app', () => {
 
 test('the interface works without the channel', async ({ page }) => {
   await page.goto('/');
-  const toggle = page.getByTestId('theme-toggle');
-  await toggle.click();
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  // The lesson loads through the site's own loader and the scene draws it (M1.2a).
+  await expect(page.getByTestId('participant-attacker')).toBeVisible();
+  await expect(page.getByTestId('zone-site')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.getByTestId('theme-toggle')).toHaveCount(0);
 });

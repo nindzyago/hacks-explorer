@@ -1,11 +1,11 @@
 // The content gate (design M1.1 E11, scenario S8): every file under content/lessons passes the
 // lesson checker. Runs in `npm run gate` and alone as `npm run content`.
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { checkContent, formatError } from '../src/core/lesson/check';
-import { readContent } from './content-files.mjs';
+import { ROOT, readContent } from './content-files.mjs';
 
 describe('content', () => {
   const { lessons, sources } = readContent();
@@ -19,6 +19,35 @@ describe('content', () => {
     // A failure lists `file:line:column: message`, one per line.
     expect(result.errors.map(formatError).join('\n')).toBe('');
     expect(result.lessons.length).toBe(lessons.length);
+  });
+
+  // M1.2a: an icon a lesson names must exist, so a typo stops the gate and not the reader
+  // (L0.1). The site still draws a placeholder for a name it does not know.
+  it('names only icons that are in content/icons', () => {
+    const icons = new Set(
+      readdirSync(join(ROOT, 'content', 'icons'))
+        .filter((name) => name.endsWith('.webp'))
+        .map((name) => name.slice(0, -'.webp'.length)),
+    );
+    expect(icons.size).toBe(8);
+    const missing = result.lessons.flatMap((lesson) => [
+      ...lesson.participants
+        .filter((p) => !icons.has(p.icon))
+        .map((p) => `${lesson.id}: participant ${p.id} has no icon ${p.icon}`),
+      ...lesson.steps
+        .filter((s) => s.icon !== null && !icons.has(s.icon))
+        .map((s) => `${lesson.id}: step ${s.id} has no icon ${String(s.icon)}`),
+    ]);
+    expect(missing).toEqual([]);
+  });
+
+  it('lists every icon and font in ATTRIBUTION.md (L1)', () => {
+    const attribution = readFileSync(join(ROOT, 'ATTRIBUTION.md'), 'utf8');
+    const assets = [
+      ...readdirSync(join(ROOT, 'content', 'icons')).map((name) => `content/icons/${name}`),
+      ...readdirSync(join(ROOT, 'public', 'fonts')).map((name) => `public/fonts/${name}`),
+    ];
+    expect(assets.filter((path) => !attribution.includes(`\`${path}\``))).toEqual([]);
   });
 });
 

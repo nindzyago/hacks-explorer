@@ -1,8 +1,12 @@
 import { mount } from 'svelte';
 import { createApp } from './commands/app';
 import { installControl } from './control/control';
+import { createLessonLoader } from './services/catalog/catalog';
 import { createRealTimeDriver } from './time/real-time-driver';
 import App from './ui/App.svelte';
+import './ui/tokens.css';
+import './ui/fonts.css';
+import './ui/base.css';
 
 const target = document.getElementById('app');
 if (target === null) throw new Error('index.html has no #app element');
@@ -22,4 +26,10 @@ driver.start();
 // In the production build this condition is the constant `false` and the bundler drops the code.
 if (import.meta.env.DEV || import.meta.env.MODE === 'e2e') installControl(window, app);
 
-mount(App, { target, props: { app } });
+// Lesson data the build put into data/ (K37), fetched from this site only.
+const loader = createLessonLoader({
+  fetch: (url) => window.fetch(url),
+  base: import.meta.env.BASE_URL,
+});
+
+mount(App, { target, props: { app, loader } });

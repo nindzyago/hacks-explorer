@@ -1,0 +1,11 @@
+/* Page basics on top of the tokens (src/ui/tokens.css). */
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: var(--leading);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
