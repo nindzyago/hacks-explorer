@@ -98,6 +98,8 @@
     padding: var(--space-1) var(--space-2);
     border-bottom: var(--line-width) solid var(--line);
     vertical-align: middle;
+    /* M1.6: one long word in a title or result wraps instead of widening the page. */
+    overflow-wrap: anywhere;
   }
 
   tr.now {
