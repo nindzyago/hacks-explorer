@@ -85,6 +85,7 @@ PortSwigger, Protocol Explorer, Attack Explorer и любых других за�
 | `npm run gate` | единственная проверка: формат, линт, типы, тесты, структура, сборка, браузерные тесты |
 | `npm run e2e` | только браузерные тесты (Playwright, Chromium без окна) |
 | `npm run content` | только проверка уроков в `content/` |
+| `npm run budget` | размер первой загрузки и файлов уроков (после сборки; входит в gate) |
 | `npm run dev` | сайт на `localhost:5173` |
 | `npm run build` | сборка в `dist/` |
 
