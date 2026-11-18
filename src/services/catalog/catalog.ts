@@ -12,6 +12,7 @@ import { readCatalog, readSiteLesson } from '../../core/lesson/site-read';
 export type FetchLike = (url: string) => Promise<{
   readonly ok: boolean;
   readonly status: number;
+  readonly headers: { get(name: string): string | null };
   text(): Promise<string>;
 }>;
 
@@ -35,15 +36,21 @@ export interface LessonLoader {
   lesson(id: unknown, language: unknown): Promise<Loaded<SiteLesson>>;
 }
 
-/** Larger files are bad data unread: a lesson is at most 30 KB, the catalog a few. */
-const MAX_FILE_CHARS = 128 * 1024;
+/** Larger files are bad data: a lesson is at most 30 KB, the catalog a few. In UTF-8 bytes. */
+const MAX_FILE_BYTES = 128 * 1024;
+
+function utf8Bytes(text: string): number {
+  // A character takes at most 3 bytes in UTF-8 (a surrogate pair, 2 characters, takes 4).
+  return text.length * 3 <= MAX_FILE_BYTES ? text.length : new TextEncoder().encode(text).length;
+}
 
 function failure(code: LoadError['code'], message: string): { ok: false; error: LoadError } {
   return { ok: false, error: { code, message } };
 }
 
 async function fetchJson(fetch: FetchLike, url: string): Promise<Loaded<unknown>> {
-  let body: string;
+  const tooLarge = failure('bad-data', `${url}: the file is over ${String(MAX_FILE_BYTES)} bytes`);
+  let body: unknown;
   try {
     const response = await fetch(url);
     if (!response.ok) {
@@ -51,11 +58,15 @@ async function fetchJson(fetch: FetchLike, url: string): Promise<Loaded<unknown>
         ? failure('not-found', `${url}: not found`)
         : failure('network', `${url}: the server answered ${String(response.status)}`);
     }
+    // Refuse early when the server says the file is too large; the body is still measured below.
+    const declared = Number(response.headers.get('content-length') ?? '');
+    if (declared > MAX_FILE_BYTES) return tooLarge;
     body = await response.text();
   } catch {
     return failure('network', `${url}: the request failed`);
   }
-  if (body.length > MAX_FILE_CHARS) return failure('bad-data', `${url}: the file is too large`);
+  if (typeof body !== 'string') return failure('bad-data', `${url}: not text`);
+  if (utf8Bytes(body) > MAX_FILE_BYTES) return tooLarge;
   try {
     return { ok: true, value: JSON.parse(body) as unknown };
   } catch {
@@ -69,7 +80,8 @@ function checked<T>(url: string, result: ReadResult<T>): Loaded<T> {
 
 /**
  * `base` is the site's base path (`import.meta.env.BASE_URL`), `/` by default. Successful
- * results are kept for the life of the loader; failures are not, so a later call retries.
+ * results are kept for the life of the loader; failures are not, so a later call retries. A
+ * lesson that is missing or bad also drops the kept catalog (it may be from an older deploy).
  */
 export function createLessonLoader(options: {
   readonly fetch: FetchLike;
@@ -109,12 +121,13 @@ export function createLessonLoader(options: {
     if (kept !== undefined) return { ok: true, value: kept };
     const url = `${base}${lessonFile(entry.id, translation.language, translation.hash)}`;
     const json = await fetchJson(fetch, url);
-    if (!json.ok) return json;
-    const result = checked(
-      url,
-      readSiteLesson(json.value, { id: entry.id, language: translation.language }),
-    );
+    const result = json.ok
+      ? checked(url, readSiteLesson(json.value, { id: entry.id, language: translation.language }))
+      : json;
     if (result.ok) lessons.set(key, result.value);
+    // The catalog named a file that is gone or not what it should be: likely a new deploy.
+    // Forget the catalog so the next call reads the fresh one.
+    else if (result.error.code !== 'network' && catalog === index.value) catalog = null;
     return result;
   }
 

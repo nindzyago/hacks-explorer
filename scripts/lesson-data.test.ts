@@ -174,6 +174,13 @@ describe('npm run dev', () => {
       const lesson = readSiteLesson(await response.json(), { id: 'B1', language: 'ru' });
       expect(lesson.ok).toBe(true);
       expect((await fetch(`${origin}data/lessons/B1.ru.00000000.json`)).status).toBe(404);
+      for (const method of ['POST', 'PUT', 'DELETE']) {
+        const refused = await fetch(`${origin}${CATALOG_FILE}`, { method });
+        expect(refused.status).toBe(405);
+        expect(refused.headers.get('allow')).toBe('GET, HEAD');
+      }
+      const head = await fetch(`${origin}${CATALOG_FILE}`, { method: 'HEAD' });
+      expect(head.status).toBe(200);
 
       // A broken lesson in dev: the data answers 500 with the message, the server lives on.
       writeFileSync(join(root, 'content/lessons/B1/ru.md'), b1Text.replace('`wave` 1', '`wave` 9'));

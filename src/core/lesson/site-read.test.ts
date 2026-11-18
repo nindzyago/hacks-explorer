@@ -122,16 +122,50 @@ describe('readSiteLesson', () => {
     expect(!result.ok && result.error.message).toMatch(/^steps\[0\]\.kind: /);
   });
 
-  it('survives text nested too deep and huge arrays without throwing', () => {
+  /** The error message, or '' when the data was read. */
+  function messageOf(input: unknown): string {
+    const result = readSiteLesson(input, WANT);
+    return result.ok ? '' : result.error.message;
+  }
+  function pushText(block: unknown) {
+    return broken((d) => {
+      const steps = d['steps'] as { levels: { simple: unknown[] } }[];
+      steps[0]?.levels.simple.push(block);
+    });
+  }
+
+  it('stops at text nested too deep, inline or in lists, without throwing', () => {
     let deep: unknown = { type: 'text', value: 'x' };
     for (let i = 0; i < 100_000; i += 1) deep = { type: 'strong', children: [deep] };
-    const nested = broken((d) => {
-      const steps = d['steps'] as { levels: { simple: unknown[] } }[];
-      steps[0]?.levels.simple.push({ type: 'paragraph', children: [deep] });
-    });
-    expect(readSiteLesson(nested, WANT).ok).toBe(false);
-    const many = broken((d) => (d['sources'] = Array.from({ length: 200_000 }, () => 1)));
-    expect(readSiteLesson(many, WANT).ok).toBe(false);
+    expect(messageOf(pushText({ type: 'paragraph', children: [deep] }))).toMatch(
+      /: expected text nested at most 32 deep$/,
+    );
+    let lists: unknown = { type: 'paragraph', children: [] };
+    for (let i = 0; i < 40; i += 1) lists = { type: 'list', ordered: false, items: [[lists]] };
+    expect(messageOf(pushText(lists))).toMatch(/: expected text nested at most 32 deep$/);
+    // 30 levels of lists are still text.
+    let fine: unknown = { type: 'paragraph', children: [] };
+    for (let i = 0; i < 30; i += 1) fine = { type: 'list', ordered: false, items: [[fine]] };
+    expect(messageOf(pushText(fine))).toBe('');
+  });
+
+  it('stops at lists longer than 2000 items', () => {
+    const source = { title: 't', url: 'https://owasp.org/' };
+    const many = broken((d) => (d['sources'] = Array.from({ length: 2001 }, () => source)));
+    expect(messageOf(many)).toBe('sources: expected at most 2000 items');
+    const most = broken((d) => (d['sources'] = Array.from({ length: 2000 }, () => source)));
+    expect(messageOf(most)).toBe('');
+  });
+
+  it('rejects a participant, zone or step id given twice', () => {
+    const twice = (field: string) =>
+      broken((d) => {
+        const items = d[field] as unknown[];
+        items.push(items[0]);
+      });
+    expect(messageOf(twice('participants'))).toBe('participants: expected each id once');
+    expect(messageOf(twice('zones'))).toBe('zones: expected each id once');
+    expect(messageOf(twice('steps'))).toBe('steps: expected each id once');
   });
 
   it('ignores __proto__ and extra fields', () => {
@@ -195,11 +229,23 @@ describe('readCatalog', () => {
       },
     ],
     ['no translations', { format: 1, lessons: [{ ...good.lessons[0], translations: [] }] }],
-    ['a lesson twice', { format: 1, lessons: [good.lessons[0], good.lessons[0]] }],
   ];
   it.each(bad)('rejects %s', (_, input) => {
     const result = readCatalog(input);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.code).toBe('bad-data');
+  });
+
+  it('names a lesson or a language given twice', () => {
+    const twice = readCatalog({ format: 1, lessons: [good.lessons[0], good.lessons[0]] });
+    expect(!twice.ok && twice.error.message).toBe('lessons: expected each lesson once');
+    const ru = { language: 'ru', title: 't', hash: '0123abcd' };
+    const languages = readCatalog({
+      format: 1,
+      lessons: [{ ...good.lessons[0], translations: [ru, { ...ru, hash: 'ffff0000' }] }],
+    });
+    expect(!languages.ok && languages.error.message).toBe(
+      'lessons[0].translations: expected each language once',
+    );
   });
 });

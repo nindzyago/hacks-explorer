@@ -24,6 +24,8 @@ const catalog: SiteCatalog = {
   ],
 };
 
+const NO_HEADERS = { get: () => null };
+
 /** A fake server: path → body (a string) or a status code; records the requested urls. */
 function server(files: Record<string, string | number | Error>) {
   const requested: string[] = [];
@@ -32,9 +34,19 @@ function server(files: Record<string, string | number | Error>) {
     const body = Object.hasOwn(files, url) ? files[url] : 404;
     if (body instanceof Error) return Promise.reject(body);
     if (typeof body === 'number') {
-      return Promise.resolve({ ok: false, status: body, text: () => Promise.resolve('') });
+      return Promise.resolve({
+        ok: false,
+        status: body,
+        headers: NO_HEADERS,
+        text: () => Promise.resolve(''),
+      });
     }
-    return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(body ?? '') });
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      headers: NO_HEADERS,
+      text: () => Promise.resolve(body ?? ''),
+    });
   };
   return { fetch, requested };
 }
@@ -129,20 +141,112 @@ describe('createLessonLoader', () => {
     expect((await loader.catalog()).ok).toBe(true);
   });
 
-  const corrupt: [string, string][] = [
-    ['not JSON', '{"format":1,'],
-    ['the index.html a host answers for unknown paths', '<!doctype html><title>x</title>'],
-    ['valid JSON of the wrong shape', '{"format":1,"steps":"x"}'],
-    ['another lesson swapped in', JSON.stringify({ ...lesson, id: 'B2' })],
-    ['a huge file', `"${'x'.repeat(200 * 1024)}"`],
-    ['nested too deep for JSON.parse', `${'['.repeat(200_000)}${']'.repeat(200_000)}`],
+  const corrupt: [string, string, RegExp][] = [
+    ['not JSON', '{"format":1,', /: not JSON$/],
+    [
+      'the index.html a host answers for unknown paths',
+      '<!doctype html><title>x</title>',
+      /: not JSON$/,
+    ],
+    ['valid JSON of the wrong shape', '{"format":1,"steps":"x"}', /: id: expected the lesson X1$/],
+    ['another lesson swapped in', JSON.stringify({ ...lesson, id: 'B2' }), /: id: expected/],
+    ['a huge file', `"${'x'.repeat(200 * 1024)}"`, /: the file is over 131072 bytes$/],
+    // 70 000 characters, 140 000 bytes: the limit counts bytes.
+    ['a huge file in Cyrillic', `"${'я'.repeat(70_000)}"`, /: the file is over 131072 bytes$/],
+    [
+      'nested very deep',
+      `${'['.repeat(60_000)}${']'.repeat(60_000)}`,
+      /: (not JSON|\(top\): expected an object)$/,
+    ],
   ];
-  it.each(corrupt)('a lesson file that is %s is bad-data', async (_, body) => {
+  it.each(corrupt)('a lesson file that is %s is bad-data', async (_, body, message) => {
     const loader = createLessonLoader(server({ ...good, [LESSON_URL]: body }));
-    expect(await loader.lesson('X1', 'ru')).toMatchObject({
+    const result = await loader.lesson('X1', 'ru');
+    expect(result).toMatchObject({ ok: false, error: { code: 'bad-data' } });
+    expect(!result.ok && result.error.message).toMatch(message);
+  });
+
+  it('a file just under the byte limit is read', async () => {
+    const body = `"${'я'.repeat(65_000)}"`; // 130 002 bytes
+    const loader = createLessonLoader(server({ [`/${CATALOG_FILE}`]: body }));
+    expect(await loader.catalog()).toMatchObject({
       ok: false,
-      error: { code: 'bad-data' },
+      error: { message: '/data/catalog.json: (top): expected an object' },
     });
+  });
+
+  it('a Content-Length over the limit is bad-data without reading the body', async () => {
+    let read = false;
+    const loader = createLessonLoader({
+      fetch: () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: {
+            get: (name: string) => (name.toLowerCase() === 'content-length' ? '200000' : null),
+          },
+          text: () => {
+            read = true;
+            return Promise.resolve('{}');
+          },
+        }),
+    });
+    const result = await loader.catalog();
+    expect(!result.ok && result.error).toEqual({
+      code: 'bad-data',
+      message: '/data/catalog.json: the file is over 131072 bytes',
+    });
+    expect(read).toBe(false);
+  });
+
+  it.each([null, undefined, 42])('a text() that gives %s is bad-data', async (value) => {
+    const loader = createLessonLoader({
+      fetch: () =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: NO_HEADERS,
+          text: () => Promise.resolve(value as unknown as string),
+        }),
+    });
+    expect(await loader.catalog()).toEqual({
+      ok: false,
+      error: { code: 'bad-data', message: '/data/catalog.json: not text' },
+    });
+  });
+
+  it('a lesson missing or broken after a deploy fetches the catalog again', async () => {
+    const files: Record<string, string> = { [`/${CATALOG_FILE}`]: JSON.stringify(catalog) };
+    const { fetch, requested } = server(files);
+    const loader = createLessonLoader({ fetch });
+    // The cached catalog names a file the new deploy no longer has.
+    expect(await loader.lesson('X1', 'ru')).toMatchObject({ error: { code: 'not-found' } });
+    const NEW = 'ffff0000';
+    const fresh = {
+      ...catalog,
+      lessons: [
+        { ...catalog.lessons[0], translations: [{ language: 'ru', title: 't', hash: NEW }] },
+      ],
+    };
+    files[`/${CATALOG_FILE}`] = JSON.stringify(fresh);
+    files[`/${lessonFile('X1', 'ru', NEW)}`] = JSON.stringify(lesson);
+    expect((await loader.lesson('X1', 'ru')).ok).toBe(true);
+    expect(requested.filter((u) => u === `/${CATALOG_FILE}`)).toHaveLength(2);
+
+    // The same after bad data.
+    const second = server({ ...good, [LESSON_URL]: 'oops' });
+    const again = createLessonLoader({ fetch: second.fetch });
+    await again.lesson('X1', 'ru');
+    await again.catalog();
+    expect(second.requested.filter((u) => u === `/${CATALOG_FILE}`)).toHaveLength(2);
+  });
+
+  it('a network failure keeps the catalog', async () => {
+    const { fetch, requested } = server({ ...good, [LESSON_URL]: 503 });
+    const loader = createLessonLoader({ fetch });
+    await loader.lesson('X1', 'ru');
+    await loader.catalog();
+    expect(requested.filter((u) => u === `/${CATALOG_FILE}`)).toHaveLength(1);
   });
 
   it('a corrupted catalog is bad-data, and so is a lesson asked through it', async () => {
@@ -157,7 +261,12 @@ describe('createLessonLoader', () => {
   it('a text() that rejects is network', async () => {
     const loader = createLessonLoader({
       fetch: () =>
-        Promise.resolve({ ok: true, status: 200, text: () => Promise.reject(new Error('cut')) }),
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          headers: NO_HEADERS,
+          text: () => Promise.reject(new Error('cut')),
+        }),
     });
     expect(await loader.catalog()).toMatchObject({ ok: false, error: { code: 'network' } });
   });

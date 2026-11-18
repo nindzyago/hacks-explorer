@@ -127,6 +127,12 @@ export function lessonData(options: LessonDataOptions = {}): Plugin {
           next();
           return;
         }
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          response.statusCode = 405;
+          response.setHeader('Allow', 'GET, HEAD');
+          response.end();
+          return;
+        }
         const result = build();
         if (!result.ok) {
           const text = result.errors.join('\n');

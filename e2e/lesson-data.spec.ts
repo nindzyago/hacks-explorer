@@ -10,9 +10,17 @@ function pageFetch(page: Page): FetchLike {
   return async (url) => {
     const response = await page.evaluate(async (u) => {
       const r = await fetch(u);
-      return { ok: r.ok, status: r.status, body: await r.text() };
+      const length = r.headers.get('content-length');
+      return { ok: r.ok, status: r.status, length, body: await r.text() };
     }, url);
-    return { ok: response.ok, status: response.status, text: () => Promise.resolve(response.body) };
+    return {
+      ok: response.ok,
+      status: response.status,
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-length' ? response.length : null),
+      },
+      text: () => Promise.resolve(response.body),
+    };
   };
 }
 

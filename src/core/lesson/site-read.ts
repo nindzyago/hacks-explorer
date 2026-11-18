@@ -245,6 +245,14 @@ function zone(input: unknown, path: string, ids: ReadonlySet<string>): SiteZone 
   };
 }
 
+function unique<T extends { readonly id: string }>(
+  items: readonly T[],
+  path: string,
+): readonly T[] {
+  if (new Set(items.map((x) => x.id)).size !== items.length) fail(path, 'each id once');
+  return items;
+}
+
 function known(id: string, path: string, ids: ReadonlySet<string>): string {
   if (!ids.has(id)) fail(path, 'the id of a participant');
   return id;
@@ -297,7 +305,10 @@ function lesson(input: unknown, want: { id: string; language: string }): SiteLes
   if (id !== want.id) fail('id', `the lesson ${want.id}`);
   const language = field(o, 'language');
   if (language !== want.language) fail('language', `the language ${want.language}`);
-  const participants = list(field(o, 'participants'), 'participants', participant);
+  const participants = unique(
+    list(field(o, 'participants'), 'participants', participant),
+    'participants',
+  );
   const ids = new Set(participants.map((p) => p.id));
   const defence = field(o, 'defence');
   const title = field(o, 'title');
@@ -314,8 +325,14 @@ function lesson(input: unknown, want: { id: string; language: string }): SiteLes
     passport: passport(field(o, 'passport'), 'passport'),
     sources: list(field(o, 'sources'), 'sources', source),
     participants,
-    zones: list(field(o, 'zones'), 'zones', (v, p) => zone(v, p, ids)),
-    steps: list(field(o, 'steps'), 'steps', (v, p) => step(v, p, ids)),
+    zones: unique(
+      list(field(o, 'zones'), 'zones', (v, p) => zone(v, p, ids)),
+      'zones',
+    ),
+    steps: unique(
+      list(field(o, 'steps'), 'steps', (v, p) => step(v, p, ids)),
+      'steps',
+    ),
     defence: defence === null ? null : blocks(defence, 'defence'),
   };
 }
