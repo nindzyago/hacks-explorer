@@ -43,31 +43,57 @@ const DOC_SECOND_LEVEL = new Set(['example.com', 'example.net', 'example.org']);
 const HOST_TLDS = new Set(
   (
     'com net org edu gov mil biz ru su рф рус ua by kz uk de fr cn jp kr br ca au nl es se ch eu ' +
-    'us io co tv xyz tech zip mov ai cc gg ly'
+    'us io co tv xyz tech zip mov ai cc gg ly icu buzz cfd sbs'
   ).split(' '),
 );
 
 /**
  * Endings popular with phishing hosts that also name fields in code (`window.top`, `this.store`,
- * `logger.info`, `Makefile.in`). They are hosts unless the name looks like code: its first label
- * is a usual receiver (`CODE_RECEIVERS`) or a call or an index follows it.
+ * `logger.info`, `Makefile.in`, `div.app`). They are hosts unless the name looks like code
+ * (`looksLikeCode`).
  */
 const CODE_LIKE_TLDS = new Set(
-  'app dev site store shop top info online me to it in pl pw'.split(' '),
+  'app dev site store shop top info online me to it in pl pw live click vip club link'.split(' '),
 );
 
-/** First labels that mark `x.y` as a field of an object or a build file, not a host. */
+/**
+ * Labels that mark a name as a chain of fields (`this.props.store`), a CSS selector
+ * (`div.app`) or a build file (`Makefile.in`, `Dockerfile.dev`), not a host. Lowercase.
+ */
 const CODE_RECEIVERS = new Set(
+  // objects and modules in JS and Python
   (
     'this self cls super window document navigator globalthis process module exports console ' +
     'logger log logging req res request response ctx context app config settings options opts ' +
-    'props state store vm os sys path event err error el elem element node style rect box stack ' +
-    'parent item items data user status makefile configure setup'
+    'props state store vm os sys system path event err error el elem element node style rect ' +
+    'bounds offset pos position box stack parent item items data user status btn ' +
+    // build and dependency files
+    'makefile dockerfile configure setup requirements manifest ' +
+    // HTML elements in CSS selectors
+    'a abbr article aside b body button canvas code dd div dl dt em footer form h1 h2 h3 h4 h5 h6 ' +
+    'header html i img input label li main nav ol option p pre section select small span strong ' +
+    'table tbody td textarea th thead tr ul'
   ).split(' '),
 );
 
+/** File extensions of `name.<ext>.in` build templates (`config.h.in`, `setup.py.in`). */
+const TEMPLATE_EXTENSIONS = new Set(
+  'h c py cfg txt json yml yaml toml ini conf xml mk am'.split(' '),
+);
+
+/**
+ * `receiver.field` with a code-like ending: every label before the ending is a receiver (in a
+ * template, the one before `in` may be a file extension); or a two-label name is called or
+ * indexed right away (`tensor.to(…)`, `items.shop[0]`). A receiver does not shield a longer
+ * name with a foreign label (`this.evil.top`).
+ */
 function looksLikeCode(labels: readonly string[], after: string): boolean {
-  return CODE_RECEIVERS.has(labels[0] ?? '') || /^[([]/.test(after);
+  if (labels.length === 2 && /^[([]/.test(after)) return true;
+  const head = labels.slice(0, -1);
+  if (labels.at(-1) === 'in' && head.length >= 2 && TEMPLATE_EXTENSIONS.has(head.at(-1) ?? '')) {
+    head.pop();
+  }
+  return head.every((label) => CODE_RECEIVERS.has(label));
 }
 
 interface Normalised {

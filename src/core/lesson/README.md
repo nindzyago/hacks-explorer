@@ -147,17 +147,31 @@ example.net и всё в `.example`, `.test`, `.invalid`, `.localhost` (L4.2). �
    - в нём есть метка punycode `xn--`;
    - в нём смешаны латиница и кириллица (`google.сom` с кириллической «с»);
    - оно кончается зоной из списка явных хостовых зон: `com net org edu gov mil biz ru su рф рус
-     ua by kz uk de fr cn jp kr br ca au nl es se ch eu us io co tv xyz tech zip mov ai cc gg ly`;
+     ua by kz uk de fr cn jp kr br ca au nl es se ch eu us io co tv xyz tech zip mov ai cc gg ly
+     icu buzz cfd sbs`;
    - оно кончается зоной, любимой фишингом, но похожей на поле в коде: `app dev site store shop
-     top info online me to it in pl pw` — и не похоже на код: первая метка не из списка
-     «получателей» (`this self cls super window document navigator globalThis process module
-     exports console logger log logging req res request response ctx context app config settings
-     options opts props state store vm os sys path event err error el elem element node style rect
-     box stack parent item items data user status Makefile configure setup`, без учёта регистра)
-     и сразу после имени нет `(` или `[`. Так `bit.ly`, `t.me`, `paypal.me`, `evil.top`,
-     `x.vercel.app`, `evil.pages.dev` — хосты, а `window.top`, `this.store`, `logger.info`,
-     `logging.info(…)`, `navigator.onLine`, `config.h.in`, `Makefile.in`, `tensor.to(device)`,
-     `items.shop[0]` — код.
+     top info online me to it in pl pw live click vip club link` — и не похоже на код. Похоже на
+     код, если:
+     - **все** метки перед зоной — «получатели» (без учёта регистра):
+       объекты JS и Python `this self cls super window document navigator globalThis process
+       module exports console logger log logging req res request response ctx context app config
+       settings options opts props state store vm os sys System path event err error el elem
+       element node style rect bounds offset pos position box stack parent item items data user
+       status btn`; файлы сборки `Makefile Dockerfile configure setup requirements MANIFEST`;
+       элементы HTML в селекторах CSS `a abbr article aside b body button canvas code dd div dl
+       dt em footer form h1–h6 header html i img input label li main nav ol option p pre section
+       select small span strong table tbody td textarea th thead tr ul`. В шаблоне сборки
+       `имя.<расширение>.in` метка перед `in` может быть расширением (`h c py cfg txt json yml
+       yaml toml ini conf xml mk am`): `config.h.in`, `setup.py.in`;
+     - или имя из двух меток и сразу за ним, без пробела, стоит `(` или `[`: `tensor.to(device)`,
+       `items.shop[0]`.
+
+     Так `bit.ly`, `t.me`, `paypal.me`, `evil.top`, `x.vercel.app`, `evil.pages.dev`,
+     `this.evil.top` (чужая метка в цепочке), `login.evil.top[0]` (больше двух меток),
+     `evil.top (там форма)` (пробел перед скобкой) — хосты, а `window.top`, `this.props.store`,
+     `logger.info`, `logging.info(…)`, `navigator.onLine`, `System.in`, `Makefile.in`,
+     `MANIFEST.in`, `requirements.in`, `Dockerfile.dev`, `div.app`, `span.info`, `offset.top` —
+     код.
 4. Прочие имена через точку — идентификаторы и файлы: `users.id`, `u.email`, `this.name`,
    `file.py`, `ru.md`, `libc.so`, `run.sh`, `main.rs`. Зоны, которые совпадают с частыми полями и
    расширениями (`id`, `py`, `md`, `so`, `sh`, `rs`, `js`, `name`, `email`, `date` и прочие не из
@@ -165,12 +179,13 @@ example.net и всё в `.example`, `.test`, `.invalid`, `.localhost` (L4.2). �
 
 Известные совпадения (ошибка `address` на коде; пишите иначе или в положении, где ясно, что это
 код): `main.cc` (файл C++ — зона `cc`), `run.pl` (скрипт Perl — `pl`), поле объекта с
-незнакомым получателем: `cart.store`, `game.top`, `user2.info`, `ctx2.app`. Получатель из списка
-и вызов спасают: `this.store`, `cart.store()`.
+незнакомым получателем: `cart.store`, `game.top`, `user2.info`, `ctx2.app`, `post.link`,
+`page.live`, `team.club`. Получатель из списка и вызов спасают: `this.store`, `cart.store()`.
 
 Ограничения правила: `evil.lol` или `evil.id` без `www.`, схемы, `@`, порта и пути не
-распознаются; хост с зоной второго списка, у которого первая метка совпала с получателем
-(`app.store`, `user.me`), или за которым стоит `(`, не распознаётся; IPv4 целым числом
+распознаются; хост с зоной второго списка, у которого все метки перед зоной — получатели
+(`app.store`, `user.me`, `a.info`), или имя из двух меток, за которым вплотную стоит `(` или `[`
+(`evil.top[1]`, `evil.link(x)`), не распознаётся; IPv4 целым числом
 (`134744072`) и в восьмеричной или шестнадцатеричной записи не распознаётся; омоглифы из других
 алфавитов, кроме кириллицы, не ловятся. Их найдёт ревью.
 

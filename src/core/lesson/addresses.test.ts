@@ -229,3 +229,72 @@ describe('phishing-style hosts written bare', () => {
     expect(values('anna@this.app')).toEqual(['this.app']);
   });
 });
+
+// M1.1c verifier notes: a receiver exempts only a chain of receivers; a call or an index exempts
+// only `receiver.field`-sized names and only right after the name.
+describe('code-like endings: holes and false positives', () => {
+  it.each([
+    'this.evil.top',
+    'window.evil.shop',
+    'app.evil-bank.shop',
+    'data.x.online',
+    'evil.this.top',
+    'evil.h.in',
+    'this.evil.top()',
+    'login.evil.top[0]',
+    'Откройте evil.top (там форма).',
+    'Откройте evil.top [ссылка].',
+    'evil.live',
+    'evil.click',
+    'evil.icu',
+    'evil.buzz',
+    'evil.cfd',
+    'evil.sbs',
+    'evil.vip',
+    'evil.club',
+    'evil.link',
+    'bank-login.click',
+  ])('rejects %s', (text) => {
+    expect(values(text)).toHaveLength(1);
+  });
+
+  it.each([
+    'System.in',
+    'new Scanner(System.in)',
+    'Dockerfile.dev',
+    'requirements.in',
+    'MANIFEST.in',
+    'configure.in',
+    'setup.py.in',
+    'setup.site',
+    'div.app',
+    'span.info',
+    'a.info',
+    'li.top',
+    'button.click',
+    'bounds.top',
+    'offset.top',
+    'pos.top',
+    'this.props.store',
+    'el.click()',
+    'btn.click()',
+    'item.link',
+    'user.vip',
+  ])('accepts code %s', (text) => {
+    expect(values(text)).toEqual([]);
+  });
+
+  it.each(['evil.top[1]', 'evil.link(x)'])(
+    'known limit: a call or an index right after a two-label name means code: %s',
+    (text) => {
+      expect(values(text)).toEqual([]);
+    },
+  );
+
+  it.each(['post.link', 'page.live', 'team.club'])(
+    'known collision: takes %s for a host (README «Адреса»)',
+    (text) => {
+      expect(values(text)).toEqual([text]);
+    },
+  );
+});
