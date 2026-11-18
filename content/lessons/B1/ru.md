@@ -13,7 +13,8 @@
 ## Источники
 
 - [OWASP: SQL Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
-- [OWASP Top 10:2021, A03 Injection](https://owasp.org/Top10/A03_2021-Injection/)
+- [OWASP Top 10:2021, A03 Injection](https://owasp.org/Top10/2021/A03_2021-Injection/)
+- [OWASP: Error Handling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html)
 - [MITRE CWE-89: SQL Injection](https://cwe.mitre.org/data/definitions/89.html)
 
 ## Участники

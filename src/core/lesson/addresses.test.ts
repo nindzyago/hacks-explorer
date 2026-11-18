@@ -72,3 +72,70 @@ describe('findForeignAddresses', () => {
     expect(values(text)).toEqual([]);
   });
 });
+
+describe('identifiers in code are not hosts', () => {
+  it.each([
+    'users.id',
+    'u.id',
+    'users.name',
+    'u.email',
+    'orders.date',
+    'this.name',
+    'window.top',
+    'file.py',
+    'ru.md',
+    'libc.so',
+    'run.sh',
+    'main.rs',
+    'Makefile.in',
+    'SELECT u.id, u.email FROM users u WHERE u.name = ?',
+    'document.cookie',
+    'location.href',
+    'req.body.login',
+    'a.b.c.d',
+  ])('accepts %s', (text) => {
+    expect(values(text)).toEqual([]);
+  });
+
+  it.each([
+    ['google.com', 'google.com'],
+    ['evil.ru', 'evil.ru'],
+    ['https://x.zip/', 'x.zip'],
+    ['user@gmail.com', 'gmail.com'],
+    ['www.evil.lol', 'www.evil.lol'],
+    ['http://intranet.corp/x', 'intranet.corp'],
+    ['evil.id:8080', 'evil.id'],
+    ['ftp://files.py/', 'files.py'],
+    ['mail me at anna@users.id', 'users.id'],
+    ['shop.co.uk/path', 'shop.co.uk'],
+    ['evil.lol/login', 'evil.lol'],
+  ])('still rejects %s', (text, value) => {
+    expect(values(text)).toEqual([value]);
+  });
+});
+
+describe('addresses that try to slip through', () => {
+  it.each([
+    ['IPv6 after a word and a colon', 'addr:2606:4700::1111', '2606:4700::1111'],
+    ['a zero-width space in a host', 'google\u200B.com', 'google.com'],
+    ['a fullwidth dot', 'google\uFF0Ecom', 'google.com'],
+    ['fullwidth digits', '\uFF18.\uFF18.\uFF18.\uFF18', '8.8.8.8'],
+    ['a punycode label', 'xn--80ak6aa92e.xn--p1ai', 'xn--80ak6aa92e.xn--p1ai'],
+    ['punycode under a common name', 'login.xn--e1afmkfd', 'login.xn--e1afmkfd'],
+    ['a Cyrillic homoglyph in the TLD', 'google.сom', 'google.сom'],
+    ['a neighbour of 192.0.2.0/24', '192.0.20.5', '192.0.20.5'],
+    ['a neighbour of 198.51.100.0/24', '198.51.10.5', '198.51.10.5'],
+  ])('rejects %s', (_name, text, value) => {
+    expect(values(text)).toEqual([value]);
+  });
+
+  it('points at the original text when it had to normalise', () => {
+    expect(findForeignAddresses('ab google\u200B.com')).toEqual([
+      { value: 'google.com', kind: 'domain', index: 3 },
+    ]);
+  });
+
+  it('still accepts documentation addresses written oddly', () => {
+    expect(values('shop\uFF0Eexample 2001:db8::1 addr:2001:db8::5')).toEqual([]);
+  });
+});

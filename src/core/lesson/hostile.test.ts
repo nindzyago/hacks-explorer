@@ -30,7 +30,7 @@ describe('hostile input', () => {
   it.each([
     ['empty', ''],
     ['whitespace', '  \n\n\t'],
-    ['binary', '\u0000\u0001�\uD800'],
+    ['binary', '\u0000\u0001\uFFFD\uD800'],
     ['only a title', '# Урок'],
     ['deep quotes', '>'.repeat(60_000)],
     ['deep lists', Array.from({ length: 200 }, (_, i) => `${'  '.repeat(i)}- a`).join('\n')],
@@ -70,10 +70,10 @@ describe('hostile input', () => {
   });
 
   it('caps the number of errors per file', () => {
-    const text = `${validRu}\n${'<b>x</b>\n\n'.repeat(5000)}`;
+    const text = `${validRu}\n${'<b>x</b> 8.8.8.8 1.1.1.1\n\n'.repeat(400)}`;
     const { errors } = check(text);
     expect(errors.length).toBeLessThanOrEqual(101);
-    expect(errors.at(-1)?.message).toMatch(/more errors/);
+    expect(errors.at(-1)?.message).toBe('and 1500 more errors in this file'); // 400 × (2 tags + 2 IPs), counted past the 1000 kept
   });
 
   it('checkContent survives hostile file lists', () => {

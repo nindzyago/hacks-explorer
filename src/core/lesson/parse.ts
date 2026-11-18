@@ -8,7 +8,7 @@ import type { LanguageWords, LevelKey, SectionKey } from './headings';
 import { LEVEL_ORDER, SECTION_ORDER } from './headings';
 import type { Reporter } from './report';
 import { START, quote } from './report';
-import { blocks, codeBlock, positionOf } from './text';
+import { blocks, checkPlainLine, codeBlock, plainText, positionOf } from './text';
 import type {
   Block,
   CodeBlock,
@@ -36,8 +36,8 @@ export interface Anchors {
 export interface ParsedLesson {
   readonly draft: Lesson;
   readonly anchors: Anchors;
-  /** Offsets of the source link targets: real sites, skipped by the address check. */
-  readonly sourceUrlRanges: readonly (readonly [number, number])[];
+  /** Offsets of the links in «Источники»: real sites, skipped by the address check. */
+  readonly sourceLinkRanges: readonly (readonly [number, number])[];
   /** Lines in «Источники», valid or not: an invalid line is its own error, not «no sources». */
   readonly sourceLines: number;
   /** Offsets of code blocks: the only place for ⟦…⟧ marks. */
@@ -62,20 +62,34 @@ function flat(value: string): string {
   return value.replace(/\s*\n\s*/g, ' ').trim();
 }
 
+/** Heading text for matching against the heading table; markup shows as U+FFFD and never matches. */
 function headingText(node: Heading): string {
   return node.children
     .map((c) =>
-      c.type === 'text' ? c.value : c.type === 'inlineCode' ? `\`${c.value}\`` : '\u0000',
+      c.type === 'text' ? c.value : c.type === 'inlineCode' ? `\`${c.value}\`` : '\uFFFD',
     )
     .join('')
     .trim();
 }
 
-/** The paragraph of a list item, or null (and an error) when the item is something else. */
-function itemParagraph(ctx: Context, item: Nodes, path: string, hint: string): Paragraph | null {
+/**
+ * The paragraph of a list item, or null (and an error) when the item is something else. With
+ * `plain`, the paragraph must also be plain text (service words allowed; bold when `strong`).
+ */
+function itemParagraph(
+  ctx: Context,
+  item: Nodes,
+  path: string,
+  hint: string,
+  plain?: { strong?: boolean },
+): Paragraph | null {
   if (item.type === 'listItem' && item.children.length === 1) {
     const only = item.children[0];
-    if (only?.type === 'paragraph') return only;
+    if (only?.type === 'paragraph') {
+      if (plain === undefined) return only;
+      const allow = { code: true, strong: plain.strong === true };
+      return checkPlainLine(only.children, ctx.reporter, path, allow) ? only : null;
+    }
   }
   ctx.reporter.add(positionOf(item), path, 'bad-line', `expected one line: ${hint}`);
   return null;
@@ -115,6 +129,7 @@ function parseHeader(ctx: Context, node: RootContent | undefined, id: string): H
     return header;
   }
   const at = positionOf(node);
+  if (!checkPlainLine(node.children, ctx.reporter, 'header', { code: true })) return header;
   const values = new Map<string, string>();
   for (const token of flat(raw(ctx, node)).split(/\s+·\s+/)) {
     const match = /^`([^`]*)`\s+(\S+)$/.exec(token);
@@ -217,7 +232,7 @@ function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
   };
   const seen = new Set<string>();
   for (const item of listItems(ctx, nodes, 'passport')) {
-    const p = itemParagraph(ctx, item, 'passport', '- `cwe` 89');
+    const p = itemParagraph(ctx, item, 'passport', '- `cwe` 89', {});
     if (p === null) continue;
     const at = positionOf(p);
     const match = /^`([^`]*)`\s+(.+)$/.exec(flat(raw(ctx, p)));
@@ -302,11 +317,12 @@ function parseSources(
     if (p === null) continue;
     const parts = p.children.filter((c) => !(c.type === 'text' && c.value.trim() === ''));
     for (const part of parts) {
-      // A link target here points at a real site even when the line is malformed.
+      // A link here names and points at a real site, even when the line is malformed.
       const start = part.position?.start.offset;
-      const target = part.type === 'link' ? raw(ctx, part).indexOf('](') : -1;
-      if (start !== undefined && target >= 0)
-        urlRanges.push([start + target, start + raw(ctx, part).length]);
+      const end = part.position?.end.offset;
+      if (part.type === 'link' && start !== undefined && end !== undefined) {
+        urlRanges.push([start, end]);
+      }
     }
     const link = parts[0];
     if (
@@ -346,7 +362,7 @@ function checkId(ctx: Context, at: Position, path: string, what: string, id: str
 function parseParticipants(ctx: Context, nodes: readonly RootContent[]): Participant[] {
   const out: Participant[] = [];
   for (const item of listItems(ctx, nodes, 'participants')) {
-    const p = itemParagraph(ctx, item, 'participants', PARTICIPANT_HINT);
+    const p = itemParagraph(ctx, item, 'participants', PARTICIPANT_HINT, { strong: true });
     if (p === null) continue;
     const at = positionOf(p);
     const line = flat(raw(ctx, p));
@@ -379,7 +395,7 @@ const ZONE_HINT = '- `site` Сайт: `server`, `db` (· `danger` optional)';
 function parseZones(ctx: Context, nodes: readonly RootContent[]): Zone[] {
   const out: Zone[] = [];
   for (const item of listItems(ctx, nodes, 'zones')) {
-    const p = itemParagraph(ctx, item, 'zones', ZONE_HINT);
+    const p = itemParagraph(ctx, item, 'zones', ZONE_HINT, {});
     if (p === null) continue;
     const at = positionOf(p);
     const match = ZONE.exec(flat(raw(ctx, p)));
@@ -535,13 +551,16 @@ function levelKey(words: LanguageWords, text: string): LevelKey | null {
 function parseStep(ctx: Context, heading: Heading, body: readonly RootContent[]): Step | null {
   const at = positionOf(heading);
   const first = heading.children[0];
-  const title = heading.children
-    .slice(1)
-    .map((c) => (c.type === 'text' ? c.value : '\u0000'))
-    .join('')
-    .trim();
-  if (first?.type !== 'inlineCode' || title === '' || title.includes('\u0000')) {
-    ctx.reporter.add(at, 'steps', 'bad-line', 'a step heading looks like ### `id` Title');
+  const rest = heading.children.slice(1);
+  const title = plainText(rest);
+  if (first?.type !== 'inlineCode' || title === null || title === '') {
+    checkPlainLine(rest, ctx.reporter, 'steps', {});
+    ctx.reporter.add(
+      at,
+      'steps',
+      'bad-line',
+      'a step heading looks like ### `id` Title, the title plain text',
+    );
     return null;
   }
   const id = first.value;
@@ -553,7 +572,9 @@ function parseStep(ctx: Context, heading: Heading, body: readonly RootContent[])
     ctx.reporter.add(at, path, 'bad-line', `after the heading comes the line ${STEP_HINT}`);
     return null;
   }
-  const line = parseServiceLine(ctx, service, path);
+  const line = checkPlainLine(service.children, ctx.reporter, path, { code: true })
+    ? parseServiceLine(ctx, service, path)
+    : null;
 
   let i = 1;
   let code: CodeBlock | null = null;
@@ -721,9 +742,13 @@ export function parseLesson(
   let title = '';
   let index = 0;
   const first = nodes[0];
-  if (first?.type === 'heading' && first.depth === 1 && headingText(first) !== '') {
-    title = headingText(first);
+  if (first?.type === 'heading' && first.depth === 1) {
     index = 1;
+    if (checkPlainLine(first.children, reporter, 'title', {})) {
+      title = plainText(first.children) ?? '';
+      if (title === '')
+        reporter.add(positionOf(first), 'title', 'missing-title', 'the title is empty');
+    }
   } else {
     reporter.add(
       first === undefined ? START : positionOf(first),
@@ -851,7 +876,7 @@ export function parseLesson(
   return {
     draft,
     anchors,
-    sourceUrlRanges: urlRanges,
+    sourceLinkRanges: urlRanges,
     sourceLines,
     codeRanges: collectCodeRanges(root),
   };

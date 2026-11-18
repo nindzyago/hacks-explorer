@@ -5,7 +5,7 @@ import { findForeignAddresses } from './addresses';
 import type { LanguageWords } from './headings';
 import type { ParsedLesson } from './parse';
 import type { Reporter } from './report';
-import { START, positionAt, quote } from './report';
+import { START, createLocator, quote } from './report';
 
 /** One line of the scene holds six participants (decision K19). */
 export const MAX_PARTICIPANTS = 6;
@@ -33,8 +33,8 @@ function checkSources(parsed: ParsedLesson, reporter: Reporter, domains: readonl
     let host: string | null = null;
     try {
       const url = new URL(source.url);
-      if (url.protocol === 'https:' && url.username === '' && url.password === '')
-        host = url.hostname;
+      const plain = url.username === '' && url.password === '' && url.port === '';
+      if (url.protocol === 'https:' && plain) host = url.hostname;
     } catch {
       host = null;
     }
@@ -43,7 +43,7 @@ function checkSources(parsed: ParsedLesson, reporter: Reporter, domains: readonl
         source.position,
         'sources',
         'source-domain',
-        `source ${quote(source.url, 80)} must be an https link to a domain from content/sources.md: ${domains.join(', ')}`,
+        `source ${quote(source.url, 80)} must be an https link without a user or port to a domain from content/sources.md: ${domains.join(', ')}`,
       );
     }
   }
@@ -157,27 +157,42 @@ function inRanges(index: number, ranges: readonly (readonly [number, number])[])
   return ranges.some(([start, end]) => index >= start && index < end);
 }
 
-/** L4.2 over the whole file, except the targets of source links. */
-function checkAddresses(parsed: ParsedLesson, text: string, reporter: Reporter): void {
-  let masked = text;
-  for (const [start, end] of parsed.sourceUrlRanges) {
-    masked = masked.slice(0, start) + ' '.repeat(end - start) + masked.slice(end);
+/** L4.2 over the whole file, except the links of «Источники», which point at real sites. */
+function checkAddresses(
+  parsed: ParsedLesson,
+  text: string,
+  reporter: Reporter,
+  locate: (index: number) => { line: number; column: number },
+): void {
+  const parts: string[] = [];
+  let from = 0;
+  const ranges = [...parsed.sourceLinkRanges].sort((a, b) => a[0] - b[0]);
+  for (const [start, end] of ranges) {
+    if (start < from) continue;
+    parts.push(text.slice(from, start), ' '.repeat(end - start));
+    from = end;
   }
-  for (const found of findForeignAddresses(masked)) {
+  parts.push(text.slice(from));
+  for (const found of findForeignAddresses(parts.join(''))) {
     const message =
       found.kind === 'ip'
         ? `address ${quote(found.value, 45)} is not in a documentation range (192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24, 2001:db8::/32)`
         : `domain ${quote(found.value, 80)} is not a documentation name (example.com, example.org, example.net, *.example, *.test)`;
-    reporter.add(positionAt(text, found.index), 'text', 'address', message);
+    reporter.add(locate(found.index), 'text', 'address', message);
   }
 }
 
 /** ⟦…⟧ marks the harmful part of code; elsewhere it is a mistake. */
-function checkMarks(parsed: ParsedLesson, text: string, reporter: Reporter): void {
+function checkMarks(
+  parsed: ParsedLesson,
+  text: string,
+  reporter: Reporter,
+  locate: (index: number) => { line: number; column: number },
+): void {
   let lastLine = 0;
   for (const match of text.matchAll(/[⟦⟧]/g)) {
     if (inRanges(match.index, parsed.codeRanges)) continue;
-    const at = positionAt(text, match.index);
+    const at = locate(match.index);
     if (at.line === lastLine) continue;
     lastLine = at.line;
     reporter.add(at, 'text', 'bad-mark', 'marks ⟦…⟧ are allowed only inside code blocks');
@@ -193,6 +208,7 @@ export function checkRules(
   checkSources(parsed, reporter, options.sourceDomains);
   checkScene(parsed, reporter);
   checkDefence(parsed, reporter, options.words);
-  checkAddresses(parsed, text, reporter);
-  checkMarks(parsed, text, reporter);
+  const locate = createLocator(text);
+  checkAddresses(parsed, text, reporter, locate);
+  checkMarks(parsed, text, reporter, locate);
 }

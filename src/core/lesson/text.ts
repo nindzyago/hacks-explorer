@@ -15,6 +15,58 @@ export function positionOf(node: Nodes): Position {
   return start === undefined ? START : { line: start.line, column: start.column };
 }
 
+/** Text that a browser would read as a tag, even when the file wrote it as `&lt;b&gt;`. */
+const TAG_LIKE = /<[a-zA-Z/!?]/;
+
+/**
+ * A single-line field (title, header, passport, participant, zone, step lines) is plain text:
+ * text nodes, plus service words in backticks when `code` is set and the bold participant name
+ * when `strong` is set. Reports anything else; returns whether the field is clean.
+ */
+export function checkPlainLine(
+  children: readonly PhrasingContent[],
+  reporter: Reporter,
+  path: string,
+  allow: { code?: boolean; strong?: boolean },
+): boolean {
+  let clean = true;
+  for (const node of children) {
+    if (node.type === 'text') {
+      if (TAG_LIKE.test(node.value)) {
+        reporter.add(positionOf(node), path, 'html', 'HTML is not allowed here; write plain text');
+        clean = false;
+      }
+    } else if (node.type === 'inlineCode' && allow.code === true) {
+      continue;
+    } else if (node.type === 'strong' && allow.strong === true) {
+      if (!checkPlainLine(node.children, reporter, path, {})) clean = false;
+    } else {
+      clean = false;
+      if (['html', 'image', 'imageReference', 'link', 'linkReference'].includes(node.type)) {
+        forbidden(node, reporter, path);
+      } else {
+        reporter.add(
+          positionOf(node),
+          path,
+          'not-allowed',
+          `${node.type === 'inlineCode' ? 'code' : node.type} is not allowed here; this line is plain text`,
+        );
+      }
+    }
+  }
+  return clean;
+}
+
+/** The text of plain phrasing content, or null when it holds anything but text. */
+export function plainText(children: readonly PhrasingContent[]): string | null {
+  let out = '';
+  for (const node of children) {
+    if (node.type !== 'text') return null;
+    out += node.value;
+  }
+  return out.trim();
+}
+
 function forbidden(node: Nodes, reporter: Reporter, path: string): void {
   const at = positionOf(node);
   switch (node.type) {

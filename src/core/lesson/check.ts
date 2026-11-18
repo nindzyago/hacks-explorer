@@ -8,7 +8,7 @@ import { fromMarkdown } from 'mdast-util-from-markdown';
 import { BASE_LANGUAGE, knownLanguages, wordsFor } from './headings';
 import type { ParsedLesson } from './parse';
 import { parseLesson } from './parse';
-import { START, capErrors, createReporter } from './report';
+import { START, capErrors, capReported, createReporter } from './report';
 import { checkRules } from './rules';
 import { parseSourceDomains } from './sources';
 import { compareTranslation } from './translations';
@@ -22,6 +22,96 @@ export const MAX_LESSON_BYTES = 64 * 1024;
  * lesson has a few dozen.
  */
 export const MAX_DELIMITERS = 2000;
+/**
+ * Lines per file. The parser is slow on some constructs that need many lines (16 000 setext
+ * headings take 14 s); B1 has about 220 lines.
+ */
+export const MAX_LINES = 1000;
+/**
+ * Quote and list markers at the start of one line, and the column the last one may stand in.
+ * Deep nesting is slow to parse: 64 000 `>` take 4 s; 2 000 lines of `- - - - a` 0.9 s;
+ * an ordered list nested 200 levels by indentation 0.4 s. Lessons nest two or three levels.
+ */
+export const MAX_LINE_MARKERS = 2;
+export const MAX_MARKER_INDENT = 16;
+
+/** Drops a leading BOM and turns CRLF and lone CR into LF; lines and columns stay as editors show them. */
+export function normaliseText(text: string): string {
+  return text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+}
+
+/** Cheap limits checked before the Markdown parser runs, so no input can make it slow. */
+function preflight(
+  text: string,
+): { code: 'too-large' | 'too-complex' | 'too-deep'; line: number; message: string } | null {
+  const bytes = utf8Length(text);
+  if (bytes > MAX_LESSON_BYTES) {
+    return {
+      code: 'too-large',
+      line: 1,
+      message: `the file is ${String(bytes)} bytes; a lesson is at most ${String(MAX_LESSON_BYTES)}`,
+    };
+  }
+  const lines = text.split('\n');
+  if (lines.length > MAX_LINES) {
+    return {
+      code: 'too-large',
+      line: 1,
+      message: `the file has ${String(lines.length)} lines; a lesson has at most ${String(MAX_LINES)}`,
+    };
+  }
+  const delimiters = text.match(/[*_[]/g)?.length ?? 0;
+  if (delimiters > MAX_DELIMITERS) {
+    return {
+      code: 'too-complex',
+      line: 1,
+      message: `the file has ${String(delimiters)} of the characters * _ [; a lesson has at most ${String(MAX_DELIMITERS)}`,
+    };
+  }
+  for (let i = 0; i < lines.length; i += 1) {
+    const { markers, width } = containerPrefix(lines[i] ?? '');
+    if (markers > MAX_LINE_MARKERS || (markers > 0 && width > MAX_MARKER_INDENT)) {
+      return {
+        code: 'too-deep',
+        line: i + 1,
+        message: `quote and list markers nest too deep on this line; at most ${String(MAX_LINE_MARKERS)} markers within the first ${String(MAX_MARKER_INDENT)} columns`,
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * The quote and list markers that open a line (`> - 1. `) and the columns they take, tab = 4.
+ * Stops early: only whether the limits are crossed matters.
+ */
+function containerPrefix(line: string): { markers: number; width: number } {
+  let markers = 0;
+  let width = 0;
+  /** The column where the last marker ends. */
+  let end = 0;
+  let i = 0;
+  while (i < line.length && markers <= MAX_LINE_MARKERS && width <= MAX_MARKER_INDENT * 2) {
+    const c = line[i];
+    if (c === ' ') width += 1;
+    else if (c === '\t') width += 4;
+    else if (c === '>') {
+      markers += 1;
+      width += 1;
+      end = width;
+    } else {
+      const marker = /^(?:[-+*]|\d{1,9}[.)])(?=[ \t]|$)/.exec(line.slice(i, i + 11))?.[0];
+      if (marker === undefined) break;
+      markers += 1;
+      width += marker.length;
+      end = width;
+      i += marker.length;
+      continue;
+    }
+    i += 1;
+  }
+  return { markers, width: end };
+}
 
 const LESSON_PATH = /^content\/lessons\/([A-Z][0-9]{1,2})\/([a-z]{2,3})\.md$/;
 
@@ -54,10 +144,10 @@ function utf8Length(text: string): number {
   return bytes;
 }
 
-function checkOne(file: unknown, text: unknown, options: CheckOptions): Checked {
+function checkOne(file: unknown, input: unknown, options: CheckOptions): Checked {
   const name = typeof file === 'string' ? file : '<not a file name>';
   const reporter = createReporter(name);
-  const fail = (): Checked => ({ lesson: null, errors: capErrors(reporter.errors), parsed: null });
+  const fail = (): Checked => ({ lesson: null, errors: capReported(reporter), parsed: null });
   const match = typeof file === 'string' ? LESSON_PATH.exec(file) : null;
   if (match === null) {
     reporter.add(
@@ -79,28 +169,14 @@ function checkOne(file: unknown, text: unknown, options: CheckOptions): Checked 
     );
     return fail();
   }
-  if (typeof text !== 'string') {
+  if (typeof input !== 'string') {
     reporter.add(START, '', 'parse-failed', 'the file is not text');
     return fail();
   }
-  const bytes = utf8Length(text);
-  if (bytes > MAX_LESSON_BYTES) {
-    reporter.add(
-      START,
-      '',
-      'too-large',
-      `the file is ${String(bytes)} bytes; a lesson is at most ${String(MAX_LESSON_BYTES)}`,
-    );
-    return fail();
-  }
-  const delimiters = text.match(/[*_[]/g)?.length ?? 0;
-  if (delimiters > MAX_DELIMITERS) {
-    reporter.add(
-      START,
-      '',
-      'too-complex',
-      `the file has ${String(delimiters)} of the characters * _ [; a lesson has at most ${String(MAX_DELIMITERS)}`,
-    );
+  const text = normaliseText(input);
+  const limit = preflight(text);
+  if (limit !== null) {
+    reporter.add({ line: limit.line, column: 1 }, '', limit.code, limit.message);
     return fail();
   }
   let root: Root;
@@ -112,8 +188,7 @@ function checkOne(file: unknown, text: unknown, options: CheckOptions): Checked 
   }
   const parsed = parseLesson(root, text, { id, language, words }, reporter);
   checkRules(parsed, text, reporter, { sourceDomains: options.sourceDomains, words });
-  const sorted = [...reporter.errors].sort((a, b) => a.line - b.line || a.column - b.column);
-  const errors = capErrors(sorted);
+  const errors = capReported(reporter);
   return { lesson: errors.length === 0 ? parsed.draft : null, errors, parsed };
 }
 
@@ -141,19 +216,16 @@ export interface ContentResult {
 export function checkContent(files: readonly ContentFile[], sources: ContentFile): ContentResult {
   const errors: LessonError[] = [];
   const sourcesReporter = createReporter(sources.path);
-  const sourceDomains =
-    typeof sources.text === 'string' && utf8Length(sources.text) <= MAX_LESSON_BYTES
-      ? parseSourceDomains(sources.text, sourcesReporter)
-      : [];
-  if (sourceDomains.length === 0 && sourcesReporter.errors.length === 0) {
-    sourcesReporter.add(
-      START,
-      'sources',
-      'too-large',
-      'the sources file is not readable text up to 64 KB',
-    );
+  let sourceDomains: string[] = [];
+  if (typeof sources.text !== 'string') {
+    sourcesReporter.add(START, 'sources', 'parse-failed', 'the sources file is not text');
+  } else {
+    const text = normaliseText(sources.text);
+    const limit = preflight(text);
+    if (limit === null) sourceDomains = parseSourceDomains(text, sourcesReporter);
+    else sourcesReporter.add({ line: limit.line, column: 1 }, 'sources', limit.code, limit.message);
   }
-  errors.push(...capErrors(sourcesReporter.errors));
+  errors.push(...capReported(sourcesReporter));
 
   const checked = files.map((f) => {
     const path = typeof f.path === 'string' ? f.path : '';
