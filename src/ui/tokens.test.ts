@@ -98,6 +98,14 @@ describe('tokens', () => {
     // M1.2d: a stopped message is green, its word on the paper and its label on the plaque.
     ['--scene-message-text', '--scene-message-stopped'],
     ['--scene-message-stopped', '--scene-paper'],
+    // M1.3: the «Ход атаки» table — white numbers on a later step (muted), results in the
+    // colour of their kind on the panel and on the current row (paper).
+    ['--scene-message-text', '--muted'],
+    ['--scene-message-attack', '--panel'],
+    ['--scene-message-attack', '--paper'],
+    ['--scene-message-safe', '--panel'],
+    ['--scene-message-safe', '--paper'],
+    ['--panel', '--ink'],
   ];
 
   it('paint a stopped message in the defence green, never in red (M1.2d)', () => {

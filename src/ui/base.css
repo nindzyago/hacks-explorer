@@ -9,3 +9,9 @@ body {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
+
+/* Focus is always visible (S6): the same ring on every control, from the keyboard. */
+:focus-visible {
+  outline: 3px solid var(--legit);
+  outline-offset: 2px;
+}

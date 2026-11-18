@@ -1,7 +1,7 @@
 // M1.2b acceptance (design M1.2 §8; oracle A for the screenshots, D for S2 and S11): the
 // message of the current step moves by the player clock, through the temporary commands
-// `scene.step` and `scene.defence` (E10). B1 step 3 stands at the middle of its path in the
-// middle of the step; two runs give byte-equal screenshots; with the defence step 3's harmful plaque
+// `player.goto` and `defence.set` (E10; M1.3 replaced `scene.*`). B1 step 3 stands at the
+// middle of its path in the middle of the step; two runs give byte-equal screenshots; with the defence step 3's harmful plaque
 // stays at the participant that stopped it, with a shield and «остановлено»; with reduced motion
 // the message is at its target at once (S11). I1 shows an icon token and a step that stays put.
 import { copyFileSync, mkdirSync } from 'node:fs';
@@ -86,7 +86,7 @@ for (const viewport of VIEWPORTS) {
       const shoot = async () => {
         await openApp(page);
         await page.evaluate(() => window.__app?.clock.set(0));
-        await run(page, ['scene.step', { step: 3 }]);
+        await run(page, ['player.goto', { step: 3 }]);
         await page.evaluate((ms) => window.__app?.clock.set(ms), TRAVEL_MS / 2);
         const message = page.getByTestId('message');
         await expect(message).toHaveAttribute('data-step', 'glue');
@@ -119,7 +119,7 @@ for (const viewport of VIEWPORTS) {
     }, testInfo) => {
       await openApp(page);
       await page.evaluate(() => window.__app?.clock.set(0));
-      await run(page, ['scene.defence', { on: true }], ['scene.step', { step: 3 }]);
+      await run(page, ['defence.set', { on: true }], ['player.goto', { step: 3 }]);
       // B1 step 3 with the defence: the harmful input travels to the database as a parameter.
       // On its way it is a harmful message like any other, without a shield…
       await page.evaluate((ms) => window.__app?.clock.set(ms), TRAVEL_MS / 2);
@@ -153,7 +153,7 @@ for (const viewport of VIEWPORTS) {
       expect((await page.getByTestId('scene').screenshot(SHOT)).equals(before)).toBe(true);
 
       // The last step is a plain refusal to the attacker: safe, no shield.
-      await run(page, ['scene.step', { step: 5 }]);
+      await run(page, ['player.goto', { step: 5 }]);
       await page.evaluate(() => window.__app?.clock.tick(900));
       await expect(message).toHaveAttribute('data-step', 'refuse');
       await expect(message).toHaveAttribute('data-kind', 'safe');
@@ -180,10 +180,10 @@ for (const viewport of VIEWPORTS) {
       await keep(page, testInfo, `m12b-i1-step1-mail-${viewport.name}`);
 
       // The password manager step: from the employee to the employee.
-      await run(page, ['scene.defence', { on: true }]);
+      await run(page, ['defence.set', { on: true }]);
       const message = page.getByTestId('message');
       for (let step = 1; step <= 6; step += 1) {
-        await run(page, ['scene.step', { step }]);
+        await run(page, ['player.goto', { step }]);
         if ((await message.getAttribute('data-step')) === 'autofill') break;
       }
       await expect(message).toHaveAttribute('data-step', 'autofill');
@@ -203,7 +203,7 @@ for (const viewport of VIEWPORTS) {
       await keep(page, testInfo, `m12b-i1-step3-defence-autofill-${viewport.name}`);
 
       // The stolen password reaches the bank and stops there: the second factor (D3 a).
-      await run(page, ['scene.step', { step: 4 }]);
+      await run(page, ['player.goto', { step: 4 }]);
       await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS);
       await expect(message).toHaveAttribute('data-step', 'leak');
       await expect(message).toHaveAttribute('data-kind', 'attack');
@@ -221,7 +221,7 @@ for (const viewport of VIEWPORTS) {
       await sceneReady(page);
       await keep(page, testInfo, `m12b-i1-step4-defence-stopped-${viewport.name}`);
       // The bank's answer is a plain safe reply, no shield.
-      await run(page, ['scene.step', { step: 5 }]);
+      await run(page, ['player.goto', { step: 5 }]);
       await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS);
       await expect(message).toHaveAttribute('data-step', 'second');
       await expect(message).toHaveAttribute('data-stopped', 'false');
@@ -259,10 +259,10 @@ for (const viewport of [VIEWPORTS[0], { name: 'phone-360', width: 360, height: 8
     const white = await rgb('--scene-message-text');
     expect(green).not.toBe(red);
     const at = async (lesson: string, defence: boolean, step: number, ms: number) => {
-      await run(page, ['lesson.open', { id: lesson }], ['scene.defence', { on: defence }]);
+      await run(page, ['lesson.open', { id: lesson }], ['defence.set', { on: defence }]);
       await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
       await page.evaluate(() => window.__app?.clock.set(0));
-      await run(page, ['scene.step', { step }]);
+      await run(page, ['player.goto', { step }]);
       await page.evaluate((t) => window.__app?.clock.set(t), ms);
       await expect(page.getByTestId('message')).toHaveAttribute(
         'data-progress',
@@ -315,15 +315,15 @@ test.describe('with reduced motion (S11)', () => {
   test('the message is at its target at once, with no movement', async ({ page }) => {
     await openApp(page);
     await page.evaluate(() => window.__app?.clock.set(0));
-    await run(page, ['scene.step', { step: 3 }]);
+    await run(page, ['player.goto', { step: 3 }]);
     const message = page.getByTestId('message');
     await expect(message).toHaveAttribute('data-progress', '1');
     await expect(message).toHaveAttribute('data-arrived', 'true');
     const db = await centreX(page, icon('db'));
     expect(Math.abs((await centreX(page, plaque)) - db)).toBeLessThan(1);
     // The same state as without reduced motion at the end of the step.
-    const state = await page.evaluate(() => window.__app?.state.get().scene);
-    expect(state).toEqual({ step: 3, defence: false, startedMs: 0 });
+    const state = await page.evaluate(() => window.__app?.state.get().player);
+    expect(state).toMatchObject({ step: 3, defence: false, startedMs: 0, playing: false });
   });
 });
 
@@ -331,10 +331,10 @@ test('the scene commands reject hostile parameters and keep the state', async ({
   await openApp(page);
   const codes = await page.evaluate(() =>
     [
-      window.__app?.commands.run('scene.step', { step: '3' }),
-      window.__app?.commands.run('scene.step', { step: 0 }),
-      window.__app?.commands.run('scene.step', { step: 1e9 }),
-      window.__app?.commands.run('scene.defence', { on: 'yes' }),
+      window.__app?.commands.run('player.goto', { step: '3' }),
+      window.__app?.commands.run('player.goto', { step: 0 }),
+      window.__app?.commands.run('player.goto', { step: 1e9 }),
+      window.__app?.commands.run('defence.set', { on: 'yes' }),
       window.__app?.commands.run('lesson.open', { id: '../../etc' }),
     ].map((r) => (r?.ok === false ? r.error.code : 'ok')),
   );
@@ -343,14 +343,14 @@ test('the scene commands reject hostile parameters and keep the state', async ({
     'invalid-params',
     'invalid-params',
     'invalid-params',
-    'failed',
+    'invalid-params',
   ]);
   await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'B1');
 });
 
 test('a step number past the end shows the last step', async ({ page }) => {
   await openApp(page);
-  await run(page, ['scene.step', { step: 100 }]);
+  await run(page, ['player.goto', { step: 100 }]);
   await expect(page.getByTestId('message')).toHaveAttribute('data-step', 'enter');
   await expect(page.getByTestId('scene-step')).toContainText('Шаг 5 из 5.');
 });

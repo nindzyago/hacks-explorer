@@ -6,11 +6,19 @@
  */
 
 export type ParamSpec =
-  | { readonly kind: 'string'; readonly maxLength?: number; readonly optional?: boolean }
+  | {
+      readonly kind: 'string';
+      readonly maxLength?: number;
+      /** A regular expression (source text) the whole value must match, e.g. `[A-Z][0-9]{1,3}`. */
+      readonly pattern?: string;
+      readonly optional?: boolean;
+    }
   | {
       readonly kind: 'integer' | 'number';
       readonly min?: number;
       readonly max?: number;
+      /** The only values allowed, e.g. the speeds `[0.5, 1, 2]`. */
+      readonly values?: readonly number[];
       readonly optional?: boolean;
     }
   | { readonly kind: 'boolean'; readonly optional?: boolean }
@@ -61,6 +69,20 @@ function rangeProblem(value: number, min: number, max: number): string | null {
   return `must be between ${String(min)} and ${String(max)}`;
 }
 
+/** True when `value` as a whole matches `pattern`; a pattern that does not compile matches nothing. */
+function wholeMatch(pattern: string, value: string): boolean {
+  try {
+    return new RegExp(`^(?:${pattern})$`, 'u').test(value);
+  } catch {
+    return false;
+  }
+}
+
+function listProblem(values: readonly number[] | undefined, value: number): string | null {
+  if (values === undefined || values.includes(value)) return null;
+  return `must be one of: ${values.map(String).join(', ')}`;
+}
+
 /** Why `value` does not fit `spec`, or null when it fits. `undefined` means "absent". */
 function valueProblem(spec: ParamSpec, value: unknown): string | null {
   if (value === undefined) return spec.optional === true ? null : 'is required';
@@ -68,18 +90,28 @@ function valueProblem(spec: ParamSpec, value: unknown): string | null {
     case 'string': {
       if (typeof value !== 'string') return 'must be a string';
       const max = spec.maxLength ?? DEFAULT_MAX_STRING_LENGTH;
-      return value.length <= max ? null : `must be at most ${String(max)} characters`;
+      if (value.length > max) return `must be at most ${String(max)} characters`;
+      if (spec.pattern !== undefined && !wholeMatch(spec.pattern, value)) {
+        return `must look like ${spec.pattern}`;
+      }
+      return null;
     }
     case 'integer':
       if (typeof value !== 'number' || !Number.isSafeInteger(value)) return 'must be an integer';
-      return rangeProblem(
-        value,
-        spec.min ?? Number.MIN_SAFE_INTEGER,
-        spec.max ?? Number.MAX_SAFE_INTEGER,
+      return (
+        listProblem(spec.values, value) ??
+        rangeProblem(
+          value,
+          spec.min ?? Number.MIN_SAFE_INTEGER,
+          spec.max ?? Number.MAX_SAFE_INTEGER,
+        )
       );
     case 'number':
       if (typeof value !== 'number' || !Number.isFinite(value)) return 'must be a finite number';
-      return rangeProblem(value, spec.min ?? -Number.MAX_VALUE, spec.max ?? Number.MAX_VALUE);
+      return (
+        listProblem(spec.values, value) ??
+        rangeProblem(value, spec.min ?? -Number.MAX_VALUE, spec.max ?? Number.MAX_VALUE)
+      );
     case 'boolean':
       return typeof value === 'boolean' ? null : 'must be a boolean';
     case 'enum':
@@ -177,12 +209,27 @@ export function specProblems(spec: ParamsSpec): string[] {
         if (max !== undefined && (!Number.isSafeInteger(max) || max < 0)) {
           problems.push(`${name}: maxLength must be a non-negative integer`);
         }
+        if (paramSpec.pattern !== undefined) {
+          try {
+            new RegExp(paramSpec.pattern, 'u');
+          } catch {
+            problems.push(`${name}: pattern is not a regular expression`);
+          }
+        }
         break;
       }
       case 'integer':
       case 'number': {
         const problem = boundsProblem(name, paramSpec);
         if (problem !== null) problems.push(problem);
+        const values = paramSpec.values;
+        if (values !== undefined) {
+          const fits = paramSpec.kind === 'integer' ? Number.isSafeInteger : Number.isFinite;
+          if (values.length === 0) problems.push(`${name}: values must not be empty`);
+          else if (!values.every((v) => fits(v))) {
+            problems.push(`${name}: values must be ${paramSpec.kind}s`);
+          }
+        }
         break;
       }
       case 'boolean':

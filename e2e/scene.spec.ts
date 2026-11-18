@@ -99,7 +99,7 @@ for (const viewport of VIEWPORTS) {
         await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
         await sceneReady(page);
         for (const on of [false, true]) {
-          await page.evaluate((v) => window.__app?.commands.run('scene.defence', { on: v }), on);
+          await page.evaluate((v) => window.__app?.commands.run('defence.set', { on: v }), on);
           const count = Number(
             /из (\d+)/.exec((await page.getByTestId('scene-step').textContent()) ?? '')?.[1],
           );
@@ -107,7 +107,7 @@ for (const viewport of VIEWPORTS) {
           for (let step = 1; step <= count; step += 1) {
             await page.evaluate((n) => {
               window.__app?.clock.set(0);
-              window.__app?.commands.run('scene.step', { step: n });
+              window.__app?.commands.run('player.goto', { step: n });
             }, step);
             for (const [ms, progress] of [
               [0, '0'],
@@ -150,7 +150,7 @@ for (const viewport of VIEWPORTS) {
       await openApp(page);
       await page.evaluate(() => {
         window.__app?.clock.set(0);
-        window.__app?.commands.run('scene.step', { step: 3 });
+        window.__app?.commands.run('player.goto', { step: 3 });
         window.__app?.clock.set(900);
       });
       await expect(page.getByTestId('message')).toHaveAttribute('data-progress', '1');

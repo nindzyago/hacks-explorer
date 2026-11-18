@@ -239,3 +239,38 @@ describe('checkParams with a polluted Object.prototype (N2b)', () => {
     expect(Object.prototype).not.toHaveProperty('note');
   });
 });
+
+// M1.3 (verifier): a speed of 0.5, 1 or 2 and a lesson id like B1 are checked as parameters, so
+// a bad value is `invalid-params`, not a failure inside the command.
+describe('number values and string patterns', () => {
+  const s = {
+    speed: { kind: 'number', values: [0.5, 1, 2] },
+    id: { kind: 'string', maxLength: 8, pattern: '[A-Z][0-9]{1,3}' },
+  } as const satisfies ParamsSpec;
+
+  it('accepts listed numbers and whole matches', () => {
+    expect(checkParams(s, { speed: 0.5, id: 'B1' })).toMatchObject({ ok: true });
+    expect(checkParams(s, { speed: 2, id: 'K123' })).toMatchObject({ ok: true });
+  });
+
+  it.each([
+    [{ speed: 1.5, id: 'B1' }, 'speed'],
+    [{ speed: Number.NaN, id: 'B1' }, 'speed'],
+    [{ speed: 1, id: 'b1' }, 'id'],
+    [{ speed: 1, id: 'B1\n' }, 'id'],
+    [{ speed: 1, id: 'xB1' }, 'id'],
+    [{ speed: 1, id: 'B1234' }, 'id'],
+  ])('rejects %j at %s', (raw, param) => {
+    const result = checkParams(s, raw);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.problems.map((p) => p.param)).toEqual([param]);
+  });
+
+  it('finds bad values and patterns in a spec', () => {
+    expect(specProblems({ a: { kind: 'number', values: [] } })).toHaveLength(1);
+    expect(specProblems({ a: { kind: 'number', values: [1, Number.NaN] } })).toHaveLength(1);
+    expect(specProblems({ a: { kind: 'integer', values: [1.5] } })).toHaveLength(1);
+    expect(specProblems({ a: { kind: 'string', pattern: '(' } })).toHaveLength(1);
+    expect(specProblems(s)).toEqual([]);
+  });
+});

@@ -21,7 +21,7 @@ async function runScenario(page: Page) {
       app.clock.tick(40),
       app.clock.set(1234),
       // M1.2b: step 3 starts at 1230; at 1540 its message is on the way, so time is on screen.
-      app.commands.run('scene.step', { step: 3 }),
+      app.commands.run('player.goto', { step: 3 }),
       app.clock.tick(60),
       app.commands.run('theme.set', { theme: 'dark' }),
       app.clock.tick(Number.NaN),
@@ -55,8 +55,14 @@ test('the same scenario twice gives the same dump and the same screenshot', asyn
       '    "timeMs": 1540',
       '  },',
       '  "lesson": "B1",',
-      '  "scene": {',
+      '  "player": {',
+      '    "counts": {',
+      '      "with": 5,',
+      '      "without": 5',
+      '    },',
       '    "defence": false,',
+      '    "playing": false,',
+      '    "speed": 1,',
       '    "startedMs": 1230,',
       '    "step": 3',
       '  },',
@@ -73,8 +79,10 @@ test('the same scenario twice gives the same dump and the same screenshot', asyn
   expect((await page.screenshot(SHOT)).equals(first.png)).toBe(false);
 });
 
+// M1.3 (K68): real time runs the clock while the player plays or a message is on its way.
 test('the site has a live clock until the first manual move stops it', async ({ page }) => {
   await openApp(page);
+  await page.evaluate(() => window.__app?.commands.run('player.play'));
   // Real time drives the clock: it passes one second of its own time.
   await page.waitForFunction(() => (window.__app?.state.get().clock.timeMs ?? 0) >= 1000);
 
@@ -83,13 +91,14 @@ test('the site has a live clock until the first manual move stops it', async ({ 
   await page.waitForTimeout(400);
   expect(await clockOf(page)).toEqual(stopped);
   // The scene stopped with the clock: a new step does not move without manual time.
-  await page.evaluate(() => window.__app?.commands.run('scene.step', { step: 2 }));
+  await page.evaluate(() => window.__app?.commands.run('player.goto', { step: 2 }));
   await page.waitForTimeout(200);
   await expect(page.getByTestId('message')).toHaveAttribute('data-progress', '0');
 });
 
 test('a rejected clock call does not stop the live clock', async ({ page }) => {
   await openApp(page);
+  await page.evaluate(() => window.__app?.commands.run('player.play'));
   expect(await page.evaluate(() => window.__app?.clock.tick(-1))).toMatchObject({ ok: false });
   const before = (await clockOf(page))?.timeMs ?? 0;
   await page.waitForFunction(
