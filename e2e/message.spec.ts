@@ -7,6 +7,7 @@
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
+import { sceneBoxes } from './scene-boxes';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
@@ -226,6 +227,85 @@ for (const viewport of VIEWPORTS) {
       await expect(message).toHaveAttribute('data-stopped', 'false');
       await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'safe');
     });
+  });
+}
+
+// M1.2d (style guide: a stopped message is green, with a shield and «остановлено»; red belongs
+// to the attacker and its messages only; K62): the colours as the browser paints them, equal to
+// the token values. A stopped message travels red and turns green where it stops; its ring
+// follows it; a harmful message that is not stopped keeps a red ring.
+for (const viewport of [VIEWPORTS[0], { name: 'phone-360', width: 360, height: 800 }] as const) {
+  test(`stopped messages are green where they stop, ring included, at ${String(viewport.width)} px (M1.2d)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await openApp(page);
+    const rgb = async (name: string) => {
+      const hex = await page.evaluate(
+        (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim(),
+        name,
+      );
+      // The build may write a colour short (#fff).
+      const long = /^#[0-9a-f]{3}$/i.test(hex)
+        ? `#${Array.from(hex.slice(1), (c) => c + c).join('')}`
+        : hex;
+      const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(long);
+      if (m === null) throw new Error(`${name} is not a #rgb or #rrggbb colour: ${hex}`);
+      const [r, g, b] = [m[1], m[2], m[3]].map((x) => Number.parseInt(x ?? '', 16));
+      return `rgb(${String(r)}, ${String(g)}, ${String(b)})`;
+    };
+    const red = await rgb('--scene-message-attack');
+    const green = await rgb('--scene-message-stopped');
+    const white = await rgb('--scene-message-text');
+    expect(green).not.toBe(red);
+    const at = async (lesson: string, defence: boolean, step: number, ms: number) => {
+      await run(page, ['lesson.open', { id: lesson }], ['scene.defence', { on: defence }]);
+      await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
+      await page.evaluate(() => window.__app?.clock.set(0));
+      await run(page, ['scene.step', { step }]);
+      await page.evaluate((t) => window.__app?.clock.set(t), ms);
+      await expect(page.getByTestId('message')).toHaveAttribute(
+        'data-progress',
+        ms >= TRAVEL_MS ? '1' : /.+/,
+      );
+      const { message } = await sceneBoxes(page);
+      if (message === null) throw new Error('no message');
+      return message;
+    };
+
+    // B1 with the defence, step 3: red on its way, the ring of the database red too.
+    const going = await at('B1', true, 3, TRAVEL_MS / 2);
+    expect(going.paint).toMatchObject({ ring: red, body: red, word: red, trail: red });
+    await expect(page.getByTestId('message')).toHaveAttribute('data-paint', 'attack');
+    // Where it stops: green plaque, white shield, green «остановлено», green ring; the trail
+    // still shows the harmful message that came.
+    const stopped = await at('B1', true, 3, TRAVEL_MS);
+    expect(stopped.paint).toMatchObject({
+      ring: green,
+      body: green,
+      word: green,
+      label: white,
+      sign: white,
+      trail: red,
+    });
+    await expect(page.getByTestId('message')).toHaveAttribute('data-paint', 'stopped');
+    await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'stopped');
+    await expect(page.getByTestId('message-word')).toHaveText('остановлено');
+    expect(stopped.unpainted).toEqual([]);
+    // Without the defence the harmful query arrives: everything red, ring included.
+    const arrived = await at('B1', false, 3, TRAVEL_MS);
+    expect(arrived.paint).toMatchObject({ ring: red, body: red, word: red });
+    // I1 with the defence: the stolen password stops at the bank, the password manager stays
+    // silent at the employee — both green.
+    for (const step of [3, 4]) {
+      const m = await at('I1', true, step, TRAVEL_MS);
+      expect(m.paint, `I1 step ${String(step)}`).toMatchObject({
+        ring: green,
+        body: green,
+        word: green,
+      });
+      expect(m.unpainted).toEqual([]);
+    }
   });
 }
 

@@ -390,3 +390,119 @@ describe('no-css-animation', () => {
     expect(rules([file('src/ui/a.test.ts', "el.style.transition = 'x';")])).toEqual([]);
   });
 });
+
+// M1.2d (carry-over of the M1.2c verifier, K61): ways past no-css-animation. SMIL in script
+// strings, tags in capitals, Svelte style={…} values, cssText, Object.assign(el.style, …),
+// style[`…`], the -o- and -ms- prefixes and CSS escapes in a property name (decided: any
+// backslash escape in a CSS property name is an error, K63).
+describe('no-css-animation, M1.2d', () => {
+  const rules = (files) =>
+    checkFiles(files)
+      .filter((p) => p.rule === 'no-css-animation')
+      .map((p) => `${p.path}:${String(p.line)}`);
+
+  it.each([
+    [
+      'SMIL in a script string',
+      'src/scene/s.ts',
+      'el.innerHTML = \'<animate attributeName="x" />\';',
+    ],
+    [
+      'SMIL set in a template string',
+      'src/scene/s.ts',
+      'g.innerHTML = `<set attributeName="x"/>`;',
+    ],
+    [
+      'SMIL in a Svelte script string',
+      'src/scene/S.svelte',
+      '<script>\n  const s = "<animateMotion path=\'M0 0\'/>";\n</script>',
+      2,
+    ],
+    [
+      'SMIL created by name',
+      'src/scene/s.ts',
+      "const a = document.createElementNS(SVG, 'animateTransform');",
+    ],
+    [
+      'SMIL in capitals',
+      'src/scene/s.svg',
+      '<svg><rect><ANIMATE attributeName="x" /></rect></svg>',
+    ],
+    [
+      'SMIL in capitals in Svelte',
+      'src/scene/S.svelte',
+      '<rect><ANIMATE attributeName="x" /></rect>',
+    ],
+    ['SMIL in a lower-case-first mix', 'src/scene/S.svelte', '<rect><aNiMaTe to="1" /></rect>'],
+    ['a Svelte style string', 'src/ui/A.svelte', '<p style={"transition: opacity 1s"}>x</p>'],
+    ['a Svelte style template', 'src/ui/A.svelte', '<p style={`animation: ${a} 1s`}>x</p>'],
+    [
+      'a Svelte style concatenation',
+      'src/ui/A.svelte',
+      "<p style={'color: x; ' + 'transition: 1s'}>x</p>",
+    ],
+    ['cssText', 'src/ui/s.ts', "el.style.cssText = 'transition: opacity 1s';"],
+    ['cssText added to', 'src/ui/s.ts', 'el.style.cssText += `; animation: spin 1s`;'],
+    [
+      'a style attribute from a script',
+      'src/ui/s.ts',
+      "el.setAttribute('style', 'transition: 1s');",
+    ],
+    ['Object.assign with a shorthand', 'src/ui/s.ts', 'Object.assign(el.style, { transition });'],
+    [
+      'Object.assign with a value',
+      'src/ui/s.ts',
+      "Object.assign(el.style, { animationName: 'x' });",
+    ],
+    [
+      'Object.assign with a quoted key',
+      'src/ui/s.ts',
+      "Object.assign(this.el.style, { 'transition-duration': '1s' });",
+    ],
+    ['style[`transition`]', 'src/ui/s.ts', "el.style[`transition`] = 'x';"],
+    ['an -o- prefix', 'src/ui/a.css', 'p { -o-transition: all 1s; }'],
+    ['an -ms- prefix', 'src/ui/a.css', 'p { -ms-animation: x 1s; }'],
+    ['-o- keyframes', 'src/ui/a.css', '@-o-keyframes spin {}'],
+    ['a prefixed property from a script', 'src/ui/s.ts', "el.style.msTransition = '1s';"],
+    ['an O prefix from a script', 'src/ui/s.ts', "el.style.OTransition = '1s';"],
+    ['a CSS escape in a property', 'src/ui/a.css', 'p { tr\\61nsition: opacity 1s; }'],
+    ['a CSS escape of a letter', 'src/ui/a.css', 'p {\n  an\\imation: x 1s;\n}', 2],
+    ['a CSS escape in a style block', 'src/ui/A.svelte', '<style>p { \\74ransition: 1s; }</style>'],
+    ['a CSS escape in a style attribute', 'src/ui/A.svelte', '<p style="tr\\61nsition: 1s">x</p>'],
+  ])('rejects %s', (_name, path, text, line = 1) => {
+    expect(rules([file(path, text)])).toEqual([`${path}:${String(line)}`]);
+  });
+
+  it('keeps hovers, resets, components, types, data keys and prose allowed', () => {
+    expect(
+      rules([
+        file('src/ui/a.css', '.transition:hover { color: var(--ink); }\np { transition: none; }'),
+        file('src/ui/b.css', '.md\\:flex { display: flex; }\n.a\\.b { margin: 0; }'),
+        file(
+          'src/ui/A.svelte',
+          '<p class:in={on} class="set">x</p>\n<Set />\n<Animate x={1} />\n' +
+            '<p style={`color: ${c}`}>x</p>\n<p style={"transition: none"}>x</p>',
+        ),
+        file(
+          'src/scene/s.ts',
+          'const seen: Set<string> = new Set<string>();\nconst m = new Map<string, Set<number>>();\n' +
+            "const keys = { set: 1, animate: 2, transition: 3 };\nconst k = keys['set'];\n" +
+            "const text = 'The animation of a transition';\nconst a = Array<Set<string>>();",
+        ),
+        file('src/scene/t.ts', "el.style.cssText = 'transition: none; color: var(--ink)';"),
+        file('src/scene/u.ts', "Object.assign(options, { transition: 1 });\nel.style['color'];"),
+        file(
+          'src/ui/B.svelte',
+          '<script lang="ts">\n  const s: Set<string> = new Set();\n</script>',
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('sees a colour set through style[`…`] too (no-literal-colours)', () => {
+    const found = checkFiles([file('src/scene/s.ts', "el.style[`color`] = 'red';")]).map(
+      (p) => p.rule,
+    );
+    expect(found).toEqual(['no-literal-colours']);
+  });
+});

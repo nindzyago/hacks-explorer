@@ -246,7 +246,9 @@ describe('layoutMessage', () => {
     const labelBottom = Math.max(...scene.zones.map((z) => z.label.box.y + z.label.box.height));
     const m = layoutMessage(scene, glue, 0, false);
     const wordTop = (m?.wordY ?? 0) - 11 * 0.8;
-    expect(wordTop).toBeGreaterThan(labelBottom);
+    // M1.2d: at least 10 px of paper, so that the word does not read as a second line of the
+    // zone label above it («Подделка» / «вредное» on a phone).
+    expect(wordTop - labelBottom).toBeGreaterThanOrEqual(10);
     expect(m?.wordY ?? Infinity).toBeLessThan(scene.lane.y - TOKEN_RADIUS);
   });
 });
@@ -344,7 +346,7 @@ describe('the message at rest fits its zone (M1.2c)', () => {
     ['B1', B1, B1_STEPS],
     ['I1', I1, I1_STEPS],
   ] as const) {
-    for (const width of [356, 364, 390, 760, 926]) {
+    for (const width of [334, 349, 356, 364, 390, 760, 926]) {
       it(`${name} at ${String(width)} px`, () => {
         const layout = layoutScene({ ...input, width });
         const texts = [
@@ -381,7 +383,7 @@ describe('the message at rest fits its zone (M1.2c)', () => {
               const full = Array.from(line.text).length * MESSAGE_FONT_SIZE * 0.6;
               expect(line.fit ?? full).toBeGreaterThanOrEqual(full * MIN_SQUEEZE - 1e-6);
             }
-            expect(m.plaque?.lines.length ?? 1).toBeLessThanOrEqual(2);
+            expect(m.plaque?.lines.length ?? 1).toBeLessThanOrEqual(3);
           }
         }
       });
@@ -413,6 +415,121 @@ describe('the message at rest fits its zone (M1.2c)', () => {
       expect(start?.trail?.x1).toBeCloseTo(layoutMessage(layout, param, 0, false)?.x ?? NaN, 1);
       expect(later?.trail?.x1).toBe(start?.trail?.x1);
       expect(later?.trail?.x2).toBe(later?.x);
+    }
+  });
+});
+
+// M1.2d (style guide: a stopped message is green with a shield and «остановлено»; red belongs
+// to the attacker and its messages only). A stopped message travels in the colour of its kind
+// and turns into the defence colour where it stops; the receiver ring follows the message, so
+// it stays red while a harmful message travels or arrives unstopped (K62).
+describe('the colour of a message (M1.2d)', () => {
+  const param = B1_STEPS[5] ?? step({ id: 'x' });
+  const glue = B1_STEPS[2] ?? step({ id: 'x' });
+
+  it('paints a stopped harmful message red on its way and green where it stops', () => {
+    for (const t of [0, TRAVEL_MS / 2, TRAVEL_MS - 1]) {
+      expect(layoutMessage(scene, param, t, false)).toMatchObject({
+        paint: 'attack',
+        trailPaint: 'attack',
+        sign: 'attack',
+        word: 'вредное',
+      });
+    }
+    for (const t of [TRAVEL_MS, TRAVEL_MS * 20]) {
+      expect(layoutMessage(scene, param, t, false)).toMatchObject({
+        paint: 'stopped',
+        sign: 'stopped',
+        word: 'остановлено',
+        // The line behind it shows the harmful message that came.
+        trailPaint: 'attack',
+      });
+    }
+  });
+
+  it('keeps a harmful message that is not stopped red all the way, ring included', () => {
+    for (const t of [0, TRAVEL_MS / 2, TRAVEL_MS, TRAVEL_MS * 20]) {
+      expect(layoutMessage(scene, glue, t, false)?.paint).toBe('attack');
+    }
+  });
+
+  it('paints a stopped step that does not move green at once, other kinds as their kind', () => {
+    const autofill = I1_STEPS[5] ?? step({ id: 'x' });
+    const i1 = layoutScene({ ...I1, width: 760 });
+    expect(layoutMessage(i1, autofill, 0, false)?.paint).toBe('stopped');
+    expect(layoutMessage(scene, step({ id: 's', kind: 'safe' }), 0, false)?.paint).toBe('safe');
+    expect(layoutMessage(scene, step({ id: 'l' }), TRAVEL_MS, false)?.paint).toBe('legit');
+    // With reduced motion the stopped message is there, and green, at once (S11).
+    expect(layoutMessage(scene, param, 0, true)?.paint).toBe('stopped');
+  });
+});
+
+// M1.2d: on a 360 px phone (334 px of scene) «пароль не подставлен» was cut to «пароль не…».
+// A compact plaque now hangs its text around the sign: the sign takes room on the first line
+// only, the next lines start under it, up to three lines. No plaque of B1 or I1 is cut on
+// 360, 375 and 390 px phones.
+describe('compact plaques on narrow phones (M1.2d)', () => {
+  const PHONES = [334, 349, 364];
+
+  it('keeps «пароль не подставлен» whole at 360 and 375 px', () => {
+    for (const width of PHONES) {
+      const layout = layoutScene({ ...I1, width });
+      for (const s of [I1_STEPS[5], I1_STEPS[6]]) {
+        if (s === undefined) throw new Error('no step');
+        const m = layoutMessage(layout, s, TRAVEL_MS, false);
+        expect(m?.plaque?.cut, `${s.id} at ${String(width)}`).toBe(false);
+        expect(m?.plaque?.text, `${s.id} at ${String(width)}`).toBe(s.message);
+      }
+    }
+    const narrow = layoutScene({ ...I1, width: 334 });
+    const autofill = layoutMessage(narrow, I1_STEPS[5] ?? step({ id: 'x' }), 0, false);
+    expect(autofill?.plaque?.lines.map((l) => l.text)).toEqual(['пароль не', 'подставлен']);
+  });
+
+  it('starts the first line after the sign and the next lines under it', () => {
+    const narrow = layoutScene({ ...I1, width: 334 });
+    const plaque = layoutMessage(narrow, I1_STEPS[5] ?? step({ id: 'x' }), 0, false)?.plaque;
+    if (plaque === null || plaque === undefined) throw new Error('no plaque');
+    const [first, second] = plaque.lines;
+    expect(first?.x).toBe(plaque.textX);
+    expect(second?.x).toBeLessThan(plaque.textX);
+    expect(second?.x).toBeGreaterThanOrEqual(3);
+    // The sign stands at the first line.
+    expect(plaque.signY).toBeCloseTo((first?.y ?? 0) - 4, 6);
+    // Every line ends inside the plaque.
+    for (const line of plaque.lines) {
+      const drawn = line.fit ?? Array.from(line.text).length * MESSAGE_FONT_SIZE * 0.6;
+      expect(line.x + drawn).toBeLessThanOrEqual(plaque.width - 3 + 1e-6);
+    }
+  });
+
+  it('uses up to three lines, 42 px high, before it cuts', () => {
+    const narrow = layoutScene({ ...I1, width: 334 });
+    const three = step({ id: 'three', to: 'user', message: 'пароль не подставлен сюда' });
+    const plaque = layoutMessage(narrow, three, TRAVEL_MS, false)?.plaque;
+    expect(plaque?.lines).toHaveLength(3);
+    expect(plaque?.height).toBe(42);
+    expect(plaque?.cut).toBe(false);
+    const long = step({ id: 'long', to: 'user', message: 'один два три четыре пять шесть семь' });
+    const cut = layoutMessage(narrow, long, TRAVEL_MS, false)?.plaque;
+    expect(cut?.lines).toHaveLength(3);
+    expect(cut?.cut).toBe(true);
+    expect(cut?.text.endsWith('…')).toBe(true);
+  });
+
+  it('cuts no plaque of B1 and I1 on a phone', () => {
+    for (const [input, steps] of [
+      [B1, B1_STEPS],
+      [I1, I1_STEPS],
+    ] as const) {
+      for (const width of PHONES) {
+        const layout = layoutScene({ ...input, width });
+        for (const s of steps) {
+          const m = layoutMessage(layout, s, TRAVEL_MS, false);
+          if (m?.plaque === null || m?.plaque === undefined) continue;
+          expect(m.plaque.cut, `${s.id} at ${String(width)}`).toBe(false);
+        }
+      }
     }
   });
 });

@@ -11,9 +11,12 @@ import { layoutProblems, messageProblems, sceneBoxes } from './scene-boxes';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
+// M1.2d: also the narrow Android phones of 375 and 360 px.
 const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 720 },
   { name: 'phone', width: 390, height: 844 },
+  { name: 'phone-375', width: 375, height: 812 },
+  { name: 'phone-360', width: 360, height: 800 },
 ] as const;
 
 test('the B1 scene is on the page with its participants and zones', async ({ page }) => {
@@ -125,6 +128,11 @@ for (const viewport of VIEWPORTS) {
               expect(messageProblems(scene, boxes, m), where).toEqual([]);
               // Text of the message is not below 11 px either.
               expect(m.word.fontSize, where).toBeGreaterThanOrEqual(11);
+              // M1.2d: and no plaque text is cut.
+              const label = page.getByTestId('message-label');
+              if ((await label.count()) > 0) {
+                expect(await label.textContent(), where).not.toContain('…');
+              }
             }
           }
         }
@@ -195,6 +203,74 @@ for (const viewport of VIEWPORTS) {
       await page.evaluate(() =>
         document.querySelector('[data-testid="message-word"]')?.removeAttribute('visibility'),
       );
+      // M1.2d: what M1.2c did not see. Each change is made through the CSSOM (the component's
+      // classes beat attributes) and undone before the next.
+      const styled = async (selector: string, property: string, value: string) => {
+        const found = await broken(() => undefined);
+        expect(found).toEqual([]);
+        await page.evaluate(
+          ([s, p, v]) => {
+            const e = document.querySelector(s);
+            if (e instanceof SVGElement) e.style.setProperty(p, v);
+          },
+          [selector, property, value] as const,
+        );
+        const problems = await broken(() => undefined);
+        await page.evaluate(
+          ([s, p]) => {
+            const e = document.querySelector(s);
+            if (e instanceof SVGElement) e.style.removeProperty(p);
+          },
+          [selector, property] as const,
+        );
+        return problems;
+      };
+      const ringSel = '[data-testid="message-ring"]';
+      const plaqueSel = '[data-testid="message-plaque"] .plaque';
+      const labelSel = '[data-testid="message-label"]';
+      const wordSel = '[data-testid="message-word"]';
+      expect(await styled(ringSel, 'stroke-opacity', '0')).toContain('ring: stroke-opacity 0');
+      expect(await styled(plaqueSel, 'fill-opacity', '0')).toContain('body: fill-opacity 0');
+      expect(await styled(labelSel, 'display', 'none')).toContain('label: display none');
+      expect(await styled(labelSel, 'fill-opacity', '0')).toContain('label: fill-opacity 0');
+      // The label in the plaque's own colour, the word in the paper's: there but unreadable.
+      expect(
+        (await styled(labelSel, 'fill', 'var(--scene-message-attack)')).some((p) =>
+          p.startsWith('label: contrast 1.0'),
+        ),
+      ).toBe(true);
+      expect(
+        (await styled(wordSel, 'fill', 'var(--scene-paper)')).some((p) =>
+          p.startsWith('word: contrast 1.0'),
+        ),
+      ).toBe(true);
+      // A ring in the paper's colour is not seen either.
+      expect(
+        (await styled(ringSel, 'stroke', 'var(--scene-paper)')).some((p) =>
+          p.startsWith('ring: contrast'),
+        ),
+      ).toBe(true);
+      // The plaque pushed up over the top of the ring, off the lane.
+      const lifted = await styled(
+        '[data-testid="message-plaque"]',
+        'transform',
+        'translateY(-30px)',
+      );
+      expect(lifted.some((p) => p.startsWith('plaque off the lane'))).toBe(true);
+      // The plaque grown down over the database's icon: more than its top 30% (K59, M1.2d).
+      const grown = await broken(() => {
+        for (const r of document.querySelectorAll('[data-testid="message-plaque"] > rect')) {
+          r.setAttribute('height', String(Number(r.getAttribute('height')) + 60));
+        }
+      });
+      expect(grown).toContain('plaque covers participant-db icon');
+      await page.evaluate(() => {
+        for (const r of document.querySelectorAll('[data-testid="message-plaque"] > rect')) {
+          r.setAttribute('height', String(Number(r.getAttribute('height')) - 60));
+        }
+      });
+      expect(await broken(() => undefined)).toEqual([]);
+
       // The ring pulled onto the database's note; the plaque moved onto the internet zone.
       const cut = await broken(() => {
         const r = document.querySelector('[data-testid="message-ring"]');
@@ -245,12 +321,16 @@ for (const viewport of VIEWPORTS) {
         .locator('[data-testid^="participant-"] [data-part="name"]')
         .allTextContents();
       const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
+      // M1.2d: an address is never cut; on a narrow phone it breaks after a dot onto the next
+      // line and still reads as one word.
       expect(notes.map(squash)).toEqual([
         '203.0.113.66',
         '192.0.2.24',
-        viewport.width < 500 ? 'bank-…example' : 'bank-login.example',
+        'bank-login.example',
         'bank.example',
       ]);
+      const drawn = await page.locator('[data-testid="scene"] svg').textContent();
+      expect(drawn ?? '').not.toContain('…');
       // Lines of one label are separate words: a space between them, never a word cut in two.
       expect(names.map(squash)).toEqual(['Атакующий', 'Сотрудник', 'Поддельная страница', 'Банк']);
     });

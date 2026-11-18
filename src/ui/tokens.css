@@ -35,6 +35,11 @@
   --scene-message-attack: var(--scene-attack-text);
   --scene-message-safe: #087a6a;
   --scene-message-legit: var(--legit);
+  /*
+   * A message stopped by the defence, where it stops (M1.2d, style guide: green, shield,
+   * «остановлено»): the defence green, as dark as the safe one for the same 4.5:1.
+   */
+  --scene-message-stopped: var(--scene-message-safe);
   --scene-message-text: #ffffff;
   /* A participant without an icon of its own (unknown icon name). */
   --scene-placeholder: #dde3e9;

@@ -132,7 +132,7 @@ describe('layoutScene', () => {
     ['I1', I1],
     ['six participants with long labels', SIX],
   ] as const) {
-    for (const width of [760, 390]) {
+    for (const width of [760, 390, 349, 334]) {
       it(`${name} at ${String(width)} px: nothing leaves the scene or overlaps`, () => {
         const layout = layoutScene({ ...input, width });
         expect(layout.width).toBe(width);
@@ -198,15 +198,44 @@ describe('layoutScene', () => {
     const layout = layoutScene({ ...I1, width: 390 });
     const fake = layout.participants.find((p) => p.id === 'fake');
     expect(fake?.name.lines.map((l) => l.text)).toEqual(['Поддельная', 'страница']);
-    // An address never breaks inside: far too long for the column, it loses its middle and
-    // keeps its zone (M1.2b).
-    expect(fake?.note?.lines.map((l) => l.text)).toEqual(['bank-l…example']);
-    expect(fake?.note?.cut).toBe(true);
+    // M1.2d: an address too long for the column is never cut in the middle; it breaks after a
+    // dot or a hyphen onto the next line, and the lines read as one word.
+    expect(fake?.note?.lines.map((l) => l.text)).toEqual(['bank-login.', 'example']);
+    expect(fake?.note?.lines.map((l) => l.glued)).toEqual([false, true]);
+    expect(fake?.note?.cut).toBe(false);
+  });
+
+  it('breaks an address only after a dot, colon or hyphen, in balanced lines (M1.2d)', () => {
+    const at = (note: string, width: number) =>
+      layoutScene({
+        participants: [1, 2, 3, 4].map((i) => ({ id: `p${String(i)}`, name: 'Банк', note })),
+        zones: [],
+        width,
+      }).participants[0]?.note;
+    // 360 px phone: the IP address does not fit even drawn at 85%; never «20…0.113.66».
+    const ip = at('203.0.113.66', 334);
+    expect(ip?.lines.map((l) => l.text)).toEqual(['203.0.', '113.66']);
+    expect(ip?.lines.map((l) => l.glued)).toEqual([false, true]);
+    expect(ip?.cut).toBe(false);
+    // 390 px: it fits drawn a little narrower, on one line.
+    expect(at('203.0.113.66', 364)?.lines.map((l) => l.text)).toEqual(['203.0.113.66']);
+    // IPv6 (RFC 3849) breaks after a colon.
+    const v6 = at('2001:db8:4006:812::200e', 334);
+    expect(v6?.lines.every((l, i) => i === 0 || /[:.-]$/.test(v6.lines[i - 1]?.text ?? ''))).toBe(
+      true,
+    );
+    expect(v6?.lines.map((l) => l.text).join('')).toBe('2001:db8:4006:812::200e');
+    // Words that are not addresses keep the old rule: their end is cut with «…».
+    const word = at('Сверхдлиннаяслововсеголинии', 334);
+    expect(word?.cut).toBe(true);
+    expect(word?.lines.every((l) => !l.glued)).toBe(true);
+    // A word ending in a colon or a dot is not an address.
+    expect(at('параметр:', 760)?.lines.map((l) => l.glued)).toEqual([false]);
   });
 
   it('draws a word a little too wide narrower instead of cutting it (M1.2b)', () => {
     // A real phone: 390 px less the page padding and border.
-    const layout = layoutScene({ ...I1, width: 356 });
+    const layout = layoutScene({ ...I1, width: 364 });
     const attacker = layout.participants.find((p) => p.id === 'attacker');
     const line = attacker?.note?.lines[0];
     expect(line?.text).toBe('203.0.113.66');
@@ -231,7 +260,15 @@ describe('layoutScene', () => {
           ] as const) {
             if (block === null) continue;
             const words = text.split(/\s+/);
-            for (const line of block.lines) {
+            // Lines glued to the one before them (an address broken after a dot) are one word.
+            const joined = block.lines.reduce<string[]>(
+              (out, l) =>
+                l.glued && out.length > 0
+                  ? [...out.slice(0, -1), `${out.at(-1) ?? ''}${l.text}`]
+                  : [...out, l.text],
+              [],
+            );
+            for (const line of joined.map((text) => ({ text }))) {
               for (const word of line.text.split(' ')) {
                 // Each word on a line is a whole word of the text, or one cut with «…».
                 if (!word.includes('…')) expect(words).toContain(word);
@@ -243,12 +280,17 @@ describe('layoutScene', () => {
     }
   });
 
-  it('keeps the addresses of B1 and I1 whole on a phone (M1.2b)', () => {
+  it('keeps the addresses of B1 and I1 whole on a phone (M1.2b, M1.2d: 360 and 375 px)', () => {
     for (const input of [B1, I1]) {
-      for (const p of layoutScene({ ...input, width: 356 }).participants) {
-        const note = input.participants.find((x) => x.id === p.id)?.note ?? '';
-        if (note === 'bank-login.example') continue;
-        expect(p.note?.lines.map((l) => l.text).join(' ')).toBe(note);
+      for (const width of [280, 334, 349, 356, 364]) {
+        for (const p of layoutScene({ ...input, width }).participants) {
+          const note = input.participants.find((x) => x.id === p.id)?.note ?? '';
+          const text = (p.note?.lines ?? [])
+            .map((l, i) => (i > 0 && !l.glued ? ` ${l.text}` : l.text))
+            .join('');
+          expect(text, `${p.id} at ${String(width)}`).toBe(note);
+          expect(p.note?.cut, `${p.id} at ${String(width)}`).toBe(false);
+        }
       }
     }
   });
@@ -265,11 +307,14 @@ describe('layoutScene', () => {
       height: r.height + 2 * d,
     });
     for (const input of [B1, I1, SIX]) {
-      for (const width of [280, 356, 390, 760, 926]) {
+      for (const width of [280, 334, 349, 356, 390, 760, 926]) {
         const layout = layoutScene({ ...input, width });
         const all = participantBoxes(layout);
         for (const p of layout.participants) {
-          const inner = grow(p.area, -RING_STROKE / 2);
+          // M1.2d: 2 px of paper between the ring's line and the participant's text and icon,
+          // and between the ring's line and the zone frame's line (1.5 px wide), so that the
+          // ring does not read as a second line of a red «Подделка» frame.
+          const inner = grow(p.area, -RING_STROKE / 2 - 2);
           const outer = grow(p.area, RING_STROKE / 2);
           const where = `${p.id} at ${String(width)}`;
           for (const b of all) {
@@ -281,7 +326,9 @@ describe('layoutScene', () => {
           }
           for (const z of layout.zones) {
             if (z.members.includes(p.id)) {
-              expect(inside(outer, grow(z.rect, -0.75)), `${where}: ring in ${z.id}`).toBe(true);
+              expect(inside(outer, grow(z.rect, -0.75 - 2)), `${where}: ring in ${z.id}`).toBe(
+                true,
+              );
             } else {
               expect(overlap(outer, z.rect), `${where}: ring × zone ${z.id}`).toBe(false);
             }

@@ -31,18 +31,25 @@
 - `prefers-reduced-motion: reduce` (`MediaQuery` из `svelte/reactivity`) — сообщение сразу у
   цели (S11); меняется на лету.
 - Сообщение: кольцо вокруг получателя (линия 2 px, `RING_STROKE`, не задевает ни текст, ни
-  рамку зоны — M1.2c), след за сообщением (толщина 3), плашка (одна строка или компактная в
-  две, M1.2c) или жетон с тенью, знак (контур, не символ шрифта) и слово вида над сообщением.
+  рамку зоны — M1.2c; от рамки зоны и от текста — не меньше 2 px бумаги, M1.2d), след за
+  сообщением (толщина 3), плашка (одна строка или компактная до трёх строк, знак перед первой,
+  M1.2d) или жетон с тенью, знак (контур, не символ шрифта) и слово вида над сообщением.
   На покое всё это остаётся в зоне участника, у которого стоит сообщение. Цвета вида —
-  `--scene-message-attack | safe | legit`; белый текст плашки держит 4,5:1 на каждом.
+  `--scene-message-attack | safe | legit`; где остановленное сообщение остановилось, плашка,
+  значок, слово и кольцо — `--scene-message-stopped` (зелёный защиты), след остаётся цвета
+  вида (M1.2d, K62; классы `.message.<вид>` и `.stopped`, переменные `--kind` и `--paint`).
+  Белый текст плашки держит 4,5:1 на каждом.
+- Строка, сжатая `textLength`, рисуется от левого края (`text-anchor="start"` на `x − fit/2`):
+  Chromium центрирует такую строку по её естественной ширине и сдвигал её на 1,5 px (M1.2d).
 - Доступность: `<svg role="img">` с заголовком «Схема урока «…»» и описанием
   (`data-testid="scene-description"`): участники слева направо и состав зон. Под схемой —
   подпись текущего шага (`figcaption`, `aria-live="polite"`, `data-testid="scene-step"`):
   «Шаг 3 из 5. Сервер склеивает запрос: Веб-сервер → База данных, вредное сообщение «SELECT ...».»
-- Строки одной подписи разделены пробелом между `<tspan>`: текст читается словами.
+- Строки одной подписи разделены пробелом между `<tspan>`: текст читается словами. Адрес,
+  перенесённый после точки (`glued`, M1.2d), склеен без пробела: «bank-login.example».
 - `data-testid`: `scene` (с `data-lesson`), `participant-<id>`, `zone-<id>` (с `data-members`),
   `scene-description`, `scene-step`, `icon-placeholder`, `message` (`data-step`, `data-from`, `data-to`, `data-kind`,
-  `data-stopped`, `data-arrived`, `data-progress` до тысячных), `message-ring`,
+  `data-paint`, `data-stopped`, `data-arrived`, `data-progress` до тысячных), `message-ring`,
   `message-trail`, `message-plaque` (`data-lines`), `message-label`, `message-token` (`data-icon`),
   `message-sign` (`data-sign`: `attack | safe | stopped | right | left | here`),
   `message-word`. Части участников и зон помечены `data-part` (`icon`, `name`, `note`, `frame`,
