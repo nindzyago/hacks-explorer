@@ -19,8 +19,9 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings",
     "test": "vitest run",
     "structure": "node scripts/structure-check.mjs",
+    "budget": "node scripts/budget.mjs dist",
     "e2e": "npm run build && npm run build:e2e && playwright test",
-    "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run e2e",
+    "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run e2e && npm run budget",
     "content": "vitest run scripts/content.test.mjs"
   },
   "devDependencies": {

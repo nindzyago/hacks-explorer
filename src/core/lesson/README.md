@@ -238,6 +238,24 @@ result.errors.map(formatError); // 'content/lessons/B1/ru.md:41:1: step `glue`: 
 `Steps`, `How to defend`; `Simple`, `Step by step`, `Deeper`; `Message`, `Result`), поэтому
 `en.md` добавляется без изменений кода. Третий язык — одна запись в `headings.ts`.
 
+## Данные для сайта (`site.ts`, `site-read.ts`; M1.1b, K37)
+
+Сайт не разбирает Markdown (K31): плагин сборки `scripts/lesson-data.ts` проверяет весь контент
+(`checkContent`), при любой ошибке останавливает сборку с `файл:строка:столбец: сообщение` и
+кладёт в `dist/`:
+
+- `data/catalog.json` — `{ format: 1, lessons: [{ id, section, wave, translations: [{ language,
+  title, hash }] }] }`, `ru` первым;
+- `data/lessons/<id>.<язык>.<hash>.json` — `SiteLesson`: паспорт, источники, участники, зоны,
+  шаги (`from`, `to`, `kind`, `mode`, `stopped`, `icon`, табличка, код, три уровня), «Как
+  защититься». Текст — то же дерево узлов, что у проверки, без позиций в файле и без HTML;
+  `⟦…⟧` — сегменты кода с `marked: true`. Файл больше 30 КБ — ошибка сборки.
+
+`npm run dev` отдаёт те же файлы из памяти, собирая их на каждый запрос; сломанный урок отвечает
+500 с сообщениями, сервер не падает. `site.ts` и `site-read.ts` не тянут разборщик Markdown, их
+можно импортировать в сайт; загрузчик — `src/services/catalog`. Размеры проверяет
+`npm run budget` (последний шаг gate): первая загрузка JS в gzip до 150 КБ, файл урока до 30 КБ.
+
 ## Ограничения
 
 - Пределы выбраны по замерам скорости на враждебных файлах и по B1 (около 9 КБ, 220 строк);
