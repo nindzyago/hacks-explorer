@@ -397,16 +397,16 @@ tr:last-child td { border-bottom: 0; }
     </section>
     <section class="approve" style="border-color:var(--ok)" aria-labelledby="built-h">
       <h2 id="built-h" style="margin:0" data-t="built_h"></h2>
-      <p style="margin:0"></p>
+      <p style="margin:0">Построено по ревизии r2, все решения как утверждены; задачи M1.2a–M1.2d слиты в main 2026-11-18.</p>
       <div class="dl">
-        <div><b data-t="b_gate"></b><span></span></div>
-        <div><b data-t="b_how"></b><span></span></div>
-        <div><b data-t="b_rules"></b><span></span></div>
-        <div><b data-t="b_diff"></b><span></span></div>
-        <div><b data-t="b_live"></b><span></span></div>
-        <div><b data-t="b_not"></b><span></span></div>
-        <div><b data-t="b_unmeasured"></b><span></span></div>
-        <div><b data-t="b_touches"></b><span></span></div>
+        <div><b data-t="b_gate"></b><span>Тестов было 830 модульных и 24 браузерных (после M1.2a), стало 1037 и 67; первая загрузка JS 23.0 → 28.8 КБ gzip из 150.</span></div>
+        <div><b data-t="b_how"></b><span>Четыре задачи по очереди (M1.2a–d), каждую проверял отдельный верификатор. Возвраты: M1.2b — остановка стояла у атакующего (исправлено в уроках); M1.2d — обходы запрета анимаций (FAIL, исправлено).</span></div>
+        <div><b data-t="b_rules"></b><span>Зелёный со щитом всегда значит «остановлено здесь», красный — вредное сообщение в пути; зелёная плашка никогда не едет. Адрес на схеме никогда не режется, только переносится по точке. При выключенной в системе анимации сообщение сразу у цели. Тёмной темы нет. Сломанная иконка — нейтральная заглушка; сбой загрузки урока — сообщение по-русски с кнопкой «Попробовать снова».</span></div>
+        <div><b data-t="b_diff"></b><span>Иконки WebP с прозрачными краями вместо JPG (K47a); остановленное сообщение зелёное по прибытии (K62, по стиль-гайду); сценарий S2 переписан под D3 (K48); добавлена команда lesson.open (K53). Всё записано в docs/decisions.md.</span></div>
+        <div><b data-t="b_live"></b><span>Браузерные тесты на 1280, 390, 375 и 360 px для уроков B1 и I1, все шаги, с защитой и без; черновой адрес hacks-explorer.mike-antipiev.workers.dev обновляется с main.</span></div>
+        <div><b data-t="b_not"></b><span>Реальные телефоны и браузеры кроме Chromium; экраны высокой плотности; медленная сеть.</span></div>
+        <div><b data-t="b_unmeasured"></b><span>Время хода 900 мс и сглаживание; предел сжатия текста 85%; пороги контраста и зазоров в тестах; ширины букв Onest измерены только в Chromium.</span></div>
+        <div><b data-t="b_touches"></b><span>3: ответы на вопросы, решение «без тёмной темы», выбор иконок.</span></div>
       </div>
     </section>
   </div>
@@ -588,8 +588,64 @@ tr:last-child td { border-bottom: 0; }
 
 <script type="application/json" id="built-data">
 {
-  "pr": "",
-  "shots": []
+ "pr": "",
+ "shots": [
+  {
+   "key": "before",
+   "label": "Было · до доводки",
+   "caption": "Шаг 3 с защитой: остановленная плашка красная, как было после M1.2c",
+   "src": "/_blob/96e6c89fa31f42d938246398af7790d3",
+   "was": true
+  },
+  {
+   "key": "b1-attack",
+   "label": "SQL-инъекция · шаг 3 · ноутбук",
+   "caption": "Вредный запрос на середине пути от сервера к базе; красная рамка у получателя",
+   "src": "/_blob/83fa83900b5633e5bccab75b908d6410"
+  },
+  {
+   "key": "b1-defence",
+   "label": "SQL-инъекция · с защитой · ноутбук",
+   "caption": "Ввод атакующего дошёл до базы только как данные и остановлен: зелёная плашка со щитом",
+   "src": "/_blob/9be23d26ad7f62767c5d9ca85c01b05f"
+  },
+  {
+   "key": "i1-mail",
+   "label": "Фишинг · шаг 1 · ноутбук",
+   "caption": "Письмо-приманка едет от атакующего к сотруднику; зона «Подделка» красная",
+   "src": "/_blob/6035723ddb34a9050ac27d6472c44e30"
+  },
+  {
+   "key": "i1-defence",
+   "label": "Фишинг · с защитой · ноутбук",
+   "caption": "Украденный пароль остановлен у банка: нужен второй фактор",
+   "src": "/_blob/45c0bbfbfe1101be2564c7d8febce105"
+  },
+  {
+   "key": "b1-attack-phone",
+   "label": "SQL-инъекция · шаг 3 · телефон 390",
+   "caption": "Схема целиком по ширине; адрес атакующего в две строки по точке",
+   "src": "/_blob/5e9da31532ed8d0c7680c7388efffe06"
+  },
+  {
+   "key": "b1-defence-phone",
+   "label": "SQL-инъекция · с защитой · телефон 390",
+   "caption": "Остановленная плашка внутри зоны сайта",
+   "src": "/_blob/870b6e752727ec209b769875027eb66b"
+  },
+  {
+   "key": "i1-mail-phone",
+   "label": "Фишинг · шаг 1 · телефон 390",
+   "caption": "Четыре участника на узком экране без прокрутки вбок",
+   "src": "/_blob/10d6eb320d4f32626475bf153ba96ec2"
+  },
+  {
+   "key": "i1-defence-phone",
+   "label": "Фишинг · с защитой · телефон 390",
+   "caption": "«чужой пароль» остановлен внутри зоны банка",
+   "src": "/_blob/3e711cb6aaba1781bc6ce99e166ebf7e"
+  }
+ ]
 }
 </script>
 
