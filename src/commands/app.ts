@@ -8,6 +8,7 @@ import { initialState, type AppState } from '../core/state';
 import { createStore, type Store } from '../core/store';
 import { registerClockCommands } from './clock';
 import { createRegistry, type CommandRegistry } from './registry';
+import { registerSceneCommands } from './scene';
 import { registerThemeCommands } from './theme';
 
 export interface AppContext {
@@ -36,5 +37,6 @@ export function createApp(options: AppOptions = {}): AppContext {
   // Every group of commands is registered here, one line per group.
   registerThemeCommands(registry, store);
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
+  registerSceneCommands(registry, store, clock);
   return { store, registry, clock };
 }

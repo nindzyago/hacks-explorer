@@ -1,6 +1,6 @@
 // M1.2a (design M1.2 E9): a still scene has a text description for screen readers.
 import { describe, expect, it } from 'vitest';
-import { describeScene, sceneTitle } from './describe';
+import { describeScene, describeStep, sceneTitle } from './describe';
 
 describe('describeScene', () => {
   it('names participants in order and the members of each zone', () => {
@@ -29,5 +29,73 @@ describe('describeScene', () => {
 
   it('titles the scene by the lesson', () => {
     expect(sceneTitle('SQL-инъекция')).toBe('Схема урока «SQL-инъекция»');
+  });
+});
+
+// M1.2b (design M1.2 E9): the current step in words, for screen readers and under the scene.
+describe('describeStep', () => {
+  const participants = [
+    { id: 'attacker', name: 'Атакующий', note: '' },
+    { id: 'server', name: 'Веб-сервер', note: '' },
+    { id: 'db', name: 'База данных', note: '' },
+  ];
+  const base = {
+    id: 'glue',
+    title: 'Сервер склеивает запрос',
+    from: 'server',
+    to: 'db',
+    kind: 'attack',
+    mode: 'without-defence',
+    stopped: false,
+    icon: null,
+    message: "SELECT … 'admin' --",
+  } as const;
+
+  it('names the number, the title, who sends to whom and the kind of message', () => {
+    expect(describeStep(participants, { number: 3, count: 5, step: base })).toBe(
+      'Шаг 3 из 5. Сервер склеивает запрос: Веб-сервер → База данных, ' +
+        "вредное сообщение «SELECT … 'admin' --».",
+    );
+  });
+
+  it('says where a stopped message stopped', () => {
+    const param = {
+      ...base,
+      title: 'Запрос с параметром',
+      mode: 'with-defence',
+      stopped: true,
+      message: "параметр: admin' --",
+    } as const;
+    expect(describeStep(participants, { number: 3, count: 5, step: param })).toBe(
+      'Шаг 3 из 5. Запрос с параметром: Веб-сервер → База данных, вредное сообщение ' +
+        "«параметр: admin' --» остановлено у участника «База данных».",
+    );
+  });
+
+  it('does not name the participant twice for a stopped step that stays put (I1 autofill)', () => {
+    const autofill = {
+      ...base,
+      title: 'Менеджер паролей молчит',
+      from: 'attacker',
+      to: 'attacker',
+      kind: 'safe',
+      stopped: true,
+      message: 'пароль не подставлен',
+    } as const;
+    expect(describeStep(participants, { number: 3, count: 5, step: autofill })).toBe(
+      'Шаг 3 из 5. Менеджер паролей молчит: у участника «Атакующий», безопасное сообщение ' +
+        '«пароль не подставлен» остановлено.',
+    );
+  });
+
+  it('describes a step that stays with one participant', () => {
+    const self = { ...base, from: 'db', to: 'db', kind: 'legit', message: 'проверка' } as const;
+    expect(describeStep(participants, { number: 1, count: 1, step: self })).toBe(
+      'Шаг 1 из 1. Сервер склеивает запрос: у участника «База данных», обычное сообщение «проверка».',
+    );
+  });
+
+  it('says when the mode has no steps', () => {
+    expect(describeStep(participants, null)).toBe('В этом режиме у урока нет шагов.');
   });
 });

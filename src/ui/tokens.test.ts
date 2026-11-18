@@ -88,6 +88,13 @@ describe('tokens', () => {
     ['--scene-muted', '--scene-paper'],
     ['--scene-attack-text', '--scene-paper'],
     ['--scene-ink', '--scene-placeholder'],
+    // M1.2b: plaque text on each kind, and the word above a message on the scene paper.
+    ['--scene-message-text', '--scene-message-attack'],
+    ['--scene-message-text', '--scene-message-safe'],
+    ['--scene-message-text', '--scene-message-legit'],
+    ['--scene-message-attack', '--scene-paper'],
+    ['--scene-message-safe', '--scene-paper'],
+    ['--scene-message-legit', '--scene-paper'],
   ];
 
   it.each(TEXT_PAIRS)('%s on %s has a contrast of at least 4.5:1', (fg, bg) => {

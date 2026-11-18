@@ -1,5 +1,6 @@
 // Acceptance for M0.4, browser half (oracle level A): the same scenario run twice gives an
-// identical state dump and an identical screenshot, byte for byte.
+// identical state dump and an identical screenshot, byte for byte. Since M1.2b the clock is on
+// the screen through the scene: the message of the current step stands where clock time says.
 import { stableDump } from '../src/core/dump';
 import { expect, openApp, sceneReady, test } from './support';
 import type { Page } from '@playwright/test';
@@ -19,15 +20,18 @@ async function runScenario(page: Page) {
     return [
       app.clock.tick(40),
       app.clock.set(1234),
+      // M1.2b: step 3 starts at 1230; at 1540 its message is on the way, so time is on screen.
+      app.commands.run('scene.step', { step: 3 }),
       app.clock.tick(60),
       app.commands.run('theme.set', { theme: 'dark' }),
       app.clock.tick(Number.NaN),
       app.commands.run('clock.tick', { ms: 250 }),
     ].map((result) => (result.ok ? 'ok' : result.error.code));
   });
-  expect(results).toEqual(['ok', 'ok', 'ok', 'ok', 'invalid-params', 'ok']);
-  // 1234 + 60 + 250 = 1544: 154 whole steps of 10 ms and 4 ms kept.
-  await expect(page.getByTestId('clock-readout')).toHaveText('Часы плеера: 1540 мс');
+  expect(results).toEqual(['ok', 'ok', 'ok', 'ok', 'ok', 'invalid-params', 'ok']);
+  // 1234 + 60 + 250 = 1544: 154 whole steps of 10 ms and 4 ms kept. 310 ms into the step of
+  // 900: eased 2·(310/900)² = 0.237 of the way.
+  await expect(page.getByTestId('message')).toHaveAttribute('data-progress', '0.237');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
   const dumped = stableDump(await page.evaluate(() => window.__app?.state.get()));
@@ -50,15 +54,22 @@ test('the same scenario twice gives the same dump and the same screenshot', asyn
       '    "stepMs": 10,',
       '    "timeMs": 1540',
       '  },',
+      '  "lesson": "B1",',
+      '  "scene": {',
+      '    "defence": false,',
+      '    "startedMs": 1230,',
+      '    "step": 3',
+      '  },',
       '  "theme": "dark"',
       '}',
     ].join('\n'),
   );
   expect(second.png.equals(first.png), 'screenshots of the two runs are byte-equal').toBe(true);
 
-  // The comparison means something: clock time is on the screen, so other time is another PNG.
+  // The comparison means something: the message moves with clock time (no readout since
+  // M1.2b), so other time is another PNG.
   await page.evaluate(() => window.__app?.clock.tick(10));
-  await expect(page.getByTestId('clock-readout')).toHaveText('Часы плеера: 1550 мс');
+  await expect(page.getByTestId('message')).not.toHaveAttribute('data-progress', '0.237');
   expect((await page.screenshot(SHOT)).equals(first.png)).toBe(false);
 });
 
@@ -71,9 +82,10 @@ test('the site has a live clock until the first manual move stops it', async ({ 
   const stopped = await clockOf(page);
   await page.waitForTimeout(400);
   expect(await clockOf(page)).toEqual(stopped);
-  await expect(page.getByTestId('clock-readout')).toHaveText(
-    `Часы плеера: ${String(stopped?.timeMs)} мс`,
-  );
+  // The scene stopped with the clock: a new step does not move without manual time.
+  await page.evaluate(() => window.__app?.commands.run('scene.step', { step: 2 }));
+  await page.waitForTimeout(200);
+  await expect(page.getByTestId('message')).toHaveAttribute('data-progress', '0');
 });
 
 test('a rejected clock call does not stop the live clock', async ({ page }) => {

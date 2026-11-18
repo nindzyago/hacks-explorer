@@ -6,7 +6,7 @@ import { ESLint } from 'eslint';
 import globals from 'globals';
 import ts from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
-import { REAL_TIME_DRIVER, timingConfig } from './timing-rules.mjs';
+import { LOAD_TIMER, REAL_TIME_DRIVER, timingConfig } from './timing-rules.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -150,7 +150,13 @@ describe('timing rules', () => {
       expect(config.linterOptions.noInlineConfig, path).toBe(true);
     }
     expect(REAL_TIME_DRIVER).toBe('src/time/real-time-driver.ts');
-    for (const path of [REAL_TIME_DRIVER, 'src/core/clock.test.ts', 'e2e/determinism.spec.ts']) {
+    expect(LOAD_TIMER).toBe('src/time/load-timer.ts');
+    for (const path of [
+      REAL_TIME_DRIVER,
+      LOAD_TIMER,
+      'src/core/clock.test.ts',
+      'e2e/determinism.spec.ts',
+    ]) {
       const config = await project.calculateConfigForFile(path);
       for (const name of names) expect(config.rules?.[name], path).toBeUndefined();
       expect(config.linterOptions.noInlineConfig, path).not.toBe(true);

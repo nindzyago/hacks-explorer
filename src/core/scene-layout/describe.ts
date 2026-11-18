@@ -4,6 +4,31 @@
  * i18n with M2.3.
  */
 import type { SceneInput } from './layout';
+import { messageWord, type StepInput } from './message';
+
+/** The current step in words (E9): «Шаг 3 из 5. Заголовок: кто → кому, вредное сообщение «…».» */
+export function describeStep(
+  participants: SceneInput['participants'],
+  current: { readonly number: number; readonly count: number; readonly step: StepInput } | null,
+): string {
+  if (current === null) return 'В этом режиме у урока нет шагов.';
+  const { number, count, step } = current;
+  const name = (id: string) => participants.find((p) => p.id === id)?.name ?? id;
+  const route =
+    step.from === step.to
+      ? `у участника «${name(step.to)}»`
+      : `${name(step.from)} → ${name(step.to)}`;
+  const kind = messageWord(step.kind, false);
+  // «… вредное сообщение «…» остановлено у участника «База данных».»: the message, not the
+  // participant, is what was stopped.
+  // A step that stays with one participant has already named it.
+  const where = step.from === step.to ? '' : ` у участника «${name(step.to)}»`;
+  const stopped = step.stopped ? ` остановлено${where}` : '';
+  return (
+    `Шаг ${String(number)} из ${String(count)}. ${step.title}: ${route}, ` +
+    `${kind} сообщение «${step.message}»${stopped}.`
+  );
+}
 
 export function sceneTitle(lessonTitle: string): string {
   return `Схема урока «${lessonTitle}»`;

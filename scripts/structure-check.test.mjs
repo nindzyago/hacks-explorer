@@ -167,6 +167,77 @@ describe('no-literal-colours', () => {
     ).toEqual([]);
   });
 
+  // M1.2b: the M1.2a verifier's holes in the gate, closed before the messages get colours.
+  it.each([
+    ['a Svelte expression attribute', 'src/scene/S.svelte', '<rect fill={"red"} />'],
+    [
+      'a colour picked in an expression',
+      'src/scene/S.svelte',
+      "<rect fill={x ? 'red' : 'blue'} />",
+    ],
+    ['a style directive', 'src/ui/A.svelte', '<p style:background-color={"navy"}>x</p>'],
+    ['a custom property', 'src/ui/A.svelte', '<style>p { --x: red; }</style>'],
+    ['a component custom property', 'src/ui/A.svelte', '<Scene --accent="tomato" />'],
+    ['a gradient', 'src/ui/a.css', 'p { background-image: linear-gradient(red, var(--ink)); }'],
+    [
+      'a repeating gradient',
+      'src/ui/a.css',
+      'p { mask: repeating-radial-gradient(circle, white 0 2px, var(--x) 3px); }',
+    ],
+    ['a drop shadow', 'src/ui/a.css', 'p { filter: drop-shadow(0 1px 2px black); }'],
+    ['color() with a colour space', 'src/ui/a.css', 'p { accent: color(display-p3 1 0 0); }'],
+    ['a logical border colour', 'src/ui/a.css', 'p { border-inline-start-color: maroon; }'],
+    ['a scrollbar colour', 'src/ui/a.css', 'p { scrollbar-color: gray white; }'],
+    ['a text emphasis colour', 'src/ui/a.css', 'p { text-emphasis-color: olive; }'],
+    ['a webkit text fill colour', 'src/ui/a.css', 'p { -webkit-text-fill-color: teal; }'],
+    ['setAttribute with a colour', 'src/scene/s.ts', "el.setAttribute('fill', 'red');"],
+    ['setAttribute with a hex colour', 'src/scene/s.ts', "el.setAttribute('stroke', '#abc');"],
+    ['style.setProperty with a colour', 'src/ui/s.ts', "el.style.setProperty('--x', 'red');"],
+    ['a canvas fill style', 'src/scene/s.ts', "ctx.fillStyle = 'red';"],
+    ['a canvas stroke style', 'src/scene/s.ts', "ctx.strokeStyle = 'navy';"],
+    ['an SVG file', 'src/scene/shield.svg', '<svg><path fill="#d8432b" d="M0 0" /></svg>'],
+    ['a named colour in an SVG file', 'src/scene/shield.svg', '<svg><path stroke="black" /></svg>'],
+  ])('rejects %s (M1.2b)', (_name, path, text) => {
+    expect(new Set(rules([file(path, text)]))).toEqual(new Set([`no-literal-colours ${path}:1`]));
+  });
+
+  it('keeps currentColor, transparent, tokens and fragment links allowed (M1.2b)', () => {
+    expect(
+      rules([
+        file(
+          'src/scene/S.svelte',
+          '<rect fill={on ? "currentColor" : "transparent"} stroke={kindColour} />',
+        ),
+        file(
+          'src/ui/a.css',
+          'p { --x: var(--ink); background-image: linear-gradient(var(--a), transparent); }',
+        ),
+        file(
+          'src/ui/b.css',
+          'p { filter: drop-shadow(0 1px 2px var(--scene-ink)); scrollbar-color: currentColor transparent; }',
+        ),
+        file(
+          'src/scene/s.ts',
+          "el.setAttribute('fill', 'var(--scene-ink)');\nctx.fillStyle = colour;",
+        ),
+        file('src/scene/t.ts', "use.setAttribute('href', '#bad');\nlink.href = '#add';"),
+        file(
+          'src/ui/C.svelte',
+          '<a href="#add">x</a>\n<use href="#cafe" />\n<p>Issue #123, задача #456</p>',
+        ),
+        file(
+          'src/scene/u.ts',
+          "const clip = 'url(#face)';\nfunction color(x: number) { return x; }",
+        ),
+        file('src/ui/D.svelte', '<p>{red}</p>\n<rect fill={palette.red} stroke={colours.white} />'),
+        file(
+          'src/ui/E.svelte',
+          '<style>\n  p { border: 1px solid var(--line); outline-color: currentcolor; }\n</style>',
+        ),
+      ]),
+    ).toEqual([]);
+  });
+
   it('lets test files hold colours as data', () => {
     expect(rules([file('src/ui/tokens.test.ts', "expect(x).toBe('#f3f5f7');")])).toEqual([]);
   });

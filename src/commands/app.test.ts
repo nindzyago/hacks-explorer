@@ -4,7 +4,7 @@ import { createApp } from './app';
 describe('createApp', () => {
   it('starts from the initial state with the application commands registered', () => {
     const app = createApp();
-    expect(app.store.get()).toEqual({ theme: 'light' });
+    expect(app.store.get()).toMatchObject({ theme: 'light' });
     expect(app.registry.list()).toContainEqual({
       id: 'theme.set',
       titleKey: 'command.theme.set',
@@ -46,7 +46,7 @@ describe('theme.set', () => {
       const app = createApp();
       const result = app.registry.run('theme.set', params);
       expect(result).toMatchObject({ ok: false, error: { code: 'invalid-params' } });
-      expect(app.store.get()).toEqual({ theme: 'light' });
+      expect(app.store.get()).toMatchObject({ theme: 'light' });
     },
   );
 });
@@ -62,7 +62,7 @@ describe('player clock (M0.4)', () => {
     expect(app.clock.now()).toBe(30);
     expect(other.clock.now()).toBe(0);
     // The clock is not part of the stored state: a step does not wake the store's subscribers.
-    expect(app.store.get()).toEqual({ theme: 'light' });
+    expect(app.store.get()).toMatchObject({ theme: 'light' });
   });
 
   it('tells the caller before every manual move of the clock', () => {

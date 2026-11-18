@@ -32,4 +32,4 @@ const loader = createLessonLoader({
   base: import.meta.env.BASE_URL,
 });
 
-mount(App, { target, props: { app, loader } });
+mount(App, { target, props: { app, loader, home: import.meta.env.BASE_URL } });
