@@ -154,7 +154,7 @@ test.describe('S3: three depths', () => {
     }
     // The CWE code is visible.
     const cwe = page.getByTestId('passport').locator('[data-key="cwe"] dd');
-    await expect(cwe).toHaveText(lesson.passport.cwe.map((n) => `CWE-${String(n)}`).join(', '));
+    await expect(cwe).toHaveText(/^CWE-89\b/);
     await expect(cwe).toBeVisible();
     expect(lesson.passport.cwe).toContain(89);
   });
@@ -266,7 +266,7 @@ test.describe('passport and sources', () => {
     const lesson = await lessonData(page, 'B1');
     const row = (key: string) => page.getByTestId('passport').locator(`[data-key="${key}"] dd`);
     await expect(row('class')).toHaveText('Инъекция в запрос к базе данных');
-    await expect(row('cwe')).toHaveText('CWE-89');
+    await expect(row('cwe')).toHaveText('CWE-89 · SQL-инъекция');
     await expect(row('owasp')).toHaveText('A03:2021');
     await expect(row('severity')).toHaveText('критическая');
     await expect(row('impact')).toHaveText(lesson.passport.impact ?? '');
@@ -352,6 +352,197 @@ test.describe('S10: the panel on a phone', () => {
       const box = await pre.boundingBox();
       expect((box?.x ?? -1) >= 0 && (box?.x ?? 0) + (box?.width ?? 0) <= 390).toBe(true);
     }
+  });
+});
+
+// A valid lesson may hold words longer than a phone is wide: a 66-letter bold word, a link in
+// prose, words of 3000 letters, a very long code line. The built B1 is changed on its way to
+// the page (the checker accepts all of these). The file stays under the loader's 128 KB.
+const LONG = 'А'.repeat(66);
+const URL_IN_PROSE = `https://example.org/${'very-long-path/'.repeat(12)}index.html`;
+const HUGE = 'W'.repeat(3000);
+const LONG_LINE = `SELECT ${'column_name, '.repeat(60)}x FROM users`;
+
+function hostile(lesson: Record<string, unknown>): Record<string, unknown> {
+  const words = (bold: boolean, huge = false) => ({
+    type: 'paragraph',
+    children: [
+      { type: 'text', value: 'Слово ' },
+      bold
+        ? { type: 'strong', children: [{ type: 'text', value: LONG }] }
+        : { type: 'text', value: LONG },
+      { type: 'text', value: ` ссылка ${URL_IN_PROSE} и ${huge ? HUGE : LONG}` },
+      { type: 'code', value: `${LONG}${LONG}` },
+    ],
+  });
+  const list = { type: 'list', ordered: false, items: [[words(false)], [words(true)]] };
+  const code = {
+    type: 'code',
+    lang: 'sql',
+    segments: [
+      { text: LONG_LINE, marked: false },
+      { text: 'x'.repeat(600), marked: true },
+    ],
+  };
+  const steps = (lesson['steps'] as Record<string, unknown>[]).map((step) => ({
+    ...step,
+    code: step['code'] === null ? null : code,
+    levels: {
+      simple: [words(true, true)],
+      detailed: [words(false), list],
+      deep: [words(true), list, code],
+    },
+  }));
+  const passport = lesson['passport'] as Record<string, unknown>;
+  return {
+    ...lesson,
+    steps,
+    passport: { ...passport, class: LONG, impact: `${HUGE} ${URL_IN_PROSE}`, defence: LONG },
+    defence: [words(true, true), list],
+    sources: [{ title: `${LONG} ${URL_IN_PROSE}`, url: `${URL_IN_PROSE}?q=${'x'.repeat(3000)}` }],
+  };
+}
+
+async function openHostile(page: Page): Promise<void> {
+  await page.route('**/data/lessons/B1.ru.*.json', async (route) => {
+    const response = await route.fetch();
+    const data = (await response.json()) as Record<string, unknown>;
+    // A fresh answer: the original headers would declare the original length.
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(hostile(data)),
+    });
+  });
+  await openApp(page);
+  await expect(page.getByTestId('explain-step')).toBeVisible();
+}
+
+for (const viewport of [
+  { width: 360, height: 800 },
+  { width: 390, height: 844 },
+  { width: 1280, height: 720 },
+] as const) {
+  test.describe(`hostile text at ${String(viewport.width)}`, () => {
+    test.use({ viewport });
+
+    test('long words, links and code lines never push the page or the panel sideways', async ({
+      page,
+    }) => {
+      await openHostile(page);
+      await expect(page.getByTestId('passport').locator('[data-key="class"] dd')).toHaveText(LONG);
+      for (const defence of [false, true]) {
+        await run(page, 'defence.set', { on: defence });
+        for (const step of [1, 3]) {
+          await run(page, 'player.goto', { step });
+          for (const depth of DEPTHS) {
+            await run(page, 'depth.set', { depth });
+            await expect(page.getByTestId('explain-text')).toHaveAttribute('data-depth', depth);
+            const where = `${String(defence)} step ${String(step)} ${depth}`;
+            const widths = await page.evaluate(() => {
+              const root = document.documentElement;
+              const panel = document.querySelector<HTMLElement>('[data-testid="explain"]');
+              const inner = Array.from(
+                document.querySelectorAll<HTMLElement>('[data-testid="explain"] *'),
+              )
+                // Code boxes scroll by design; the hidden heading is 1 px wide by design.
+                .filter((el) => el.closest('pre') === null && !el.matches('.visually-hidden'))
+                .filter((el) => el.scrollWidth > el.clientWidth + 1);
+              return {
+                page: root.scrollWidth - root.clientWidth,
+                panel: panel === null ? -1 : panel.scrollWidth - panel.clientWidth,
+                inner: inner.map((el) => el.tagName),
+              };
+            });
+            expect(widths.page, `page, ${where}`).toBe(0);
+            expect(widths.panel, `panel, ${where}`).toBe(0);
+            expect(widths.inner, `parts of the panel, ${where}`).toEqual([]);
+          }
+        }
+      }
+      // Only the code boxes scroll sideways, inside themselves.
+      await run(page, 'depth.set', { depth: 'deep' });
+      const pre = page.getByTestId('explain-code-text').first();
+      const scrolls = await pre.evaluate((el) => el.scrollWidth > el.clientWidth);
+      expect(scrolls).toBe(true);
+    });
+  });
+}
+
+test.describe('keys inside the panel (K69)', () => {
+  test('Space on the focused panel scrolls it; arrows on a code box scroll it, not the player', async ({
+    page,
+  }) => {
+    await openHostile(page);
+    await run(page, 'player.goto', { step: 3 });
+    const before = await playerOf(page);
+
+    const panel = page.getByTestId('explain');
+    await panel.focus();
+    await page.keyboard.press(' ');
+    await expect.poll(() => panel.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowLeft');
+    expect(await playerOf(page)).toEqual(before);
+
+    await run(page, 'depth.set', { depth: 'deep' });
+    const pre = page.getByTestId('explain-code-text').first();
+    await pre.focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => pre.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
+    await page.keyboard.press(' ');
+    expect(await playerOf(page)).toEqual(before);
+
+    // D is not a scrolling key: it still toggles the defence from the panel.
+    await panel.focus();
+    await page.keyboard.press('d');
+    expect((await playerOf(page))?.defence).toBe(true);
+  });
+});
+
+test.describe('the panel at 1280×720 (K73)', () => {
+  test('shows «Ниже ещё ↓» while there is more below, and the current query without scrolling', async ({
+    page,
+  }) => {
+    await openApp(page);
+    const panel = page.getByTestId('explain');
+    await expect(page.getByTestId('explain-more')).toBeVisible();
+    await expect(page.getByTestId('explain-more')).toHaveText('Ниже ещё ↓');
+    await panel.evaluate((el) => {
+      el.scrollTop = el.scrollHeight;
+    });
+    await expect(page.getByTestId('explain-more')).toHaveCount(0);
+    await panel.evaluate((el) => {
+      el.scrollTop = 0;
+    });
+    await expect(page.getByTestId('explain-more')).toBeVisible();
+
+    await run(page, 'depth.set', { depth: 'deep' });
+    for (const defence of [false, true]) {
+      await run(page, 'defence.set', { on: defence });
+      // Step 3 is the glued query without the defence and the parameterised one with it.
+      await run(page, 'player.goto', { step: 3 });
+      await panel.evaluate((el) => {
+        el.scrollTop = 0;
+      });
+      const own = page.locator('[data-testid="explain-code"][data-current="true"] pre');
+      await expect(own).toHaveCount(1);
+      const [p, c] = await Promise.all([panel.boundingBox(), own.boundingBox()]);
+      if (p === null || c === null) throw new Error('no box');
+      expect(c.y, `defence ${String(defence)}`).toBeGreaterThanOrEqual(p.y);
+      expect(c.y + c.height, `defence ${String(defence)}`).toBeLessThanOrEqual(p.y + p.height);
+      // The hint does not cover it.
+      const hint = await page.getByTestId('explain-more').boundingBox();
+      if (hint !== null) expect(c.y + c.height).toBeLessThanOrEqual(hint.y + hint.height / 2);
+    }
+  });
+
+  test('a phone has no hint: the panel does not scroll there', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openApp(page);
+    await expect(page.getByTestId('explain-step')).toBeVisible();
+    await expect(page.getByTestId('explain-more')).toHaveCount(0);
   });
 });
 

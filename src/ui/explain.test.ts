@@ -85,14 +85,14 @@ describe('code at «Глубже» (K72)', () => {
   const answer = step({ id: 'answer', from: 'db', to: 'server', mode: 'without-defence' });
   const steps = [trick, glue, answer, param];
 
-  it('shows the query before and after the defence for a one-mode step, «Без защиты» first', () => {
+  it('shows the query before and after the defence for a one-mode step, its own first', () => {
     expect(codeAtDeep(steps, glue)).toEqual([
       { label: 'Без защиты', code: glue.code, current: true },
       { label: 'С защитой', code: param.code, current: false },
     ]);
     expect(codeAtDeep(steps, param)).toEqual([
-      { label: 'Без защиты', code: glue.code, current: false },
       { label: 'С защитой', code: param.code, current: true },
+      { label: 'Без защиты', code: glue.code, current: false },
     ]);
   });
 
@@ -110,6 +110,30 @@ describe('code at «Глубже» (K72)', () => {
     const lone = step({ id: 'l', from: 'x', to: 'y', mode: 'with-defence', code: code('l') });
     expect(codeAtDeep([...steps, lone], lone)).toEqual([
       { label: 'С защитой', code: lone.code, current: true },
+    ]);
+  });
+
+  it('pairs only a step with the same sender and the same receiver', () => {
+    const toLog = step({
+      id: 'log',
+      from: 'server',
+      to: 'log',
+      mode: 'with-defence',
+      code: code('log'),
+    });
+    expect(codeAtDeep([glue, toLog, param], glue)).toEqual([
+      { label: 'Без защиты', code: glue.code, current: true },
+      { label: 'С защитой', code: param.code, current: false },
+    ]);
+    const fromElsewhere = step({
+      id: 'f',
+      from: 'cache',
+      to: 'db',
+      mode: 'with-defence',
+      code: code('f'),
+    });
+    expect(codeAtDeep([glue, fromElsewhere], glue)).toEqual([
+      { label: 'Без защиты', code: glue.code, current: true },
     ]);
   });
 });
@@ -148,7 +172,7 @@ describe('passport', () => {
     });
     expect(rows.map((r) => [r.label, r.value])).toEqual([
       ['Класс', 'Инъекция'],
-      ['CWE', 'CWE-89, CWE-564'],
+      ['CWE', 'CWE-89 · SQL-инъекция, CWE-564'],
       ['OWASP Top 10', 'A03:2021'],
       ['Тяжесть', 'критическая'],
       ['Что получает атакующий', 'Вход'],
@@ -162,6 +186,18 @@ describe('passport', () => {
       label: 'Класс',
       value: 'SQL-инъекция',
     });
+  });
+
+  it('treats an empty class as absent', () => {
+    expect(passportRows({ ...empty, class: '', cwe: [89] })[0]?.value).toBe('SQL-инъекция');
+    expect(passportRows({ ...empty, class: '  ' }).map((r) => r.key)).toEqual([]);
+  });
+
+  it('names a known CWE next to its number', () => {
+    const row = passportRows({ ...empty, class: 'Инъекция', cwe: [89] }).find(
+      (r) => r.key === 'cwe',
+    );
+    expect(row?.value).toBe('CWE-89 · SQL-инъекция');
   });
 
   it('has no class line for an unknown CWE, and nothing at all for an empty passport', () => {

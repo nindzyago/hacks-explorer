@@ -17,6 +17,7 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <pre
     tabindex="0"
+    data-own-keys
     data-testid="explain-code-text"
     aria-label={label === '' ? 'Код шага' : `Код: ${label}`}><code
       >{#each code.segments as segment, i (i)}{#if segment.marked}<mark>{segment.text}</mark

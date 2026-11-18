@@ -58,7 +58,8 @@ export interface CodeShown {
 /**
  * The code to show at «Глубже» (K72): the step's code; for a step that plays in one mode only,
  * also the code of the first step of the other mode between the same two participants — the
- * query before and after the defence, side by side. «Без защиты» always comes first.
+ * query before and after the defence, one under the other. The step's own code comes first, so
+ * it is in view without scrolling (K72, K73).
  */
 export function codeAtDeep(steps: readonly SiteStep[], step: SiteStep): readonly CodeShown[] {
   if (step.mode === 'both')
@@ -72,7 +73,7 @@ export function codeAtDeep(steps: readonly SiteStep[], step: SiteStep): readonly
   if (mine === null) return [];
   if (other?.code == null) return [mine];
   const theirs: CodeShown = { label: modeLabel(other.mode), code: other.code, current: false };
-  return step.mode === 'without-defence' ? [mine, theirs] : [theirs, mine];
+  return [mine, theirs];
 }
 
 function modeLabel(mode: SiteStep['mode']): string {
@@ -116,10 +117,12 @@ export interface PassportRow {
 export function passportRows(passport: SitePassport): readonly PassportRow[] {
   const rows: PassportRow[] = [];
   const add = (key: string, label: string, value: string | null) => {
-    if (value !== null && value !== '') rows.push({ key, label, value });
+    if (value !== null && value.trim() !== '') rows.push({ key, label, value });
   };
-  add('class', 'Класс', passport.class ?? cweClass(passport.cwe));
-  add('cwe', 'CWE', passport.cwe.map((n) => `CWE-${String(n)}`).join(', '));
+  // An empty class is no class (the checker never gives one, but data is hostile).
+  const own = passport.class !== null && passport.class.trim() !== '' ? passport.class : null;
+  add('class', 'Класс', own ?? cweClass(passport.cwe));
+  add('cwe', 'CWE', passport.cwe.map(cweLabel).join(', '));
   add('owasp', 'OWASP Top 10', passport.owasp.join(', '));
   add('attack', 'MITRE ATT&CK', passport.attack.join(', '));
   add('cves', 'CVE', passport.cves.join(', '));
@@ -130,9 +133,20 @@ export function passportRows(passport: SitePassport): readonly PassportRow[] {
   return rows;
 }
 
+function cweName(n: number): string | undefined {
+  return Object.hasOwn(CWE_NAMES, n) ? CWE_NAMES[n] : undefined;
+}
+
+/** «CWE-89 · SQL-инъекция», or «CWE-564» when the name is not known. */
+function cweLabel(n: number): string {
+  const name = cweName(n);
+  const label = `CWE-${String(n)}`;
+  return name === undefined ? label : `${label} · ${name}`;
+}
+
 function cweClass(cwe: readonly number[]): string | null {
   for (const n of cwe) {
-    const name = Object.hasOwn(CWE_NAMES, n) ? CWE_NAMES[n] : undefined;
+    const name = cweName(n);
     if (name !== undefined) return name;
   }
   return null;
