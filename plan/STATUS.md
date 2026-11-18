@@ -3,7 +3,7 @@
 > Updated: 2026-11-17 by Claude (craftspec orchestrate)
 
 **Current milestone:** M1 — Один урок насквозь: SQL-инъекция
-**Next task:** M1.1a — формат и валидатор на уроке B1 (design M1.1 r2 approved)
+**Next task:** M1.1b (данные урока для сайта) и M1.1c (урок I1) — волна, параллельно
 **Blockers (need a human):** design M1.2 r2 ждёт ответа на D1 (откуда иконки). Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev. Решения владельца без срока: G13 (версия wrangler), закрывать ли черновой адрес входом
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -29,7 +29,7 @@
 
 ## Checklist (current milestone)
 
-- [ ] M1.1a Формат и валидатор на уроке B1
+- [x] M1.1a Формат и валидатор на уроке B1
 - [ ] M1.1b Данные урока для сайта
 - [ ] M1.1c Второй урок I1 «Фишинг» как проверка формата
 - [ ] M1.2 Сцена [design r2 — ждёт ответа на D1]
