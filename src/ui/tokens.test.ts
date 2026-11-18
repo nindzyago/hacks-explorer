@@ -106,6 +106,12 @@ describe('tokens', () => {
     ['--scene-message-safe', '--panel'],
     ['--scene-message-safe', '--paper'],
     ['--panel', '--ink'],
+    // M1.5: the event feed — marks in the colour of their kind on the panel and on the current
+    // line (paper); the pressed «С защитой» button and the defence name.
+    ['--scene-message-legit', '--panel'],
+    ['--scene-message-legit', '--paper'],
+    ['--scene-message-stopped', '--panel'],
+    ['--scene-message-stopped', '--paper'],
   ];
 
   it('paint a stopped message in the defence green, never in red (M1.2d)', () => {

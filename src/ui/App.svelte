@@ -8,6 +8,8 @@
   import type { LessonLoader } from '../services/catalog/catalog';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
+  import DefenceToggle from './DefenceToggle.svelte';
+  import EventFeed from './EventFeed.svelte';
   import { loadErrorText, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
   import StepsTable from './StepsTable.svelte';
@@ -151,8 +153,10 @@
         {/key}
       </div>
 
+      <!-- The controls bar (K76): the player, then the «Без защиты / С защитой» toggle. -->
       <div class="controls-area">
-        <PlayerControls {player} {run} />
+        <div class="player-area"><PlayerControls {player} {run} /></div>
+        <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} />
       </div>
 
       <!-- M1.4 fills this panel: the step at three depths and the lesson passport. -->
@@ -173,8 +177,10 @@
         {#if stepCount(player) > 0}
           <StepsTable lesson={shown.lesson} {player} {run} />
         {/if}
-        <!-- M1.5 fills this: the event feed, one line per step played. -->
-        <section class="feed" data-testid="feed" aria-label="Лента событий"></section>
+        <!-- The event feed (M1.5, K75): one line per started step, under the table. -->
+        {#if stepCount(player) > 0}
+          <EventFeed lesson={shown.lesson} {player} clock={app.clock} />
+        {/if}
       </section>
     </div>
   {/if}
@@ -247,6 +253,15 @@
   .controls-area {
     grid-area: controls;
     min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+
+  .player-area {
+    flex: 1 1 32rem;
+    min-width: 0;
   }
 
   .explain {
@@ -288,10 +303,6 @@
     margin: 0;
     color: var(--muted);
     font-size: var(--text-sm);
-  }
-
-  .feed:empty {
-    display: none;
   }
 
   /* Phone (S10): one column — scene, controls, explanation, then the table and the feed. */

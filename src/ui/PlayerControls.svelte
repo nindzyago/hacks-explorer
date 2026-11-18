@@ -28,9 +28,6 @@
 >
   <p class="status" data-testid="player-status">
     <span>Шаг {player.step}{count > 0 ? ` из ${String(count)}` : ''}</span>
-    <span class="mode" data-testid="player-mode" data-defence={player.defence}
-      >{player.defence ? 'С защитой' : 'Без защиты'}</span
-    >
   </p>
   <div class="buttons">
     <button
@@ -122,16 +119,6 @@
     gap: var(--space-1) var(--space-3);
     align-items: baseline;
     font-weight: 700;
-  }
-
-  .mode {
-    font-weight: 400;
-    color: var(--muted);
-    font-size: var(--text-sm);
-  }
-
-  .mode[data-defence='true'] {
-    color: var(--scene-message-safe);
   }
 
   .buttons {

@@ -5,6 +5,7 @@
   import type { SiteLesson } from '../core/lesson/site';
   import type { PlayerState } from '../core/player/player';
   import { stepsInMode } from '../core/scene-layout/message';
+  import ShieldMark from './ShieldMark.svelte';
 
   const {
     lesson,
@@ -20,6 +21,8 @@
   const names = $derived(new Map(lesson.participants.map((p) => [p.id, p.name])));
   const name = (id: string) => names.get(id) ?? id;
   const MARK = { legit: '', attack: '! ', safe: '✓ ' } as const;
+  /** A stopped step (K44, K62): the shield, the word, then its result. */
+  const STOPPED = 'остановлено: ';
 </script>
 
 <!-- data-player-keys: Space here is play/pause (K69). -->
@@ -63,8 +66,10 @@
         <td class="who" data-label="Кто">{name(step.from)}</td>
         <td class="who" data-label="Кому">{step.from === step.to ? '—' : name(step.to)}</td>
         <td class="what">{step.message}</td>
-        <td class="result {paint}"
-          >{step.stopped ? 'остановлено: ' : MARK[step.kind]}{step.result}</td
+        <td class="result {paint}" data-testid="step-result"
+          >{#if step.stopped}<span class="stopped-word"><ShieldMark /> {STOPPED}</span>{:else}{MARK[
+              step.kind
+            ]}{/if}{step.result}</td
         >
       </tr>
     {/each}
@@ -149,6 +154,12 @@
   .result.safe,
   .result.stopped {
     color: var(--scene-message-safe);
+  }
+
+  /* M1.5: a stopped step says so with the shield and the word (K44, K62), in green. */
+  .stopped-word {
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   /* Phone (S10): a row is a card — number and title, then who → whom, what and the result. */

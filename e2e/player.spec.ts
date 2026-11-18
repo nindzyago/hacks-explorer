@@ -104,11 +104,14 @@ test.describe('S1: the lesson goes step by step', () => {
     await expect(page.getByTestId('player-status')).toContainText('Шаг 1 из 5');
   });
 
-  // The event feed is task M1.5: this part of S1 waits for it.
-  test.fixme('the event feed has four lines after three steps (M1.5)', async ({ page }) => {
+  // S1 «в ленте событий четыре строки» (M1.5): the feed is derived from the player state
+  // (K75), so back gives the feed of step 3 again.
+  test('the event feed has four lines after three steps, three after back', async ({ page }) => {
     await freshB1(page);
     for (let i = 0; i < 3; i += 1) await run(page, 'player.step');
     await expect(page.getByTestId('feed').getByRole('listitem')).toHaveCount(4);
+    await run(page, 'player.back');
+    await expect(page.getByTestId('feed').getByRole('listitem')).toHaveCount(3);
   });
 });
 
