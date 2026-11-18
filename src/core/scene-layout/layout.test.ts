@@ -217,8 +217,8 @@ describe('layoutScene', () => {
     expect(ip?.lines.map((l) => l.text)).toEqual(['203.0.', '113.66']);
     expect(ip?.lines.map((l) => l.glued)).toEqual([false, true]);
     expect(ip?.cut).toBe(false);
-    // 390 px: it fits drawn a little narrower, on one line.
-    expect(at('203.0.113.66', 364)?.lines.map((l) => l.text)).toEqual(['203.0.113.66']);
+    // A wider column: it fits drawn a little narrower, on one line.
+    expect(at('203.0.113.66', 400)?.lines.map((l) => l.text)).toEqual(['203.0.113.66']);
     // IPv6 (RFC 3849) breaks after a colon.
     const v6 = at('2001:db8:4006:812::200e', 334);
     expect(v6?.lines.every((l, i) => i === 0 || /[:.-]$/.test(v6.lines[i - 1]?.text ?? ''))).toBe(
@@ -234,8 +234,8 @@ describe('layoutScene', () => {
   });
 
   it('draws a word a little too wide narrower instead of cutting it (M1.2b)', () => {
-    // A real phone: 390 px less the page padding and border.
-    const layout = layoutScene({ ...I1, width: 364 });
+    // A scene of 400 px (a phone of about 426 px less the page padding and border).
+    const layout = layoutScene({ ...I1, width: 400 });
     const attacker = layout.participants.find((p) => p.id === 'attacker');
     const line = attacker?.note?.lines[0];
     expect(line?.text).toBe('203.0.113.66');
@@ -311,6 +311,13 @@ describe('layoutScene', () => {
         const layout = layoutScene({ ...input, width });
         const all = participantBoxes(layout);
         for (const p of layout.participants) {
+          // M1.2d (second round): the ring's 2 px line lies on whole pixels, so it is drawn
+          // sharp and the paper beside it is not eaten by antialiasing.
+          for (const v of [p.area.x, p.area.y, p.area.width, p.area.height]) {
+            expect(Number.isInteger(v), `${p.id} at ${String(width)}: ring at ${String(v)}`).toBe(
+              true,
+            );
+          }
           // M1.2d: 2 px of paper between the ring's line and the participant's text and icon,
           // and between the ring's line and the zone frame's line (1.5 px wide), so that the
           // ring does not read as a second line of a red «Подделка» frame.

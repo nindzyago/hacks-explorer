@@ -30,11 +30,16 @@
 //                     directives, no `style.transition`/`style.animation…` from a script. The
 //                     Web Animations API and svelte/transition are the ESLint timing rules'.
 //                     M1.2d (K63): also -o-/-ms- prefixes; SMIL tags in any case (a PascalCase
-//                     tag in a .svelte file is a component), inside script strings or made by
-//                     createElement(NS); CSS in Svelte `style={…}` strings, in `cssText` and
-//                     setAttribute('style', …); Object.assign(el.style, { transition });
-//                     style[`…`]; any backslash escape in a CSS property name. Not seen: CSS
-//                     built at run time from variables.
+//                     tag in a .svelte file is a component); any backslash escape in a CSS
+//                     property name. In script code and Svelte `{…}` expressions the rule goes
+//                     by content: any string or template literal (multi-line too, \u and \x
+//                     escapes decoded) holding an animating declaration, @keyframes, a view
+//                     transition or a SMIL tag; any string that is exactly an animating property
+//                     name (`'transition'`, `'animationDuration'`); any member write to
+//                     `.transition…`/`.animation…` (=, +=, ||=…); Object.assign(el.style, {
+//                     transition }); a SMIL element in createElement(NS) or <svelte:element
+//                     this>. A key `transition` in a plain object is data. Not seen: CSS built
+//                     at run time by joining pieces of a name (`'trans' + 'ition'`).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -363,16 +368,16 @@ const DIRECTIVE = new RegExp(
   `(?<=\\s)(?:(?:transition|in|out|animate):[A-Za-z_$]|style:${PREFIX}(?:animation|transition)\\b)`,
   'g',
 );
-const SCRIPT_STYLE = [
-  /\.style\s*\.\s*(?:webkit|moz|ms|o)?(?:animation|transition)\w*\s*=(?!=)/gi,
-  new RegExp(
-    `\\.style\\s*\\[\\s*(['"\`])${PREFIX}(?:animation|transition)[\\w-]*\\1\\s*\\]\\s*=(?!=)`,
-    'gi',
-  ),
-  new RegExp(`\\bsetProperty\\(\\s*(['"\`])${PREFIX}(?:animation|transition)[\\w-]*\\1`, 'gi'),
-];
-// Script code that hands a whole CSS text to an element (M1.2d): its strings are CSS.
-const CSS_TEXT = /\bcssText\s*\+?=(?!=)|\bsetAttribute\(\s*(['"`])style\1\s*,/g;
+// M1.2d, by content: a string that is exactly an animating property name, kebab or camel case
+// (`'transition'`, `'animation-duration'`, `'webkitTransition'`, `'viewTransitionName'`).
+// `'transitions'`, `'animationend'` and prose are other words.
+const ANIMATED_NAME = new RegExp(
+  `^(?:${PREFIX}(?:animation|transition)(?:-[a-z-]+)?|view-transition(?:-[a-z]+)?|` +
+    '(?:(?:webkit|moz|ms|o|Webkit|Moz|Ms|O)(?:Animation|Transition)|animation|transition|viewTransition)(?:[A-Z]\\w*)?)$',
+);
+// A member write to an animating property, of any object: `.transition = …`, `+=`, `||=`.
+const ANIMATED_MEMBER =
+  /\.\s*(?:(?:webkit|moz|ms|o|Webkit|Moz|Ms|O)(?:Animation|Transition)|animation|transition)\w*\s*(?:\+|-|\|\||&&|\?\?)?=(?!=)/g;
 // Object.assign(el.style, { transition }) (M1.2d): the keys of the object are properties.
 const ASSIGN_STYLE = /\bObject\.assign\(\s*[\w$.]*\bstyle\s*,/g;
 const STYLE_KEY =
@@ -391,12 +396,61 @@ function cssAnimated(css) {
   return out;
 }
 
-/** The string literals in `text` from `start` to the end of the statement or line. */
-function stringsAfter(text, start) {
-  const end = text.slice(start).search(/[;\n]|$/);
-  // A template string may hold `;` inside: take quotes up to the line's end.
-  const line = text.slice(start, start + Math.max(end, text.slice(start).search(/\n|$/)));
-  return Array.from(line.matchAll(QUOTED), (q) => q[2] ?? '');
+/**
+ * The string and template literals of `text` where `inScript(index)`, as `[index, body]`:
+ * a template may span lines; `\uXXXX`, `\u{…}` and `\xXX` escapes are decoded, so
+ * `'transition: 1s'` reads as what it is (M1.2d).
+ */
+function literals(text, inScript) {
+  const out = [];
+  let i = 0;
+  while (i < text.length) {
+    const c = text[i];
+    if ((c === "'" || c === '"' || c === '`') && inScript(i)) {
+      let j = i + 1;
+      while (j < text.length && text[j] !== c && !(c !== '`' && text[j] === '\n')) {
+        j += text[j] === '\\' ? 2 : 1;
+      }
+      const body = text
+        .slice(i + 1, j)
+        .replace(/\\u\{([0-9a-f]+)\}|\\u([0-9a-f]{4})|\\x([0-9a-f]{2})/gi, (_m, a, b, d) =>
+          String.fromCodePoint(Number.parseInt(a ?? b ?? d, 16)),
+        );
+      out.push([i, body]);
+      i = j + 1;
+      continue;
+    }
+    i += 1;
+  }
+  return out;
+}
+
+/** How deep in `{…}` index `k` of a tag is, past quoted attribute values. */
+function depthAt(tag, k) {
+  let depth = 0;
+  let quote = '';
+  for (let i = 0; i < k; i += 1) {
+    const c = tag[i];
+    if (depth === 0 && quote !== '') {
+      if (c === quote) quote = '';
+    } else if (depth === 0 && (c === '"' || c === "'")) quote = c;
+    else if (c === '{') depth += 1;
+    else if (c === '}') depth = Math.max(0, depth - 1);
+  }
+  return depth;
+}
+
+/** What in a script literal makes it CSS that animates, or SMIL; null when nothing does. */
+function animatedLiteral(body) {
+  const css = cssAnimated(body);
+  if (css.length > 0) return css[0] ?? 'animation';
+  const at = new RegExp(CSS_AT.source, 'i').exec(body);
+  if (at !== null) return at[0];
+  const smil = SMIL_IN_STRING.exec(body);
+  SMIL_IN_STRING.lastIndex = 0;
+  if (smil !== null) return `<${smil[1] ?? ''}> in a string`;
+  if (ANIMATED_NAME.test(body.trim())) return `'${body.trim()}'`;
+  return null;
 }
 
 /** Animations in one file of site code, as `[index, what]` pairs in file order. */
@@ -422,49 +476,44 @@ function animations(path, source) {
       found.push([start, `<${smil[1] ?? ''}>`]);
     }
     for (const d of tag.matchAll(DIRECTIVE)) found.push([start + d.index, d[0]]);
-    // Svelte `style={…}`: its strings and template strings are CSS (M1.2d).
-    for (const s of tag.matchAll(/(?<=\s)style\s*=\s*\{/g)) {
-      const expression = enclosed(tag, s.index + s[0].length - 1, '{', '}');
-      for (const q of expression.matchAll(QUOTED)) {
-        for (const what of cssAnimated(q[2] ?? '')) found.push([start + s.index, what]);
-      }
+    // Svelte expressions in a tag (`style={…}`, any `{…}`): their literals are script.
+    for (const [index, body] of literals(tag, (k) => depthAt(tag, k) > 0)) {
+      const what = animatedLiteral(body);
+      if (what !== null) found.push([start + index, what]);
+    }
+    // <svelte:element this="animate"> or this={"animate"} (M1.2d).
+    if (/^<svelte:element\b/.test(tag)) {
+      const name = /\sthis\s*=\s*(?:\{\s*)?(['"`])([^'"`]*)\1/.exec(tag)?.[2] ?? '';
+      if (new RegExp(`^${SMIL_NAMES}$`, 'i').test(name)) found.push([start, `<${name}>`]);
     }
   }
-  for (const pattern of SCRIPT_STYLE) {
-    for (const m of text.matchAll(pattern)) {
-      if (kindAt(m.index) === 'script') found.push([m.index, m[0]]);
-    }
+  // Script code (M1.2d, by content): literals, member writes, Object.assign onto a style,
+  // SMIL elements made by name.
+  for (const [index, body] of literals(text, (k) => kindAt(k) === 'script')) {
+    const what = animatedLiteral(body);
+    if (what !== null) found.push([index, what]);
   }
-  for (const m of text.matchAll(CSS_TEXT)) {
-    if (kindAt(m.index) !== 'script') continue;
-    for (const css of stringsAfter(text, m.index + m[0].length)) {
-      for (const what of cssAnimated(css)) found.push([m.index, what]);
-    }
+  for (const m of text.matchAll(ANIMATED_MEMBER)) {
+    if (kindAt(m.index) === 'script') found.push([m.index, m[0]]);
   }
   for (const m of text.matchAll(ASSIGN_STYLE)) {
     if (kindAt(m.index) !== 'script') continue;
     const args = enclosed(text, m.index + m[0].indexOf('('), '(', ')');
     for (const key of args.matchAll(STYLE_KEY)) found.push([m.index, `style ${key[2] ?? ''}`]);
   }
-  for (const m of text.matchAll(QUOTED)) {
-    if (kindAt(m.index) !== 'script') continue;
-    for (const tag of (m[2] ?? '').matchAll(SMIL_IN_STRING)) {
-      found.push([m.index, `<${tag[1] ?? ''}> in a string`]);
-    }
-  }
   for (const m of text.matchAll(SMIL_CREATE)) {
     if (kindAt(m.index) === 'script') found.push([m.index, `<${m[2] ?? ''}>`]);
   }
   const seen = new Set();
   return found
-    .filter(([index, what]) => {
-      // One report per line and thing.
-      const key = `${String(lineAt(text, index))} ${what.toLowerCase()}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
+    .sort((a, b) => a[0] - b[0])
+    .filter(([index]) => {
+      // One report per line.
+      const line = lineAt(text, index);
+      if (seen.has(line)) return false;
+      seen.add(line);
       return true;
-    })
-    .sort((a, b) => a[0] - b[0]);
+    });
 }
 
 /**

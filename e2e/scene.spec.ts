@@ -257,7 +257,27 @@ for (const viewport of VIEWPORTS) {
         'translateY(-30px)',
       );
       expect(lifted.some((p) => p.startsWith('plaque off the lane'))).toBe(true);
-      // The plaque grown down over the database's icon: more than its top 30% (K59, M1.2d).
+      // M1.2d, second round: shrunk to a dot, clipped away, dashed into gaps, text of 2 px.
+      expect(
+        (await styled('[data-testid="message-plaque"]', 'transform', 'scale(0.01)')).some((p) =>
+          p.startsWith('body: drawn'),
+        ),
+      ).toBe(true);
+      expect(
+        (await styled(plaqueSel, 'clip-path', 'inset(50%)')).some((p) =>
+          p.startsWith('body: clip-path'),
+        ),
+      ).toBe(true);
+      expect(
+        (await styled(ringSel, 'stroke-dasharray', '0 10000')).some((p) =>
+          p.startsWith('ring: dashed'),
+        ),
+      ).toBe(true);
+      expect(await styled(labelSel, 'font-size', '2px')).toContain('label: font-size 2px');
+      expect(
+        (await styled(wordSel, 'transform', 'scale(0.1)')).some((p) => p.startsWith('word: drawn')),
+      ).toBe(true);
+      // The plaque grown down over the database's icon (M1.2d: no cover at all).
       const grown = await broken(() => {
         for (const r of document.querySelectorAll('[data-testid="message-plaque"] > rect')) {
           r.setAttribute('height', String(Number(r.getAttribute('height')) + 60));

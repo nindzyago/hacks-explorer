@@ -506,3 +506,100 @@ describe('no-css-animation, M1.2d', () => {
     expect(found).toEqual(['no-literal-colours']);
   });
 });
+
+// M1.2d, second round (verifier of M1.2d): the rule went by call shapes and missed others. Now
+// it goes by content in script code: any string or template literal (multi-line too) holding
+// an animation or transition declaration, @keyframes, a view transition or a SMIL tag; any
+// string that is exactly an animating property name; any member write to .transition or
+// .animation…; a SMIL element named in an element-creation call or <svelte:element this>.
+describe('no-css-animation by content (M1.2d)', () => {
+  const rules = (files) =>
+    checkFiles(files)
+      .filter((p) => p.rule === 'no-css-animation')
+      .map((p) => `${p.path}:${String(p.line)}`);
+
+  it.each([
+    [
+      'a cssText wrapped by Prettier',
+      'src/ui/s.ts',
+      "el.style.cssText =\n  'opacity: 1; transition: all 1s';",
+      2,
+    ],
+    [
+      'a multi-line template for cssText',
+      'src/ui/s.ts',
+      'el.style.cssText = `\n  opacity: 1;\n  animation: spin 1s;\n`;',
+      1,
+    ],
+    ['insertRule', 'src/ui/s.ts', "sheet.insertRule('.a { transition: all 1s }');", 1],
+    [
+      'replaceSync with keyframes',
+      'src/ui/s.ts',
+      "sheet.replaceSync('@keyframes x { to { opacity: 0 } }');",
+      1,
+    ],
+    ['a style element text', 'src/ui/s.ts', "styleEl.textContent = '.a { animation: x 1s }';", 1],
+    ['a transition added to', 'src/ui/s.ts', "el.style.transition += ' 1s';", 1],
+    ['an indexed transition added to', 'src/ui/s.ts', "el.style['transition'] += ' 1s';", 1],
+    ['Reflect.set', 'src/ui/s.ts', "Reflect.set(el.style, 'transition', 'all 1s');", 1],
+    ['attributeStyleMap', 'src/ui/s.ts', "el.attributeStyleMap.set('transition', 'all 1s');", 1],
+    [
+      'a camelCase name as a string',
+      'src/ui/s.ts',
+      "el.style[name ?? 'animationDuration'] = x;",
+      1,
+    ],
+    [
+      'a view transition in a string',
+      'src/ui/s.ts',
+      "const css = 'main { view-transition-name: a }';",
+      1,
+    ],
+    [
+      'an escaped property in a string',
+      'src/ui/s.ts',
+      "el.style.cssText = 'trans\\u0069tion: 1s';",
+      1,
+    ],
+    [
+      'a SMIL tag in a Svelte script template',
+      'src/scene/S.svelte',
+      '<script>\n  const s = `\n  <animate to="1" />`;\n</script>',
+      2,
+    ],
+    [
+      'svelte:element with a SMIL name',
+      'src/scene/S.svelte',
+      '<svelte:element this={"animate"} attributeName="x" />',
+      1,
+    ],
+    [
+      'svelte:element with a quoted SMIL name',
+      'src/scene/S.svelte',
+      '<svelte:element this="animateMotion" />',
+      1,
+    ],
+    ['a member write on any object', 'src/ui/s.ts', 'box.animationName = name;', 1],
+  ])('rejects %s', (_name, path, text, line) => {
+    expect(rules([file(path, text)])).toEqual([`${path}:${String(line)}`]);
+  });
+
+  it('keeps selectors, resets, components, types, data and prose allowed', () => {
+    expect(
+      rules([
+        file('src/ui/a.css', '.transition:hover { color: var(--ink); }\np { transition: none; }'),
+        file('src/ui/A.svelte', '<p class:in={on}>The transition: a word in prose.</p>\n<Set />'),
+        file(
+          'src/scene/s.ts',
+          "const steps = { transition: 'step', animation: 'none' };\n" +
+            'const seen: Set<string> = new Set();\n' +
+            "el.style.cssText = 'transition: none';\n" +
+            "const label = 'Transition to the next step';\n" +
+            "const k = 'transitions';\nconst e = 'animationend';\n" +
+            "const tag = document.createElement('section');",
+        ),
+        file('src/scene/S.svelte', '<svelte:element this={tag} />\n<svelte:element this="g" />'),
+      ]),
+    ).toEqual([]);
+  });
+});

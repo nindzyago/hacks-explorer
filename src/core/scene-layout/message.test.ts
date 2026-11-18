@@ -248,7 +248,7 @@ describe('layoutMessage', () => {
     const wordTop = (m?.wordY ?? 0) - 11 * 0.8;
     // M1.2d: at least 10 px of paper, so that the word does not read as a second line of the
     // zone label above it («Подделка» / «вредное» on a phone).
-    expect(wordTop - labelBottom).toBeGreaterThanOrEqual(10);
+    expect(wordTop - labelBottom).toBeGreaterThanOrEqual(14);
     expect(m?.wordY ?? Infinity).toBeLessThan(scene.lane.y - TOKEN_RADIUS);
   });
 });
@@ -377,6 +377,18 @@ describe('the message at rest fits its zone (M1.2c)', () => {
               }
             }
             expect(overlap(m.body, m.wordBox), `${where}: body × word`).toBe(false);
+            // M1.2d (second round): the plaque or token covers no icon and no ring line at
+            // all, the step's own included: it stops above the ring.
+            for (const p of layout.participants) {
+              expect(overlap(m.body, p.icon), `${where}: body × ${p.id} icon`).toBe(false);
+              const line = {
+                x: p.area.x - 1,
+                y: p.area.y - 1,
+                width: p.area.width + 2,
+                height: p.area.height + 2,
+              };
+              expect(overlap(m.body, line), `${where}: body × ${p.id} ring`).toBe(false);
+            }
             const natural = Array.from(m.word).length * (MESSAGE_FONT_SIZE * 0.6 + 0.5);
             expect(m.wordBox.width).toBeGreaterThanOrEqual(natural * MIN_SQUEEZE - 1e-6);
             for (const line of m.plaque?.lines ?? []) {

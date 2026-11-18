@@ -111,19 +111,26 @@ export const RING_STROKE = 2;
  * Room between the column frame and its text, at each side (M1.2c, M1.2d): the zone frame's
  * line (0.75 px in), 2.25 px of paper, the ring's line (3…5 px in) and 2 px of paper.
  */
-const TEXT_INSET = 7;
+const TEXT_INSET = 8;
 /**
- * Where the middle of the ring's line stands inside the column frame (M1.2d: 4, was 2.5): the
- * ring keeps 2 px of paper from the zone frame's line, so that a red ring inside the red
- * «Подделка» frame reads as a line of its own.
+ * Where the middle of the ring's line stands inside the column frame (M1.2d: 4.5, was 2.5),
+ * rounded to whole pixels so the 2 px line is drawn sharp: the ring keeps at least 2.25 px of
+ * paper from the zone frame's line, so that a red ring inside the red «Подделка» frame reads
+ * as a line of its own, and at least 2 px from the text.
  */
-const RING_INSET = 4;
+const RING_INSET = 4.5;
 /**
- * The lane lies this far below the zone labels (M1.2b: 38; M1.2d: 46): the word over a message
- * (11 px over a 21 px token) keeps 11 px of paper from the label above it, so it does not read
+ * The lane lies this far below the zone labels (M1.2b: 38; M1.2d: 50): the word over a message
+ * (11 px over a 21 px token) keeps 15 px of paper from the label above it, so it does not read
  * as the label's second line.
  */
-const LANE_BELOW_LABELS = 46;
+const LANE_BELOW_LABELS = 50;
+/**
+ * The icons start this far below the lane (M1.2b: 16; M1.2d: 30): the tallest message at rest
+ * — a three-line plaque, 42 px and its 3 px shadow, or a token — ends above the receiver's
+ * ring and covers no icon.
+ */
+const ICON_BELOW_LANE = 30;
 const CHAR_EM = 0.6;
 const ZONE_LABEL_SIZE = 11;
 const ZONE_LABEL_SPACING = 1;
@@ -162,8 +169,8 @@ function sansEm(c: string): number {
   if (SANS_SLIM.has(c)) return 0.5;
   if (SANS_WIDE.has(c)) return 0.87;
   if (SANS_CAPS_WIDE.has(c)) return 1.02;
-  if (c !== c.toLowerCase()) return 0.78;
-  return 0.63;
+  if (c !== c.toLowerCase()) return 0.77;
+  return 0.62;
 }
 
 /** Estimated width of `text` in px: font size, letter spacing and the font's advances. */
@@ -384,7 +391,7 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
   const laneY = labelBottom + LANE_BELOW_LABELS;
   const iconWidth = Math.min(MAX_ICON_WIDTH, Math.max(0, 2 * half - 16));
   const iconHeight = iconWidth * ICON_ASPECT;
-  const iconTop = laneY + 16;
+  const iconTop = laneY + ICON_BELOW_LANE;
   // Text may use the whole frame of the column but TEXT_INSET at each side, where the ring
   // runs (M1.2c, M1.2d); an address too long for a phone column breaks after a dot.
   const textWidthMax = Math.max(0, 2 * half - 2 * TEXT_INSET);
@@ -415,11 +422,13 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
           });
     const last = note ?? name;
     // The ring's line keeps 2 px of paper from the icon and the text (M1.2d).
+    const left = Math.round(x - half + RING_INSET);
+    const top = Math.round(iconTop - 4);
     const area = {
-      x: x - half + RING_INSET,
-      y: iconTop - 4,
-      width: 2 * half - 2 * RING_INSET,
-      height: bottom(last.box) - iconTop + 8,
+      x: left,
+      y: top,
+      width: Math.round(x + half - RING_INSET) - left,
+      height: Math.round(bottom(last.box) + 4) - top,
     };
     return { id: p.id, cx: x, icon, name, note, area, span: { x1: x - half, x2: x + half } };
   });

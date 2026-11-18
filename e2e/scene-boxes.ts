@@ -111,6 +111,9 @@ export async function sceneBoxes(
      * M1.2d: a fill- or stroke-opacity near 0) and the colour it shows over `under`, its
      * opacities applied.
      */
+    const viewBox = (svg.getAttribute('viewBox') ?? '').split(/\s+/).map(Number);
+    /** Screen pixels per scene unit (1 when the scene is drawn at its own width). */
+    const scale = svg.getBoundingClientRect().width / (viewBox[2] ?? 1);
     const look = (
       element: Element | null,
       what: string,
@@ -124,6 +127,9 @@ export async function sceneBoxes(
         const style = getComputedStyle(e);
         if (style.display === 'none') out.push(`${what}: display none`);
         opacity *= Number.parseFloat(style.opacity);
+        // M1.2d: a clip or a mask may hide any part of it; the scene uses neither on these.
+        if (style.clipPath !== 'none') out.push(`${what}: clip-path ${style.clipPath}`);
+        if (style.mask !== 'none' && style.mask !== '') out.push(`${what}: mask ${style.mask}`);
       }
       const style = getComputedStyle(element);
       if (style.visibility !== 'visible') out.push(`${what}: visibility ${style.visibility}`);
@@ -142,6 +148,36 @@ export async function sceneBoxes(
       const thin = element.tagName === 'line' || element.tagName === 'path';
       if (thin ? r.width <= 0 && r.height <= 0 : r.width <= 0 || r.height <= 0) {
         out.push(`${what}: empty box`);
+      }
+      // M1.2d: a line dashed so that it is mostly gap is not seen.
+      if (paint === 'stroke' && style.strokeDasharray !== 'none') {
+        const dashes = style.strokeDasharray.split(/[\s,]+/).map((v) => Number.parseFloat(v));
+        const list = dashes.length % 2 === 1 ? [...dashes, ...dashes] : dashes;
+        const drawn = list.reduce((sum, v, i) => (i % 2 === 0 ? sum + v : sum), 0);
+        const all = list.reduce((sum, v) => sum + v, 0);
+        if (all > 0 && drawn / all < 0.5) out.push(`${what}: dashed ${style.strokeDasharray}`);
+      }
+      // M1.2d: drawn the size the scene gave it (a transform or a CSS size can shrink it).
+      const expected =
+        element.tagName === 'rect'
+          ? [Number(element.getAttribute('width')), Number(element.getAttribute('height'))]
+          : element.tagName === 'circle'
+            ? [2 * Number(element.getAttribute('r')), 2 * Number(element.getAttribute('r'))]
+            : null;
+      if (expected !== null) {
+        const [w = 0, h = 0] = expected.map((v) => v * scale);
+        if (Math.abs(r.width - w) > 2 || Math.abs(r.height - h) > 2) {
+          out.push(
+            `${what}: drawn ${r.width.toFixed(1)}×${r.height.toFixed(1)}, not ${w.toFixed(1)}×${h.toFixed(1)}`,
+          );
+        }
+      }
+      // M1.2d: text keeps the 11 px floor, in its font size and in what is drawn.
+      if (element.tagName === 'text') {
+        const size = Number.parseFloat(style.fontSize);
+        if (size < 11) out.push(`${what}: font-size ${style.fontSize}`);
+        else if (r.height < 11 * scale * 0.9)
+          out.push(`${what}: drawn ${r.height.toFixed(1)} high`);
       }
       const seen = colour === null ? null : blend(colour.rgb, colour.alpha * opacity * own, under);
       return { problems: out, seen, css };
@@ -270,13 +306,11 @@ const PAPER = 2;
 const SLACK = 0.25;
 /** Half the width of a zone frame's line. */
 const FRAME_HALF = 0.75;
-/** At most this share of a step participant's icon may lie under the message (K59, M1.2d). */
-export const COVER = 0.3;
 /**
  * Paper between a zone label and the word under it, between their boxes as the browser gives
  * them (font ascent and descent included, so the letters are further apart).
  */
-export const WORD_BELOW_LABEL = 6;
+export const WORD_BELOW_LABEL = 10;
 const grow = (b: Box, d: number): Box => ({
   ...b,
   x: b.x - d,
@@ -330,9 +364,11 @@ export function layoutProblems(scene: Box, boxes: readonly Box[]): string[] {
  * the trail over any text. M1.2d: a part painted with no opacity or in a colour that does not
  * stand out from what it is on (word and label 4.5:1, ring, plaque and sign 3:1), the plaque
  * label hidden; a name or note closer than 2 px to the ring, the ring closer than 2 px of
- * paper to its zone frame; the plaque or token off the lane; the plaque or token over more
- * than the top COVER of a step participant's icon or over it from below; the word less than
- * WORD_BELOW_LABEL under a zone label.
+ * paper to its zone frame; the plaque or token off the lane, over any icon or over the ring's
+ * line; the word less than WORD_BELOW_LABEL under a zone label. Second round of M1.2d (in the
+ * unpainted list): a clip-path or mask, a line dashed mostly into gap, a rect or circle drawn
+ * more than 2 px off its own size (a transform), text under 11 px. Distances are in CSS px;
+ * the e2e browser draws at 1 device pixel per CSS px.
  */
 export function messageProblems(scene: Box, boxes: readonly Box[], m: MessageBoxes): string[] {
   const out = [...m.unpainted];
@@ -374,16 +410,12 @@ export function messageProblems(scene: Box, boxes: readonly Box[], m: MessageBox
   if (Math.abs(middle - m.laneY) > 2) {
     out.push(`${m.body.what} off the lane by ${(middle - m.laneY).toFixed(1)} px`);
   }
-  // K59 made precise (M1.2d): the plaque or token may lie on the top of the icon of the
-  // sender or receiver, from above only, over at most COVER of the icon's height.
+  // M1.2d (replaces K59's allowance): at rest the plaque or token covers no icon at all, the
+  // step's own included, and stops above the receiver's ring line.
   for (const icon of boxes.filter((b) => b.what === 'icon')) {
-    if (icon.owner !== m.from && icon.owner !== m.to) continue;
-    if (!overlap(m.body, icon)) continue;
-    const covered = Math.min(m.body.y + m.body.height, icon.y + icon.height) - icon.y;
-    if (m.body.y >= icon.y || covered > COVER * icon.height) {
-      out.push(`${m.body.what} covers ${icon.owner} icon`);
-    }
+    if (overlap(m.body, icon)) out.push(`${m.body.what} covers ${icon.owner} icon`);
   }
+  if (overlap(m.body, outer)) out.push(`${m.body.what} on the ring line`);
   // M1.2d: the word does not read as a second line of a zone label right above it.
   for (const label of boxes.filter((b) => b.what === 'label')) {
     const gap = m.word.y - (label.y + label.height);
