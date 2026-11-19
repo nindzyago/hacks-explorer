@@ -287,3 +287,43 @@ Forms: MITRE ATT&CK, ATT&CK
 
 MITRE's open knowledge base of attacker tactics and techniques, built from real-world attacks.
 Each technique has its own number: T1566 is phishing, T1566.002 is spearphishing with a link.
+
+## `logging` Log
+
+`category` basics · `see` jndi, rce · `lessons` K1
+
+Forms: log, logs, logging, logging library
+
+A program's record of what happened to it: who sent requests and when, which errors occurred. It
+is usually written by a ready-made library, such as Log4j for Java. Visitor data ends up in the
+log too, so to the library it must stay plain text.
+
+## `jndi` JNDI
+
+`category` web · `see` ldap, logging · `lessons` K1
+
+Forms: JNDI
+
+Java Naming and Directory Interface, Java's built-in way to find an object by name in a naming
+or directory service: LDAP, DNS, RMI. In vulnerable Log4j versions the `${jndi:…}` lookup in a
+log message started such a search at an address sent by the attacker.
+
+## `ldap` LDAP
+
+`category` web · `see` jndi · `lessons` K1
+
+Forms: LDAP
+
+Lightweight Directory Access Protocol, the protocol of directory services where organizations
+keep accounts, groups and other records (RFC 4511). Through JNDI a Java program can fetch an
+object from a directory, and code along with it.
+
+## `rce` Remote code execution
+
+`category` basics · `see` attacker, logging · `lessons` K1
+
+Forms: remote code execution, RCE
+
+An attacker makes someone else's server run their program over the network. Usually the worst
+outcome: from there the attacker acts with the rights of the hijacked program, reading data,
+installing programs, moving into the internal network.

@@ -32,6 +32,17 @@ const topics = (page: Page) =>
     .getByTestId('catalog-topic')
     .evaluateAll((items) => items.map((item) => item.getAttribute('data-topic') ?? ''));
 
+/** Ready lessons in a language, from the built catalog: the count grows with every lesson. */
+async function readyCount(page: Page, language: string): Promise<number> {
+  return page.evaluate(async (lang) => {
+    const response = await fetch('/data/catalog.json');
+    const catalog = (await response.json()) as {
+      lessons: { translations: { language: string }[] }[];
+    };
+    return catalog.lessons.filter((l) => l.translations.some((t) => t.language === lang)).length;
+  }, language);
+}
+
 async function openLessons(page: Page): Promise<void> {
   await page.getByTestId('open-lessons').click();
   await expect(page.getByTestId('drawer')).toBeVisible();
@@ -61,7 +72,9 @@ test.describe('S7: the lessons panel', () => {
     await openLessons(page);
     await expect(page.getByTestId('catalog-group')).toHaveCount(12);
     expect(await topics(page)).toHaveLength(75);
-    await expect(page.getByTestId('catalog-status')).toHaveText('Готово уроков: 2 из 75');
+    await expect(page.getByTestId('catalog-status')).toHaveText(
+      `Готово уроков: ${String(await readyCount(page, 'ru'))} из 75`,
+    );
     const b = page.locator('[data-testid="catalog-group"][data-section="B"]');
     await expect(b.getByTestId('catalog-count')).toHaveText('готово 1 из 8');
     // B1 is a link to its address; B8 is not focusable and says «скоро»; I1 carries «открыть».
@@ -119,7 +132,9 @@ test.describe('S7: the lessons panel', () => {
     // Only punctuation is no query: everything, and the status shows the total.
     await page.getByTestId('catalog-search').fill(' -- ');
     expect(await topics(page)).toHaveLength(75);
-    await expect(page.getByTestId('catalog-status')).toHaveText('Готово уроков: 2 из 75');
+    await expect(page.getByTestId('catalog-status')).toHaveText(
+      `Готово уроков: ${String(await readyCount(page, 'ru'))} из 75`,
+    );
   });
 
   test('the player takes no keys while the panel is open, on a lesson link and on a tab', async ({
@@ -462,7 +477,9 @@ test.describe('in English (M2.3, K105)', () => {
     await expect(page.getByTestId('open-glossary')).toHaveText('Glossary');
     await openLessons(page);
     expect(await topics(page)).toHaveLength(75);
-    await expect(page.getByTestId('catalog-status')).toHaveText('Lessons ready: 2 of 75');
+    await expect(page.getByTestId('catalog-status')).toHaveText(
+      `Lessons ready: ${String(await readyCount(page, 'en'))} of 75`,
+    );
     await expect(
       page.locator('[data-testid="catalog-group"][data-section="B"] [data-testid="catalog-count"]'),
     ).toHaveText('1 of 8 ready');
