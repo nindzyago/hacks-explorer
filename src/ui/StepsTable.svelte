@@ -58,9 +58,13 @@
 
   // The current row stays in view inside the area (never the page: no scrollIntoView, which
   // would scroll the page on a phone, and no smooth scroll). Under the sticky header, if needed.
+  // Also after the marks change (CI4): when the current message arrives, its word («в пути» →
+  // «остановлено») can widen the mark column, the columns reflow and the header grows a line, so
+  // a row kept in view at `player.goto` ends up a pixel below the area. The lines of the feed
+  // run up to the current step, so their count is its number, and the effect reruns with them.
   let area = $state<HTMLElement | null>(null);
   $effect(() => {
-    const n = current?.number ?? 0;
+    const n = lines.length;
     if (area === null || n === 0 || steps.length === 0) return;
     const row = area.querySelector<HTMLElement>(`tr[data-testid="step-row-${String(n)}"]`);
     if (row === null || area.scrollHeight <= area.clientHeight) return;

@@ -152,6 +152,36 @@ for (const viewport of [
   });
 }
 
+// CI4: when the current step's message arrives its mark changes («в пути» → «остановлено»), the
+// columns of the table reflow and the sticky header can grow a line. The current row is kept in
+// view after that too, not only when the step changes. At 980 px the reflow happens with the
+// fonts of macOS as well as Linux (on Linux it happened at 1024 too: ru C4, step 5 of defence).
+test.describe('the current row stays in view when its mark arrives', () => {
+  test.use({ viewport: { width: 980, height: 768 } });
+
+  for (const [lang, lesson] of PAIRS) {
+    test(`${lang} ${lesson} at 980×768`, async ({ page }) => {
+      await openApp(page, `/${lang}/lesson/${lesson}`);
+      await page.evaluate(() => window.__app?.clock.set(0));
+      const data = await lessonData(page, lesson, lang);
+      for (const on of [false, true]) {
+        await run(page, 'defence.set', { on });
+        const steps = stepsInMode(data.steps, on).length;
+        for (let n = 1; n <= steps; n += 1) {
+          await run(page, 'player.goto', { step: n });
+          await tick(page, TRAVEL_MS);
+          await expect(page.getByTestId(`step-row-${String(n)}`)).not.toHaveAttribute(
+            'data-mark',
+            'moving',
+          );
+          const where = `${lang} ${lesson} step ${String(n)} defence ${String(on)}`;
+          expect((await measure(page)).rowInside, where).toBe(true);
+        }
+      }
+    });
+  }
+});
+
 // D2 (K91): the table and the feed are one area. The rows up to the current one have happened
 // and carry the mark (sign and word); the current one is «в пути» until its message arrives.
 test.describe('the steps area carries the feed', () => {
