@@ -37,6 +37,16 @@ something that trusts it (the server, the database). Everything that crosses it 
 be checked and handled as data, not as commands. On a lesson diagram it is shown by the frame of a
 zone.
 
+## `data-breach` Data breach
+
+`category` basics · `see` database, hash · `lessons` F1
+
+Forms: data breach, data breaches, database leak, database leaks
+
+A case where a site's data, for example a copy of its database, ends up with outsiders. After a
+breach the attacker works on the copy on their own machines, and the site can do nothing about it.
+That is why passwords are stored so that a leaked copy gives away little.
+
 ## `web-server` Web server
 
 `category` web · `see` query, database · `lessons` B1
@@ -300,6 +310,26 @@ Forms: proxy phishing
 Phishing in which the fake page instantly forwards everything typed into it to the real site and
 shows the real site's answers. This way the attacker gets the password, the one-time code and an
 open session. Login methods bound to the domain, such as passkeys, resist it.
+
+## `salt` Salt
+
+`category` people · `see` hash, password-hashing · `lessons` F1
+
+Forms: salt, salts, salted
+
+A random string the site adds to a password before hashing, different for every password. The
+salt is not secret and is stored next to the hash. Because of it, equal passwords give different
+hashes, and tables of hashes computed in advance are useless.
+
+## `password-hashing` Password hashing function
+
+`category` people · `see` hash, salt · `lessons` F1
+
+Forms: password hashing function, password hashing functions, slow hash function, slow hash, slow hashes
+
+A hash function that deliberately spends noticeable time, and sometimes memory, on every hash:
+Argon2id, scrypt, bcrypt, PBKDF2. For one login this goes unnoticed, while guessing millions of
+passwords against a leaked database becomes very expensive.
 
 ## `spf` SPF
 

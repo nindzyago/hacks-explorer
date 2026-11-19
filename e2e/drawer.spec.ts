@@ -4,10 +4,15 @@
 // and the close button close it and focus returns; a ready lesson opens from it and the address
 // follows; the glossary tab lists the terms and opens a definition; the page stays one screen;
 // the phone gets a full-width sheet. Screenshots go to DRAWER_SHOTS when it names a folder.
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, openApp, sceneReady, test } from './support';
+
+// Lessons are added in parallel (K120): the ready count follows content/lessons, not a literal.
+const READY = readdirSync('content/lessons', { withFileTypes: true }).filter((d) =>
+  d.isDirectory(),
+).length;
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
@@ -61,7 +66,9 @@ test.describe('S7: the lessons panel', () => {
     await openLessons(page);
     await expect(page.getByTestId('catalog-group')).toHaveCount(12);
     expect(await topics(page)).toHaveLength(75);
-    await expect(page.getByTestId('catalog-status')).toHaveText('Готово уроков: 3 из 75');
+    await expect(page.getByTestId('catalog-status')).toHaveText(
+      `Готово уроков: ${String(READY)} из 75`,
+    );
     const b = page.locator('[data-testid="catalog-group"][data-section="B"]');
     await expect(b.getByTestId('catalog-count')).toHaveText('готово 1 из 8');
     // B1 is a link to its address; B8 is not focusable and says «скоро»; I1 carries «открыть».
@@ -119,7 +126,9 @@ test.describe('S7: the lessons panel', () => {
     // Only punctuation is no query: everything, and the status shows the total.
     await page.getByTestId('catalog-search').fill(' -- ');
     expect(await topics(page)).toHaveLength(75);
-    await expect(page.getByTestId('catalog-status')).toHaveText('Готово уроков: 3 из 75');
+    await expect(page.getByTestId('catalog-status')).toHaveText(
+      `Готово уроков: ${String(READY)} из 75`,
+    );
   });
 
   test('the player takes no keys while the panel is open, on a lesson link and on a tab', async ({
@@ -462,7 +471,9 @@ test.describe('in English (M2.3, K105)', () => {
     await expect(page.getByTestId('open-glossary')).toHaveText('Glossary');
     await openLessons(page);
     expect(await topics(page)).toHaveLength(75);
-    await expect(page.getByTestId('catalog-status')).toHaveText('Lessons ready: 3 of 75');
+    await expect(page.getByTestId('catalog-status')).toHaveText(
+      `Lessons ready: ${String(READY)} of 75`,
+    );
     await expect(
       page.locator('[data-testid="catalog-group"][data-section="B"] [data-testid="catalog-count"]'),
     ).toHaveText('1 of 8 ready');
