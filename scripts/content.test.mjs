@@ -60,7 +60,7 @@ describe('content', () => {
         .filter((name) => name.endsWith('.webp'))
         .map((name) => name.slice(0, -'.webp'.length)),
     );
-    expect(icons.size).toBe(8);
+    expect(icons.size).toBe(14);
     const missing = result.lessons.flatMap((lesson) => [
       ...lesson.participants
         .filter((p) => !icons.has(p.icon))

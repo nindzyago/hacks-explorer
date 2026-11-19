@@ -6,7 +6,7 @@
 
 ## Иконки участников
 
-Восемь иконок в стиле ризографии (K5). Сгенерированы владельцем проекта в Magnific (модель
+Иконки в стиле ризографии (K5): восемь из листов A–C и шесть из листов D–E. Сгенерированы владельцем проекта в Magnific (модель
 Nano Banana) тремя листами 1024×434 — `prototype/assets/sheet-a.jpg`, `sheet-b.jpg`,
 `sheet-c.jpg`; лист одобрен владельцем (K42, дизайн M1.2 D1 a). Иконки вырезаны из листов как есть
 командой `sh scripts/cut-icons.sh` (ImageMagick): вырезка 310×275, мягкие края 24 px уходят в
@@ -26,6 +26,17 @@ Nano Banana) тремя листами 1024×434 — `prototype/assets/sheet-a.j
 | `content/icons/router.webp` | C | 41, 82 | роутер |
 | `content/icons/browser.webp` | C | 350, 78 | окно браузера с формой входа |
 | `content/icons/bank.webp` | C | 675, 78 | банк |
+| `content/icons/workstation.webp` | D | 50, 78 | рабочий компьютер |
+| `content/icons/backup.webp` | D | 355, 78 | диск резервных копий |
+| `content/icons/assistant.webp` | D | 685, 80 | ИИ-ассистент |
+| `content/icons/document.webp` | E | 99, 78 | документ или веб-страница |
+| `content/icons/log.webp` | E | 379, 78 | журнал сервера |
+| `content/icons/phone.webp` | E | 639, 78 | смартфон |
+
+Листы D и E (`prototype/assets/sheet-d.jpg`, `sheet-e.jpg`) сгенерированы 2026-11-19 оркестратором
+проекта в Magnific (Google Nano Banana 2.1, платный тариф владельца) по образцу иконок листа A
+(K121): листы 1584×672 уменьшены до 1024×434; лист E дополнительно уменьшен до 80% с полями цвета
+бумаги. Лицензия та же, что у листов A–C: не проверена до M4.4 (G10).
 
 ## Шрифты
 
