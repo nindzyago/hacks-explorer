@@ -104,86 +104,86 @@ function setup(start: string) {
 
 describe('startRouter', () => {
   it('S4: the address opens lesson, step and mode through commands', () => {
-    const { app, browser, router } = setup('/ru/lesson/B1#step-3-defence');
+    const { app, browser, router } = setup('/ru/lesson/I1#step-3-defence');
     expect(app.calls).toEqual(['defence.set {"on":true}', 'player.goto {"step":3}']);
     const { lesson, player } = app.store.get();
-    expect([lesson, player.step, player.defence]).toEqual(['B1', 3, true]);
-    expect(browser.address()).toBe('/ru/lesson/B1#step-3-defence');
+    expect([lesson, player.step, player.defence]).toEqual(['I1', 3, true]);
+    expect(browser.address()).toBe('/ru/lesson/I1#step-3-defence');
     expect(browser.entries).toHaveLength(1);
     expect(router.notFound.get()).toBe(false);
   });
 
   it('another lesson is opened with lesson.open', () => {
-    const { app } = setup('/ru/lesson/I1#step-2');
-    expect(app.calls).toEqual(['lesson.open {"id":"I1"}', 'player.goto {"step":2}']);
+    const { app } = setup('/ru/lesson/B1#step-2');
+    expect(app.calls).toEqual(['lesson.open {"id":"B1"}', 'player.goto {"step":2}']);
   });
 
   it('the home page opens the default lesson and rewrites the address without a new entry', () => {
     const { app, browser } = setup('/');
     expect(app.calls).toEqual([]);
-    expect(browser.address()).toBe('/ru/lesson/B1');
-    expect(browser.entries).toEqual(['/ru/lesson/B1']);
+    expect(browser.address()).toBe('/ru/lesson/I1');
+    expect(browser.entries).toEqual(['/ru/lesson/I1']);
   });
 
   it('a forgiven address is rewritten to its canonical form', () => {
-    const { browser } = setup('/EN/lesson/b1/#step-0');
-    expect(browser.address()).toBe('/ru/lesson/B1');
+    const { browser } = setup('/EN/lesson/i1/#step-0');
+    expect(browser.address()).toBe('/ru/lesson/I1');
     expect(browser.entries).toHaveLength(1);
   });
 
   it('a step past the end is cut when the lesson loads, and the address follows', () => {
-    const { app, browser } = setup('/ru/lesson/B1#step-9-defence');
-    expect(browser.address()).toBe('/ru/lesson/B1#step-9-defence');
+    const { app, browser } = setup('/ru/lesson/I1#step-9-defence');
+    expect(browser.address()).toBe('/ru/lesson/I1#step-9-defence');
     app.loaded(5, 4);
     expect(app.store.get().player.step).toBe(4);
-    expect(browser.address()).toBe('/ru/lesson/B1#step-4-defence');
+    expect(browser.address()).toBe('/ru/lesson/I1#step-4-defence');
   });
 
   it('steps and modes replace the entry; a new lesson pushes one', () => {
-    const { app, browser } = setup('/ru/lesson/B1');
+    const { app, browser } = setup('/ru/lesson/I1');
     app.loaded(5, 5);
     app.run('player.goto', { step: 2 });
-    expect(browser.address()).toBe('/ru/lesson/B1#step-2');
+    expect(browser.address()).toBe('/ru/lesson/I1#step-2');
     app.run('defence.toggle');
-    expect(browser.address()).toBe('/ru/lesson/B1#step-2-defence');
+    expect(browser.address()).toBe('/ru/lesson/I1#step-2-defence');
     app.run('player.goto', { step: 1 });
     app.run('defence.toggle');
-    expect(browser.address()).toBe('/ru/lesson/B1');
-    expect(browser.entries).toEqual(['/ru/lesson/B1']);
-    app.run('lesson.open', { id: 'I1' });
-    expect(browser.entries).toEqual(['/ru/lesson/B1', '/ru/lesson/I1']);
+    expect(browser.address()).toBe('/ru/lesson/I1');
+    expect(browser.entries).toEqual(['/ru/lesson/I1']);
+    app.run('lesson.open', { id: 'B1' });
+    expect(browser.entries).toEqual(['/ru/lesson/I1', '/ru/lesson/B1']);
   });
 
   it('back and forward apply the address of the entry', () => {
-    const { app, browser } = setup('/ru/lesson/B1#step-3-defence');
+    const { app, browser } = setup('/ru/lesson/I1#step-3-defence');
     app.loaded(5, 5);
-    app.run('lesson.open', { id: 'I1' });
+    app.run('lesson.open', { id: 'B1' });
     app.loaded(4, 4);
     app.run('player.goto', { step: 2 });
-    expect(browser.entries).toEqual(['/ru/lesson/B1#step-3-defence', '/ru/lesson/I1#step-2']);
+    expect(browser.entries).toEqual(['/ru/lesson/I1#step-3-defence', '/ru/lesson/B1#step-2']);
     browser.go(-1);
     const back = app.store.get();
-    expect([back.lesson, back.player.step, back.player.defence]).toEqual(['B1', 3, true]);
-    expect(browser.address()).toBe('/ru/lesson/B1#step-3-defence');
+    expect([back.lesson, back.player.step, back.player.defence]).toEqual(['I1', 3, true]);
+    expect(browser.address()).toBe('/ru/lesson/I1#step-3-defence');
     browser.go(1);
     const forward = app.store.get();
-    expect([forward.lesson, forward.player.step, forward.player.defence]).toEqual(['I1', 2, false]);
+    expect([forward.lesson, forward.player.step, forward.player.defence]).toEqual(['B1', 2, false]);
     expect(browser.entries).toHaveLength(2);
   });
 
   it('a hash edited by hand is applied once; garbage gives step 1', () => {
-    const { app, browser } = setup('/ru/lesson/B1');
+    const { app, browser } = setup('/ru/lesson/I1');
     app.loaded(5, 5);
     app.calls.length = 0;
     browser.editHash('#step-4');
     expect(app.calls).toEqual(['player.goto {"step":4}']);
     browser.editHash('#<script>');
     expect(app.store.get().player.step).toBe(1);
-    expect(browser.address()).toBe('/ru/lesson/B1');
+    expect(browser.address()).toBe('/ru/lesson/I1');
   });
 
   it('an unknown path is «not found»: no commands, the address is left alone', () => {
-    for (const path of ['/ru/lesson/__proto__', '/ru/lesson/../B1', '/xx/yy', '/ru/lesson/B1/x']) {
+    for (const path of ['/ru/lesson/__proto__', '/ru/lesson/../I1', '/xx/yy', '/ru/lesson/I1/x']) {
       const { app, browser, router } = setup(path);
       expect(router.notFound.get(), path).toBe(true);
       expect(app.calls).toEqual([]);
@@ -193,16 +193,16 @@ describe('startRouter', () => {
   });
 
   it('stop() removes the listeners and the subscription', () => {
-    const { app, browser, router } = setup('/ru/lesson/B1');
+    const { app, browser, router } = setup('/ru/lesson/I1');
     router.stop();
     app.run('player.goto', { step: 3 });
-    expect(browser.address()).toBe('/ru/lesson/B1');
+    expect(browser.address()).toBe('/ru/lesson/I1');
     browser.editHash('#step-2');
     expect(app.store.get().player.step).toBe(3);
   });
 
   it('a site with English keeps it in the address', () => {
-    const browser = fakeWindow('/en/lesson/B1#step-2');
+    const browser = fakeWindow('/en/lesson/I1#step-2');
     const app = fakeApp();
     const router = startRouter({
       window: browser.win,
@@ -212,6 +212,6 @@ describe('startRouter', () => {
     });
     expect(router.lang()).toBe('en');
     app.run('defence.toggle');
-    expect(browser.address()).toBe('/en/lesson/B1#step-2-defence');
+    expect(browser.address()).toBe('/en/lesson/I1#step-2-defence');
   });
 });

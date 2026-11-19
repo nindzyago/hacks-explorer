@@ -26,8 +26,9 @@ test('a deep link loads the lesson at its step and mode, and survives a reload',
   await expect(page.getByTestId('defence-toggle')).toHaveAttribute('data-defence', 'true');
 });
 
+// M2.1a (E5, K7): the default lesson is «Фишинг».
 test('the home page of the production build opens the default lesson', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveURL(/\/ru\/lesson\/B1$/);
-  await expect(page.getByTestId('scene')).toBeVisible();
+  await expect(page).toHaveURL(/\/ru\/lesson\/I1$/);
+  await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'I1');
 });

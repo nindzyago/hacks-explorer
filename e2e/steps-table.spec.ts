@@ -1,5 +1,5 @@
 // M1.6 (re-verification of M1.4): a step title or result with one long unbreakable word must
-// not push the page sideways through the «Ход атаки» table or the event feed. The built B1 is
+// not push the page sideways through the «Ход атаки» table (the feed is inside it, K91). The built B1 is
 // changed on its way to the page (the checker accepts such words), as in explain.spec.ts.
 import type { Page } from '@playwright/test';
 import { expect, openApp, test } from './support';
@@ -42,22 +42,22 @@ for (const viewport of [
       await expect(page.getByTestId('step-row-1')).toContainText(LONG);
       for (const on of [false, true]) {
         expect(await run(page, 'defence.set', { on })).toEqual({ ok: true });
-        // The last step: every row and every feed line is on the page.
+        // The last step: every row has happened and carries its mark.
         expect(await run(page, 'player.goto', { step: 5 })).toEqual({ ok: true });
-        await expect(page.getByTestId('feed-line-5')).toBeVisible();
+        await expect(page.getByTestId('step-row-5')).not.toHaveAttribute('data-mark', 'future');
         const sideways = await page.evaluate(() => {
           const root = document.documentElement;
           const table = document.querySelector<HTMLElement>('[data-testid="steps-table"]');
-          const feed = document.querySelector<HTMLElement>('[data-testid="feed"]');
+          const area = document.querySelector<HTMLElement>('[data-testid="steps-area"]');
           return {
             page: root.scrollWidth - root.clientWidth,
             table: table === null ? -1 : table.getBoundingClientRect().right - root.clientWidth,
-            feed: feed === null ? -1 : feed.scrollWidth - feed.clientWidth,
+            area: area === null ? -1 : area.scrollWidth - area.clientWidth,
           };
         });
         expect(sideways.page, `page, defence ${String(on)}`).toBe(0);
         expect(sideways.table, `table, defence ${String(on)}`).toBeLessThanOrEqual(0);
-        expect(sideways.feed, `feed, defence ${String(on)}`).toBe(0);
+        expect(sideways.area, `steps area, defence ${String(on)}`).toBe(0);
       }
     });
   });

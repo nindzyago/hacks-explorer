@@ -5,21 +5,21 @@ import { MAX_STEPS, PAUSE_MS, stepDurationMs } from '../core/player/player';
 import { TRAVEL_MS } from '../core/scene-layout/message';
 import { createApp, type AppOptions } from './app';
 
-const B1 = { without: 5, with: 5 };
+const I1 = { without: 5, with: 5 };
 
 function loaded(options: AppOptions = {}) {
   const app = createApp(options);
-  app.lessonLoaded('B1', B1);
+  app.lessonLoaded('I1', I1);
   return app;
 }
 
 const player = (app: ReturnType<typeof createApp>) => app.store.get().player;
 
 describe('player state', () => {
-  it('starts at step 1 of B1 without the defence, paused, at speed 1', () => {
+  it('starts at step 1 of I1 without the defence, paused, at speed 1', () => {
     expect(createApp().store.get()).toEqual({
       theme: 'light',
-      lesson: 'B1',
+      lesson: 'I1',
       player: {
         step: 1,
         defence: false,
@@ -42,10 +42,10 @@ describe('player state', () => {
 
   it('the scene registers the steps of the loaded lesson only for the open lesson', () => {
     const app = createApp();
-    app.lessonLoaded('I1', { without: 9, with: 9 });
+    app.lessonLoaded('B1', { without: 9, with: 9 });
     expect(player(app).counts).toEqual({ without: 0, with: 0 });
-    app.lessonLoaded('B1', B1);
-    expect(player(app).counts).toEqual(B1);
+    app.lessonLoaded('I1', I1);
+    expect(player(app).counts).toEqual(I1);
   });
 
   it('the old temporary commands are gone', () => {
@@ -264,9 +264,9 @@ describe('lesson.open', () => {
     app.registry.run('player.speed', { value: 2 });
     app.registry.run('player.play');
     app.clock.set(90);
-    expect(app.registry.run('lesson.open', { id: 'I1' })).toEqual({ ok: true });
+    expect(app.registry.run('lesson.open', { id: 'B1' })).toEqual({ ok: true });
     expect(app.store.get()).toMatchObject({
-      lesson: 'I1',
+      lesson: 'B1',
       player: {
         step: 1,
         defence: false,
@@ -283,8 +283,8 @@ describe('lesson.open', () => {
   it('opening the open lesson again starts it over and keeps its steps', () => {
     const app = loaded();
     app.registry.run('player.goto', { step: 4 });
-    expect(app.registry.run('lesson.open', { id: 'B1' })).toEqual({ ok: true });
-    expect(player(app)).toMatchObject({ step: 1, counts: B1 });
+    expect(app.registry.run('lesson.open', { id: 'I1' })).toEqual({ ok: true });
+    expect(player(app)).toMatchObject({ step: 1, counts: I1 });
   });
 
   it.each([
@@ -292,17 +292,17 @@ describe('lesson.open', () => {
     [{ id: 7 }],
     [{ id: 'x'.repeat(33) }],
     [{ id: '' }],
-    [{ id: 'B1/../x' }],
-    [{ id: 'b1' }],
-    [{ id: 'B1\n' }],
-    [{ id: 'B1234' }],
+    [{ id: 'I1/../x' }],
+    [{ id: 'i1' }],
+    [{ id: 'I1\n' }],
+    [{ id: 'I1234' }],
   ])('rejects %j as invalid parameters', (params) => {
     const app = createApp();
     expect(app.registry.run('lesson.open', params)).toMatchObject({
       ok: false,
       error: { code: 'invalid-params' },
     });
-    expect(app.store.get().lesson).toBe('B1');
+    expect(app.store.get().lesson).toBe('I1');
   });
 });
 
