@@ -1,0 +1,104 @@
+{
+  "note": "Primary (nvd@nist.gov) cvssMetricV31 of each CVE, fetched from the NVD CVE API 2.0 at authoring time. Tests never hit the network. «catalog» true: the CVE is named in plan/content-catalog.md; false: picked for a catalog topic because the catalog names only six.",
+  "cves": [
+    {
+      "cve": "CVE-2021-44228",
+      "catalog": true,
+      "topic": "A2, K1 Log4Shell",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+      "score": 10.0,
+      "severity": "CRITICAL",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2021-44228",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-08-11T19:33:44.513"
+    },
+    {
+      "cve": "CVE-2014-0160",
+      "catalog": true,
+      "topic": "K2 Heartbleed",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+      "score": 7.5,
+      "severity": "HIGH",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2014-0160",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-06-17T00:02:24.467"
+    },
+    {
+      "cve": "CVE-2017-0144",
+      "catalog": true,
+      "topic": "K3 WannaCry and EternalBlue",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H",
+      "score": 8.8,
+      "severity": "HIGH",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2017-0144",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-08-14T05:16:53.770"
+    },
+    {
+      "cve": "CVE-2014-6271",
+      "catalog": true,
+      "topic": "K4 Shellshock",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "score": 9.8,
+      "severity": "CRITICAL",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2014-6271",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-06-17T00:12:48.020"
+    },
+    {
+      "cve": "CVE-2017-5638",
+      "catalog": true,
+      "topic": "K5 Equifax and Apache Struts",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "score": 9.8,
+      "severity": "CRITICAL",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2017-5638",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-06-17T01:20:54.013"
+    },
+    {
+      "cve": "CVE-2024-3094",
+      "catalog": true,
+      "topic": "K7 xz backdoor",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+      "score": 10.0,
+      "severity": "CRITICAL",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2024-3094",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-11-04T22:17:21.430"
+    },
+    {
+      "cve": "CVE-2014-3566",
+      "catalog": false,
+      "topic": "G3 SSL stripping and version downgrade (POODLE)",
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N",
+      "score": 3.4,
+      "severity": "LOW",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2014-3566",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-06-17T00:08:29.637"
+    },
+    {
+      "cve": "CVE-2023-44487",
+      "catalog": false,
+      "topic": "G4 DDoS (HTTP/2 Rapid Reset), extra",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+      "score": 7.5,
+      "severity": "HIGH",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2023-44487",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-08-11T19:37:30.880"
+    },
+    {
+      "cve": "CVE-2017-5753",
+      "catalog": false,
+      "topic": "Spectre variant 1, extra (local, scope changed)",
+      "vector": "CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N",
+      "score": 5.6,
+      "severity": "MEDIUM",
+      "url": "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2017-5753",
+      "fetched": "2026-11-19",
+      "lastModified": "2026-06-17T01:21:08.620"
+    }
+  ]
+}

@@ -287,6 +287,27 @@ describe('passport', () => {
     ['- `owasp` A03:2021', '- `owasp` A3', 'bad-value'],
     ['- `attack` T1190', '- `attack` 1190', 'bad-value'],
     ['- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H', '- `cvss` 9.8', 'bad-value'],
+    // M2.5: the vector is read by src/core/cvss, not only by its shape.
+    [
+      '- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      '- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N',
+      'bad-value',
+    ],
+    [
+      '- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      '- `cvss` CVSS:3.1/AV:Q/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      'bad-value',
+    ],
+    [
+      '- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      '- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H/AV:N',
+      'bad-value',
+    ],
+    [
+      '- `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      '- `cvss` CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      'bad-value',
+    ],
     ['- `cves` CVE-2021-44228', '- `cves` 2021-44228', 'bad-value'],
     ['- `severity` high', '- `severity` very high', 'bad-value'],
     ['- `severity` high', '- `danger` high', 'unknown-word'],

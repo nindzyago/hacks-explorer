@@ -188,6 +188,17 @@ describe('a broken glossary names the file, the line and the reason', () => {
     expect(errors[0]?.line).toBe(lineOf(text, '8.8.8.8'));
   });
 
+  it('a CWE, ATT&CK, OWASP or CVE id that is not vetted (M2.8, K86)', () => {
+    const vetted = 'CWE-89, T1566.002, A03:2021 и CVE-2021-44228.';
+    expect(check([{ path: RU, text: edit(VALID, 'Тот, кто нападает.', vetted) }]).errors).toEqual(
+      [],
+    );
+    for (const id of ['CWE-99999', 'T9999', 'A42:2021', 'CVE-2099-0001']) {
+      const text = edit(VALID, 'Тот, кто нападает.', `Пример: ${id}.`);
+      expect(only(text)).toMatchObject({ code: 'unknown-id', line: lineOf(text, id) });
+    }
+  });
+
   it('a wrong title, header or categories heading', () => {
     expect(only(edit(VALID, '# Словарь', '# Глоссарий')).code).toBe('missing-title');
     expect(only(edit(VALID, '`glossary` ru', '`glossary` en')).code).toBe('bad-header');

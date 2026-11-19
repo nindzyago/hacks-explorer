@@ -3,6 +3,7 @@
   import type { SiteLesson } from '../core/lesson/site';
   import { stepCount } from '../core/player/player';
   import { PROJECT } from '../core/project';
+  import { createStore, type Store } from '../core/store';
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
@@ -22,7 +23,15 @@
     loader,
     glossary,
     home = '/',
-  }: { app: AppContext; loader: LessonLoader; glossary: GlossaryLoader; home?: string } = $props();
+    notFound = createStore(false),
+  }: {
+    app: AppContext;
+    loader: LessonLoader;
+    glossary: GlossaryLoader;
+    home?: string;
+    /** M2.2: the address is no page of the site (src/services/router). */
+    notFound?: Pick<Store<boolean>, 'subscribe'>;
+  } = $props();
   const store = $derived(app.store);
   const player = $derived($store.player);
 
@@ -49,6 +58,8 @@
 
   $effect(() => {
     const id = lessonId;
+    // M2.2: an address that is no page of the site loads no lesson behind its message.
+    if ($notFound) return;
     let current = true;
     shown = { state: 'loading', attempt };
     const lesson = loader
@@ -85,13 +96,22 @@
     });
   });
 
+  // M2.2: the page title says when the address is no page; the heading takes the focus.
+  let notFoundHeading = $state<HTMLElement | null>(null);
+  $effect(() => {
+    document.title = $notFound ? `Такой страницы нет — ${PROJECT.name}` : PROJECT.name;
+  });
+  $effect(() => {
+    notFoundHeading?.focus();
+  });
+
   const step = $derived(
     shown.state === 'ready' ? currentStep(shown.lesson.steps, player.defence, player.step) : null,
   );
 
   /** S6: Space, ← →, D. Keys are ignored while typing and with Ctrl, ⌘ or Alt. */
   function onkeydown(event: KeyboardEvent): void {
-    if (shown.state !== 'ready' || event.defaultPrevented) return;
+    if ($notFound || shown.state !== 'ready' || event.defaultPrevented) return;
     const id = keyCommand(
       {
         key: event.key,
@@ -123,7 +143,7 @@
 <main data-testid="app">
   <header class="top" data-testid="topbar">
     <h1 class="brand">{PROJECT.name}</h1>
-    {#if shown.state === 'ready'}
+    {#if shown.state === 'ready' && !$notFound}
       <h2 class="lesson-title" id="lesson-title" data-testid="lesson-title">
         {shown.lesson.title}
       </h2>
@@ -132,7 +152,22 @@
     {/if}
   </header>
 
-  {#if shown.state === 'loading'}
+  {#if $notFound}
+    <div class="status error" data-testid="page-not-found" role="alert">
+      <h2
+        class="not-found-title"
+        tabindex="-1"
+        data-testid="not-found-title"
+        bind:this={notFoundHeading}
+      >
+        Такой страницы нет
+      </h2>
+      <p>Проверьте адрес или откройте урок с главной.</p>
+      <div class="actions">
+        <a href={home} data-testid="not-found-home">На главную</a>
+      </div>
+    </div>
+  {:else if shown.state === 'loading'}
     <p class="status" data-testid="lesson-loading" role="status">Загружаем урок…</p>
   {:else if shown.state === 'error'}
     <div class="status error" data-testid="lesson-error" data-code={shown.code} role="alert">
@@ -348,6 +383,13 @@
 
   .error p {
     margin: 0;
+  }
+
+  .not-found-title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--ink);
   }
 
   .actions {

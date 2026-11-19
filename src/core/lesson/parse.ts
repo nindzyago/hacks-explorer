@@ -4,8 +4,10 @@
  * The format is described in README.md.
  */
 import type { Heading, Nodes, Paragraph, Root, RootContent } from 'mdast';
+import { parseCvss31 } from '../cvss/cvss';
 import type { LanguageWords, LevelKey, SectionKey } from './headings';
 import { LEVEL_ORDER, SECTION_ORDER } from './headings';
+import { unknownId } from './ids';
 import type { Reporter } from './report';
 import { START, quote } from './report';
 import { blocks, checkPlainLine, codeBlock, plainText, positionOf } from './text';
@@ -211,12 +213,18 @@ function parseHeader(ctx: Context, node: RootContent | undefined, id: string): H
 
 const SEVERITIES: readonly Severity[] = ['low', 'medium', 'high', 'critical'];
 const LIST_VALUE: Readonly<Record<string, { re: RegExp; hint: string }>> = {
-  cwe: { re: /^\d{1,5}$/, hint: 'CWE numbers without the prefix: 89, 564' },
-  owasp: { re: /^A(0[1-9]|10):20\d\d$/, hint: 'OWASP Top 10 items: A03:2021' },
+  cwe: { re: /^[1-9]\d{0,4}$/, hint: 'CWE numbers without the prefix: 89, 564' },
+  owasp: {
+    re: /^(A|LLM)(0[1-9]|10):20\d\d$/,
+    hint: 'OWASP Top 10 items: A03:2021, or LLM Top 10 items: LLM01:2025',
+  },
   attack: { re: /^T\d{4}(\.\d{3})?$/, hint: 'ATT&CK techniques: T1566 or T1566.002' },
-  cves: { re: /^CVE-\d{4}-\d{4,7}$/, hint: 'CVE ids: CVE-2021-44228' },
+  // The official form (cve.org): year from 1999, then four digits, or more without a leading 0.
+  cves: {
+    re: /^CVE-(1999|20\d\d)-(\d{4}|[1-9]\d{4,6})$/,
+    hint: 'CVE ids: CVE-2021-44228, CVE-2014-0160',
+  },
 };
-const CVSS = /^CVSS:(3\.[01]|4\.0)(\/[A-Z]{1,3}:[A-Z]{1,2}){4,32}$/;
 const PASSPORT_WORDS = [
   'class',
   'cwe',
@@ -228,6 +236,12 @@ const PASSPORT_WORDS = [
   'impact',
   'defence',
 ];
+
+function unknownIdOf(word: string, value: string): string | null {
+  return word === 'cwe' || word === 'owasp' || word === 'attack' || word === 'cves'
+    ? unknownId(word, value)
+    : null;
+}
 
 function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
   const passport: { -readonly [K in keyof Passport]: Passport[K] } = {
@@ -285,18 +299,24 @@ function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
         );
         continue;
       }
+      // M2.8: the id must also be in its vetted list (ids.ts, L5).
+      const unknown = parts.flatMap((part) => unknownIdOf(word, part) ?? []);
+      for (const message of unknown) ctx.reporter.add(at, path, 'unknown-id', message);
+      if (unknown.length > 0) continue;
       if (word === 'cwe') passport.cwe = parts.map(Number);
       else if (word === 'owasp') passport.owasp = parts;
       else if (word === 'attack') passport.attack = parts;
       else passport.cves = parts;
     } else if (word === 'cvss') {
-      if (CVSS.test(value)) passport.cvss = value;
+      // M2.5 (K82): a CVSS v3.1 vector read by src/core/cvss, all eight base metrics.
+      const cvss = parseCvss31(value);
+      if (cvss.ok) passport.cvss = value;
       else
         ctx.reporter.add(
           at,
           path,
           'bad-value',
-          `\`cvss\` must be a vector string: CVSS:3.1/AV:N/AC:L/…`,
+          `\`cvss\` must be a CVSS v3.1 vector string: CVSS:3.1/AV:N/AC:L/…; ${cvss.error.message}`,
         );
     } else if (word === 'severity') {
       const severity = SEVERITIES.find((s) => s === value);

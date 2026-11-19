@@ -1,7 +1,9 @@
 // M1.4: what the explanation panel shows, without a browser (S3 runs it in one).
 import { describe, expect, it } from 'vitest';
+import { CWE_ENTRIES } from '../core/lesson/ids';
 import type { SiteCode, SitePassport, SiteStep } from '../core/lesson/site';
 import {
+  CWE_NAMES,
   codeAtDeep,
   DEPTH_TABS,
   levelText,
@@ -208,6 +210,12 @@ describe('passport', () => {
     expect(passportRows(empty)).toEqual([]);
   });
 
+  it('names only CWE entries of the vetted list (K86)', () => {
+    const numbers = Object.keys(CWE_NAMES).map(Number);
+    expect(numbers).toEqual([22, 78, 79, 89, 352, 918]);
+    expect(numbers.filter((n) => !CWE_ENTRIES.has(n))).toEqual([]);
+  });
+
   it('shows ATT&CK, CVE and CVSS when present', () => {
     const rows = passportRows({
       ...empty,
@@ -217,5 +225,25 @@ describe('passport', () => {
     });
     expect(rows.map((r) => r.key)).toEqual(['attack', 'cves', 'cvss']);
     expect(rows[0]?.value).toBe('T1566, T1566.002');
+  });
+
+  it('shows the CVSS score and severity computed from the vector, the vector below (M2.5)', () => {
+    const row = (cvss: string) => passportRows({ ...empty, cvss }).find((r) => r.key === 'cvss');
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toEqual({
+      key: 'cvss',
+      label: 'CVSS',
+      value: '9.8 · критическая',
+      detail: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+    });
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H')?.value).toBe('10.0 · критическая');
+    expect(row('CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N')?.value).toBe('3.4 · низкая');
+    expect(row('CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N')?.value).toBe('5.6 · средняя');
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H')?.value).toBe('8.8 · высокая');
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N')?.value).toBe('0.0 · нет');
+  });
+
+  it('shows an invalid CVSS vector as it is, without a score', () => {
+    const rows = passportRows({ ...empty, cvss: 'CVSS:3.1/AV:N/AC:L' });
+    expect(rows).toEqual([{ key: 'cvss', label: 'CVSS', value: 'CVSS:3.1/AV:N/AC:L' }]);
   });
 });

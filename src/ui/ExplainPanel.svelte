@@ -130,7 +130,12 @@
           {#each rows as row (row.key)}
             <div class="row" data-key={row.key}>
               <dt>{row.label}</dt>
-              <dd>{row.value}</dd>
+              <dd>
+                {row.value}
+                {#if row.detail !== undefined}
+                  <span class="detail">{row.detail}</span>
+                {/if}
+              </dd>
             </div>
           {/each}
         </dl>
@@ -300,6 +305,14 @@
   dd {
     margin: 0;
     overflow-wrap: anywhere;
+  }
+
+  /* M2.5: the CVSS vector under its score. */
+  .detail {
+    display: block;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
   }
 
   .sources {

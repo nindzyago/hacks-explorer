@@ -10,3 +10,5 @@ prototype/
 # Method and plan documents keep their hand-made tables
 *.md
 plan/designs/*.html
+# Agent worktrees are separate checkouts
+.claude/

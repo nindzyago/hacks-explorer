@@ -65,7 +65,8 @@
 | `unknown-term` | `see` называет термин, которого нет; `term:` участника или зоны урока — тоже (ошибка в файле урока) |
 | `unknown-lesson` | `lessons` называет урок, которого нет в `content/lessons` |
 | `html`, `image`, `link`, `not-allowed`, `empty-section` | запрещённое в тексте; термин без определения |
-| `address` | IP или домен вне учебных |
+| `address` | IP или домен вне учебных (правило уроков, с M2.8 и IPv4 числом) |
+| `unknown-id` | CWE, техника ATT&CK, пункт OWASP или CVE в тексте не из проверенных списков `src/core/lesson/ids.ts` (M2.8, K86) |
 | `missing-glossary` | у языка уроков нет словаря (K94); русский нужен всегда, когда есть уроки |
 | `translation-mismatch` | перевод расходится с русским: разделы, id терминов по порядку, `category`, `see`, `lessons` |
 

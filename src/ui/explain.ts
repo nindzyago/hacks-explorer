@@ -3,6 +3,7 @@
  * «Глубже», the lesson passport and sources. Pure functions over site data, tested without a
  * browser; the Svelte components only draw what these return. Never HTML (K37).
  */
+import { type CvssSeverity, formatScore, scoreCvss31 } from '../core/cvss/cvss';
 import type { SiteBlock, SiteCode, SitePassport, SiteStep } from '../core/lesson/site';
 import type { Severity } from '../core/lesson/types';
 import type { Depth } from '../core/state';
@@ -96,9 +97,11 @@ export function severityWord(severity: Severity): string {
 
 /**
  * Russian names of the CWE entries the lessons use, for a passport without `class` (K71). Only
- * names checked against cwe.mitre.org; an unknown number gives no class line.
+ * names checked against cwe.mitre.org; an unknown number gives no class line. The numbers and
+ * official English names live in the checker's vetted list (src/core/lesson/ids.ts, K86); a test
+ * keeps every number here in that list. Translations stay here: they are words of the interface.
  */
-const CWE_NAMES: Readonly<Record<number, string>> = {
+export const CWE_NAMES: Readonly<Record<number, string>> = {
   22: 'Обход пути к файлу',
   78: 'Внедрение команд ОС',
   79: 'Межсайтовый скриптинг (XSS)',
@@ -111,6 +114,30 @@ export interface PassportRow {
   readonly key: string;
   readonly label: string;
   readonly value: string;
+  /** A second, smaller line: the CVSS vector under its score (M2.5). */
+  readonly detail?: string;
+}
+
+const CVSS_SEVERITY_WORDS: Readonly<Record<CvssSeverity, string>> = {
+  none: 'нет',
+  ...SEVERITY_WORDS,
+};
+
+/**
+ * The CVSS row (M2.5, K82): «9.8 · критическая» computed from the vector, the vector itself as
+ * the detail line. A vector the calculator does not read (the checker rejects it, but site data is
+ * hostile) is shown as it is, without a score.
+ */
+function cvssRow(vector: string): PassportRow {
+  const r = scoreCvss31(vector);
+  if (!r.ok) return { key: 'cvss', label: 'CVSS', value: vector };
+  const { score, severity } = r.value;
+  return {
+    key: 'cvss',
+    label: 'CVSS',
+    value: `${formatScore(score)} · ${CVSS_SEVERITY_WORDS[severity]}`,
+    detail: vector,
+  };
 }
 
 /** The passport lines that have a value, in reading order. */
@@ -126,7 +153,7 @@ export function passportRows(passport: SitePassport): readonly PassportRow[] {
   add('owasp', 'OWASP Top 10', passport.owasp.join(', '));
   add('attack', 'MITRE ATT&CK', passport.attack.join(', '));
   add('cves', 'CVE', passport.cves.join(', '));
-  add('cvss', 'CVSS', passport.cvss);
+  if (passport.cvss !== null && passport.cvss.trim() !== '') rows.push(cvssRow(passport.cvss));
   add('severity', 'Тяжесть', passport.severity === null ? null : severityWord(passport.severity));
   add('impact', 'Что получает атакующий', passport.impact);
   add('defence', 'Защита', passport.defence);

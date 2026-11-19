@@ -9,6 +9,8 @@ import { findForeignAddresses } from '../lesson/addresses';
 import type { ContentFile } from '../lesson/check';
 import { normaliseText, preflight } from '../lesson/check';
 import { BASE_LANGUAGE } from '../lesson/headings';
+import type { IdWord } from '../lesson/ids';
+import { unknownId } from '../lesson/ids';
 import { ID } from '../lesson/parse';
 import type { Reporter } from '../lesson/report';
 import { START, capReported, createLocator, createReporter, quote } from '../lesson/report';
@@ -518,8 +520,29 @@ function checkOne(file: ContentFile, lessonIds: ReadonlySet<string>): Checked {
         : `domain ${quote(found.value, 80)} is not a documentation name (example.com, example.org, example.net, *.example, *.test)`,
     );
   }
+  checkIds(text, reporter, locate);
   const errors = capReported(reporter);
   return { path, language, glossary: errors.length === 0 ? glossary : null, errors };
+}
+
+/**
+ * L5 (M2.8, K86): a CWE, ATT&CK technique, OWASP item or CVE named anywhere in the glossary is in
+ * the vetted lists of src/core/lesson/ids.ts, as in a lesson passport.
+ */
+const MENTIONED_IDS: readonly { word: IdWord; pattern: RegExp }[] = [
+  { word: 'cwe', pattern: /(?<![\w-])CWE-(\d{1,6})(?![\w-])/g },
+  { word: 'attack', pattern: /(?<![\w-])(T\d{4}(?:\.\d{3})?)(?!\.\d|[\w-])/g },
+  { word: 'owasp', pattern: /(?<![\w-])((?:A|LLM)\d{2}:\d{4})(?![\w-])/g },
+  { word: 'cves', pattern: /(?<![\w-])(CVE-\d{4}-\d{4,7})(?![\w-])/g },
+];
+
+function checkIds(text: string, reporter: Reporter, locate: (index: number) => Position): void {
+  for (const { word, pattern } of MENTIONED_IDS) {
+    for (const m of text.matchAll(pattern)) {
+      const problem = unknownId(word, m[1] ?? '');
+      if (problem !== null) reporter.add(locate(m.index), 'text', 'unknown-id', problem);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
