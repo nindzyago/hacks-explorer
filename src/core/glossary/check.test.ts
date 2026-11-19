@@ -150,6 +150,16 @@ describe('a broken glossary names the file, the line and the reason', () => {
     }
   });
 
+  it('an empty form between commas', () => {
+    for (const forms of ['запрос, , запроса', 'запрос,', ', запрос']) {
+      const text = edit(VALID, 'Формы: запрос, запроса, запросы', `Формы: ${forms}`);
+      expect(only(text)).toMatchObject({
+        code: 'bad-value',
+        line: lineOf(text, `Формы: ${forms}`),
+      });
+    }
+  });
+
   it('HTML, a link and an image in a definition', () => {
     const def = 'Обращение программы к другой программе.';
     expect(only(edit(VALID, def, 'Обращение <br> программы.')).code).toBe('html');
@@ -223,15 +233,32 @@ describe('a hostile glossary fails, quickly and without throwing', () => {
     expect(codes(check([{ path: RU, text: huge }]).errors)).toEqual(['too-large']);
   });
 
-  it('too many terms', () => {
-    const terms = Array.from(
-      { length: MAX_TERMS + 1 },
-      (_, i) => `## \`t${String(i)}\` T\n\n\`category\` web\n\nD.\n`,
-    ).join('\n');
-    const text = `# Словарь\n\n\`glossary\` ru · \`format\` 1\n\n## Разделы\n\n- \`web\` Веб\n\n${terms}`;
+  it('too many terms: the cap, not the line limit, stops it', () => {
+    // One line per term, so the file stays under the 1000-line limit of the preflight.
+    const terms = Array.from({ length: MAX_TERMS + 1 }, (_, i) => `## \`t${String(i)}\` T`).join(
+      '\n',
+    );
+    const text = `# Словарь\n\n\`glossary\` ru · \`format\` 1\n\n## Разделы\n\n- \`web\` Веб\n\n${terms}\n`;
+    expect(text.split('\n').length).toBeLessThan(1000);
     const started = Date.now();
-    expect(codes(check([{ path: RU, text }]).errors)).toContain('too-large');
+    const { errors } = check([{ path: RU, text }]);
+    expect(codes(errors)).toEqual(['too-large']);
+    expect(errors[0]?.message).toContain(`${String(MAX_TERMS + 1)} terms`);
     expect(Date.now() - started).toBeLessThan(3000);
+  });
+
+  it('exactly the cap of terms passes the cap', () => {
+    const terms = Array.from({ length: MAX_TERMS }, (_, i) => `## \`t${String(i)}\` T`).join('\n');
+    const text = `# Словарь\n\n\`glossary\` ru · \`format\` 1\n\n## Разделы\n\n- \`web\` Веб\n\n${terms}\n`;
+    // Each term then lacks its lines, but none of the errors is the cap.
+    expect(codes(check([{ path: RU, text }]).errors)).not.toContain('too-large');
+  });
+
+  it('NUL and bidirectional control characters', () => {
+    for (const c of ['\u0000', '\u202A', '\u202E', '\u2066', '\u2069']) {
+      const text = edit(VALID, 'Тот, кто нападает.', `Тот, кто ${c}нападает.`);
+      expect(only(text)).toMatchObject({ code: 'not-allowed', line: lineOf(text, 'Тот, кто') });
+    }
   });
 
   it('not text, an empty file and garbage', () => {

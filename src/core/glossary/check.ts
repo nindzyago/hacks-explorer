@@ -198,8 +198,12 @@ function parseForms(ctx: Ctx, p: Paragraph, path: string): string[] | null {
   if (!checkPlainLine(p.children, ctx.reporter, path, {})) return null;
   const line = flat(raw(ctx, p));
   const value = line.slice(ctx.words.forms.length + 1);
-  const forms = list(value);
   const at = positionOf(p);
+  if (value.trim() !== '' && value.split(',').some((f) => f.trim() === '')) {
+    ctx.reporter.add(at, path, 'bad-value', 'an empty form between commas: write form, form, form');
+    return null;
+  }
+  const forms = list(value);
   if (forms.length === 0) {
     ctx.reporter.add(
       at,
@@ -494,6 +498,21 @@ function checkOne(file: ContentFile, lessonIds: ReadonlySet<string>): Checked {
     reporter.add(START, '', 'parse-failed', 'cannot read the file as Markdown');
     return fail(language);
   }
+  // Invisible characters that change what a reader sees (NUL, bidirectional overrides and
+  // isolates) are never allowed: the text must read as it is written.
+  const locateHidden = createLocator(text);
+  for (let i = 0; i < text.length; i += 1) {
+    const c = text.charCodeAt(i);
+    if (c === 0 || (c >= 0x202a && c <= 0x202e) || (c >= 0x2066 && c <= 0x2069)) {
+      reporter.add(
+        locateHidden(i),
+        'text',
+        'not-allowed',
+        `the invisible character U+${c.toString(16).toUpperCase().padStart(4, '0')} is not allowed`,
+      );
+    }
+  }
+  if (reporter.total() > 0) return fail(language);
   const ctx: Ctx = { text, reporter, words };
   const glossary = parseGlossary(ctx, root, language);
   for (const term of glossary.terms) {

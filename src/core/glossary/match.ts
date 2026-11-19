@@ -12,7 +12,9 @@
  *   skipped, so a shorter form is never found inside a longer match;
  * - one term is linked once per block (a paragraph, or a whole list), at its first occurrence;
  * - code is never searched: inline code and code blocks stay as they are;
- * - a term is found inside bold and italic text, but not across the edge of bold or italic.
+ * - a term is found inside bold and italic text, but not across the edge of bold or italic; the
+ *   characters just outside that edge still count for whole words, so in `**SQL**-инъекция`
+ *   `SQL` is not a word of its own.
  */
 import type { SiteBlock, SiteInline } from '../lesson/site';
 
@@ -87,26 +89,50 @@ interface Seen {
   readonly skip: string | null;
 }
 
-function findAt(matcher: Matcher, text: string, i: number): Form | null {
+function findAt(matcher: Matcher, text: string, i: number, after: string): Form | null {
   const list = matcher.byFirst.get(text[i] ?? '');
   if (list === undefined) return null;
   for (const form of list) {
-    if (text.startsWith(form.text, i) && !isWordChar(text[i + form.text.length])) return form;
+    const end = i + form.text.length;
+    const next = end === text.length ? after || undefined : text[end];
+    if (text.startsWith(form.text, i) && !isWordChar(next)) return form;
   }
   return null;
 }
 
-function linkText(value: string, matcher: Matcher, seen: Seen): SiteInline[] {
+/** The first or last character of the text a node shows ('' for none). */
+function edgeChar(node: SiteInline | undefined, end: 'first' | 'last'): string {
+  if (node === undefined) return '';
+  switch (node.type) {
+    case 'text':
+    case 'code':
+      return end === 'first' ? node.value.slice(0, 1) : node.value.slice(-1);
+    case 'break':
+      return '\n';
+    default: {
+      const children = node.children;
+      return edgeChar(end === 'first' ? children[0] : children[children.length - 1], end);
+    }
+  }
+}
+
+/** The characters just before and after a node, from its neighbours or its parent's. */
+interface Edges {
+  readonly before: string;
+  readonly after: string;
+}
+
+function linkText(value: string, matcher: Matcher, seen: Seen, edges: Edges): SiteInline[] {
   const text = normalise(value);
   const out: SiteInline[] = [];
   let from = 0;
   let i = 0;
   while (i < text.length) {
-    if (isWordChar(text[i - 1])) {
+    if (isWordChar(i === 0 ? edges.before || undefined : text[i - 1])) {
       i += 1;
       continue;
     }
-    const form = findAt(matcher, text, i);
+    const form = findAt(matcher, text, i, edges.after);
     if (form === null) {
       i += 1;
       continue;
@@ -129,29 +155,41 @@ function linkText(value: string, matcher: Matcher, seen: Seen): SiteInline[] {
   return out;
 }
 
-function linkInline(nodes: readonly SiteInline[], matcher: Matcher, seen: Seen): SiteInline[] {
+function linkInline(
+  nodes: readonly SiteInline[],
+  matcher: Matcher,
+  seen: Seen,
+  edges: Edges,
+): SiteInline[] {
   const out: SiteInline[] = [];
-  for (const node of nodes) {
+  nodes.forEach((node, k) => {
+    const around: Edges = {
+      before: k === 0 ? edges.before : edgeChar(nodes[k - 1], 'last'),
+      after: k === nodes.length - 1 ? edges.after : edgeChar(nodes[k + 1], 'first'),
+    };
     switch (node.type) {
       case 'text':
-        out.push(...linkText(node.value, matcher, seen));
+        out.push(...linkText(node.value, matcher, seen, around));
         break;
       case 'strong':
       case 'emphasis':
-        out.push({ type: node.type, children: linkInline(node.children, matcher, seen) });
+        out.push({ type: node.type, children: linkInline(node.children, matcher, seen, around) });
         break;
       default:
         // Inline code, line breaks and terms already linked stay as they are.
         out.push(node);
     }
-  }
+  });
   return out;
 }
 
 function linkBlock(block: SiteBlock, matcher: Matcher, seen: Seen): SiteBlock {
   switch (block.type) {
     case 'paragraph':
-      return { type: 'paragraph', children: linkInline(block.children, matcher, seen) };
+      return {
+        type: 'paragraph',
+        children: linkInline(block.children, matcher, seen, { before: '', after: '' }),
+      };
     case 'list':
       return {
         type: 'list',

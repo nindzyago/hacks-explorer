@@ -283,9 +283,9 @@ describe('the glossary', () => {
   it('fails the build when the glossary data is over 30 KB', () => {
     // Many short valid terms: each within the checker's limits, together over the budget.
     const extra = Array.from(
-      { length: 120 },
+      { length: 60 },
       (_, i) =>
-        `## \`extra-${String(i)}\` Слово ${String(i)}\n\n\`category\` basics\n\nОпределение слова для проверки размера файла словаря, достаточно длинное.\n`,
+        `## \`extra-${String(i)}\` Слово ${String(i)}\n\n\`category\` basics\n\n${'Определение слова для проверки размера файла словаря, достаточно длинное. '.repeat(4)}\n`,
     ).join('\n');
     const out = buildLessonData(withGlossary(`${realGlossary}\n${extra}`));
     expect(out.ok).toBe(false);

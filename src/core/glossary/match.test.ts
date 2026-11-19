@@ -80,6 +80,44 @@ describe('linkTerms', () => {
     ]);
   });
 
+  it('the longest form wins even when a shorter form of another term starts there', () => {
+    const m = createMatcher([
+      { id: 'short', forms: ['база'] },
+      { id: 'long', forms: ['база данных'] },
+    ]);
+    const out = linkTerms([p('Это база данных, а это база.')], m);
+    expect(out[0]?.type === 'paragraph' && show(out[0].children)).toBe(
+      'Это [long:база данных], а это [short:база].',
+    );
+  });
+
+  it('looks across the edge of bold and italic for word boundaries', () => {
+    const bold = (before: string, word: string, after: string): SiteBlock => ({
+      type: 'paragraph',
+      children: [
+        { type: 'text', value: before },
+        { type: 'strong', children: [{ type: 'text', value: word }] },
+        { type: 'text', value: after },
+      ],
+    });
+    // «**SQL**-инъекция» is one word: `SQL` alone is not linked inside it.
+    expect(linked([bold('Это ', 'SQL', '-инъекция.')])).toEqual(['Это **SQL**-инъекция.']);
+    expect(linked([bold('про', 'SQL', ' и')])).toEqual(['про**SQL** и']);
+    expect(linked([bold('Это ', 'SQL', ' и')])).toEqual(['Это **[sql:SQL]** и']);
+    // Nested: the edge is the edge of the outer node too.
+    const nested: SiteBlock = {
+      type: 'paragraph',
+      children: [
+        {
+          type: 'emphasis',
+          children: [{ type: 'strong', children: [{ type: 'text', value: 'SQL' }] }],
+        },
+        { type: 'text', value: '-запрос' },
+      ],
+    };
+    expect(linked([nested])).toEqual(['***SQL***-запрос']);
+  });
+
   it('links a term once per block, at its first occurrence', () => {
     expect(linked([p('Запрос, ещё запрос.'), p('Новый абзац: запрос.')])).toEqual([
       '[query:Запрос], ещё запрос.',
