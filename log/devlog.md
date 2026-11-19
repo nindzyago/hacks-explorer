@@ -231,3 +231,7 @@ Process: CI на GitHub теперь идёт ~14 мин из-за провер�
 ## 2026-11-19 — M4.7 Сайт на hacks.antipic.com, тег v0.1.0 (оркестратор)
 Landed: `routes` с одним custom domain в `wrangler.jsonc` (проверка пропускает только его); Cloudflare создал DNS и сертификат при выкладке main. Проверено: /ru/lesson/K1 отдаёт 200, свой заголовок и og:image, без X-Robots-Tag; sitemap.xml и карточки отвечают 200. CHANGELOG 0.1.0 датирован. Тег v0.1.0.
 Not measured on real data: превью ссылок в Telegram/X/VK; ветка `release` ещё не основная в Cloudflare — основную версию пока выкладывает main (K125).
+
+## 2026-11-19 — Выпуск 0.1.1 (оркестратор)
+Landed: тег v0.1.0 не дал Release — gate в workflow выпуска не уложился в 15 минут (браузерных проверок стало 682); лимиты в gate.yml и release.yml подняты до 30 минут, CHANGELOG 0.1.1, тег v0.1.1 → GitHub Release https://github.com/nindzyago/hacks-explorer/releases/tag/v0.1.1, ветка `release` сдвинута на тег. Тег v0.1.0 оставлен (удаление тега — только с владельцем).
+Numbers: workflow выпуска 15 мин 21 с.
