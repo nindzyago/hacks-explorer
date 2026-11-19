@@ -115,7 +115,7 @@ reference.
 ### `lookup` Lookup by number only
 
 `server → db` · `attack` · `without-defence`
-Message: SELECT ... id = 1002 · Result: attack
+Message: WHERE id = 1002 · Result: attack
 
 ```sql
 SELECT * FROM orders

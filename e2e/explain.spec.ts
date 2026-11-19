@@ -1,47 +1,21 @@
 // M1.4 acceptance (oracle D): scenario S3 «Три уровня глубины» through the control channel, the
 // tabs by mouse and keyboard, the passport (class, severity, sources) of B1 and I1, and the panel
-// on a phone. Expected texts come from the built lesson data, not from copies in the test.
+// on a phone. G18: the three levels of every step of every lesson, in Russian and English. Expected texts come from the built lesson data, not from copies in the test.
 // Screenshots go to EXPLAIN_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import type { SiteBlock, SiteInline, SiteLesson } from '../src/core/lesson/site';
 import { currentStep, stepsInMode } from '../src/core/scene-layout/message';
-import type { FetchLike } from '../src/services/catalog/catalog';
-import { createLessonLoader } from '../src/services/catalog/catalog';
+import { type Lang, LANGS, LESSONS, lessonData as lessonOf } from './lessons';
 import { expect, openApp, sceneReady, test } from './support';
 
 const DEPTHS = ['simple', 'steps', 'deep'] as const;
 type Depth = (typeof DEPTHS)[number];
 const LEVEL = { simple: 'simple', steps: 'detailed', deep: 'deep' } as const;
 
-/** `fetch` run inside the page, so the browser's CSP and the static server both apply. */
-function pageFetch(page: Page): FetchLike {
-  return async (url) => {
-    const response = await page.evaluate(async (u) => {
-      const r = await fetch(u);
-      return {
-        ok: r.ok,
-        status: r.status,
-        length: r.headers.get('content-length'),
-        body: await r.text(),
-      };
-    }, url);
-    return {
-      ok: response.ok,
-      status: response.status,
-      headers: {
-        get: (name: string) => (name.toLowerCase() === 'content-length' ? response.length : null),
-      },
-      text: () => Promise.resolve(response.body),
-    };
-  };
-}
-
-async function lessonData(page: Page, id: string): Promise<SiteLesson> {
-  const result = await createLessonLoader({ fetch: pageFetch(page) }).lesson(id, 'ru');
-  if (!result.ok) throw new Error(result.error.message);
-  return result.value;
+async function lessonData(page: Page, id: string, lang: Lang = 'ru'): Promise<SiteLesson> {
+  return lessonOf(page, id, lang);
 }
 
 /** All text of a tree, without spaces: what the reader sees, whatever the line breaks. */
@@ -159,33 +133,43 @@ test.describe('S3: three depths', () => {
     expect(lesson.passport.cwe).toContain(89);
   });
 
-  test('every step of B1 and I1 has all three levels filled, in both modes', async ({ page }) => {
-    await openApp(page);
-    let checked = 0;
-    for (const id of ['B1', 'I1']) {
-      expect(await run(page, 'lesson.open', { id })).toEqual({ ok: true });
-      await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', id);
-      const lesson = await lessonData(page, id);
-      for (const defence of [false, true]) {
-        await run(page, 'defence.set', { on: defence });
-        const steps = stepsInMode(lesson.steps, defence);
-        for (let n = 1; n <= steps.length; n += 1) {
-          await run(page, 'player.goto', { step: n });
-          const step = steps[n - 1];
-          if (step === undefined) throw new Error('no step');
-          for (const depth of DEPTHS) {
-            await run(page, 'depth.set', { depth });
-            const want = blocksText(step.levels[LEVEL[depth]]);
-            expect(want.length, `${id} ${step.id} ${depth}`).toBeGreaterThan(0);
-            await expect(page.getByTestId('explain-text')).toHaveAttribute('data-depth', depth);
-            expect(await shownLevel(page), `${id} ${step.id} ${depth}`).toBe(want);
-            checked += 1;
+  // G18: S3 «у каждого шага заполнены все три уровня» for every lesson, in both languages; the
+  // step number and the mode stay while the depth changes.
+  for (const lang of LANGS) {
+    for (const id of LESSONS) {
+      test(`${lang} ${id}: every step has all three levels filled, in both modes; depth keeps the step`, async ({
+        page,
+      }) => {
+        await openApp(page, `/${lang}/lesson/${id}`);
+        await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', id);
+        const lesson = await lessonData(page, id, lang);
+        let checked = 0;
+        for (const defence of [false, true]) {
+          await run(page, 'defence.set', { on: defence });
+          const steps = stepsInMode(lesson.steps, defence);
+          expect(steps.length, `${id} ${lang}`).toBeGreaterThan(0);
+          for (let n = 1; n <= steps.length; n += 1) {
+            await run(page, 'player.goto', { step: n });
+            const step = steps[n - 1];
+            if (step === undefined) throw new Error('no step');
+            for (const depth of DEPTHS) {
+              await run(page, 'depth.set', { depth });
+              const where = `${id} ${lang} ${step.id} ${depth}`;
+              const want = blocksText(step.levels[LEVEL[depth]]);
+              expect(want.length, where).toBeGreaterThan(0);
+              await expect(page.getByTestId('explain-text')).toHaveAttribute('data-depth', depth);
+              expect(await shownLevel(page), where).toBe(want);
+              expect(await playerOf(page), where).toMatchObject({ step: n, defence });
+              checked += 1;
+            }
           }
         }
-      }
+        const total =
+          stepsInMode(lesson.steps, false).length + stepsInMode(lesson.steps, true).length;
+        expect(checked).toBe(3 * total);
+      });
     }
-    expect(checked).toBeGreaterThanOrEqual(3 * 16);
-  });
+  }
 
   test('the depth stays when the step, the mode or the lesson changes', async ({ page }) => {
     await openApp(page);

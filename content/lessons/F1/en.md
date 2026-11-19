@@ -26,9 +26,9 @@
 
 - `user` **Alice** — 192.0.2.24 · `icon:user`
 - `server` **Server** — forum.example · `term:web-server`
-- `db` **Database** — users table · `term:database`
+- `db` **DB** — users table · `term:database`
 - `copy` **Leaked copy** — users.sql · `icon:backup` · `term:data-breach`
-- `attacker` **Attacker** — 203.0.113.66 · `term:attacker`
+- `attacker` **Hacker** — 203.0.113.66 · `term:attacker`
 
 ## Zones
 
@@ -69,7 +69,7 @@ into a hash at once, but a hash turns back into a password only by guessing.
 ### `fast` A fast hash without salt
 
 `server → db` · `legit` · `without-defence`
-Message: SHA-256(password) · Result: unsalted hash stored
+Message: SHA-256 · Result: unsalted hash stored
 
 ```text
 alice  965ccdd7…e5775ac7
@@ -97,7 +97,7 @@ special case CWE-759. Both are mapped to item A02:2021 “Cryptographic Failures
 ### `slow` A slow hash with salt
 
 `server → db` · `safe` · `with-defence`
-Message: Argon2id + salt · Result: everyone gets their own hash
+Message: Argon2id · Result: everyone gets their own hash
 
 ```text
 alice  $argon2id$v=19$m=19456,t=2,p=1$<salt 1>$<hash 1>
@@ -149,7 +149,7 @@ record in the database was made.
 ### `crack` Guessing from a word list
 
 `attacker → copy` · `attack` · `without-defence`
-Message: hashes of common passwords · Result: passwords found
+Message: guess hashes · Result: passwords found
 
 ```text
 sha256("sunny2024") = ⟦965ccdd7…e5775ac7⟧  → alice, bob
@@ -197,7 +197,7 @@ other services too.
 ### `crack-slow` Guessing becomes too costly
 
 `attacker → copy` · `attack` · `with-defence` · `stopped`
-Message: hashes of common passwords · Result: every guess is costly, guessing stalls
+Message: guess hashes · Result: every guess is costly, guessing stalls
 
 ```text
 argon2id("sunny2024", <salt 1>) → ⟦no match⟧

@@ -2,11 +2,14 @@
 // look (oracle C): at 390 × 844 (M1.2d: also 375 and 360) the page has no sideways scroll, no
 // text below 11 px and no text cut with «…» on every step of B1 and I1 in both modes; the
 // controls of the error state are at least 44 px. M2.3b: in Russian and English, at every depth.
+// G18: every lesson in content/lessons, its step counts from its data.
 // The player's own buttons come with M1.3 and get the same check there. Screenshots go to
 // SCENE_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
+import { stepsInMode } from '../src/core/scene-layout/message';
+import { authored, LANGS, LESSONS, lessonData } from './lessons';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
@@ -66,23 +69,28 @@ for (const phone of [
   test.describe(`S10 at ${String(phone.width)}×${String(phone.height)}`, () => {
     test.use({ viewport: { width: phone.width, height: phone.height } });
 
-    for (const lang of ['ru', 'en'] as const) {
-      // M2.3b: in English too, and at every depth (the explanation's length changes the page).
-      test(`${lang}: no sideways scroll, no text below 11 px, nothing cut on any step of B1 and I1`, async ({
-        page,
-      }, testInfo) => {
-        await openApp(page, `/${lang}/lesson/I1`);
-        let checked = 0;
-        for (const lesson of ['B1', 'I1']) {
-          await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
+    for (const lang of LANGS) {
+      for (const lesson of LESSONS) {
+        // M2.3b: in English too, and at every depth (the explanation's length changes the page).
+        test(`${lang} ${lesson}: no sideways scroll, no text below 11 px, nothing cut on any step`, async ({
+          page,
+        }, testInfo) => {
+          await openApp(page, `/${lang}/lesson/${lesson}`);
           await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
           await sceneReady(page);
+          const data = await lessonData(page, lesson, lang);
+          let checked = 0;
+          let expected = 0;
           for (const defence of [false, true]) {
             const mode = defence ? 'defence' : 'attack';
-            for (let step = 1; step <= 5; step += 1) {
+            const count = stepsInMode(data.steps, defence).length;
+            expected += count;
+            for (let step = 1; step <= count; step += 1) {
               await show(page, defence, step, TRAVEL_MS);
               await expect(page.getByTestId('scene-step')).toContainText(
-                lang === 'ru' ? `Шаг ${String(step)} из 5.` : `Step ${String(step)} of 5.`,
+                lang === 'ru'
+                  ? `Шаг ${String(step)} из ${String(count)}.`
+                  : `Step ${String(step)} of ${String(count)}.`,
               );
               await expect(page.getByTestId('message')).toHaveAttribute('data-arrived', 'true');
               for (const depth of ['simple', 'steps', 'deep'] as const) {
@@ -98,10 +106,16 @@ for (const phone of [
                 }));
                 expect(scroll.page, where).toBeLessThanOrEqual(scroll.window);
                 expect(scroll.body, where).toBeLessThanOrEqual(scroll.window);
-                const small = (await textSizes(page)).filter((t) => t.size < 11);
-                expect(small, where).toEqual([]);
-                const drawn = (await textSizes(page)).filter((t) => t.text.includes('…'));
-                expect(drawn, where).toEqual([]);
+                const texts = await textSizes(page);
+                expect(
+                  texts.filter((t) => t.size < 11),
+                  where,
+                ).toEqual([]);
+                // Cut by the site, not an «…» the lesson itself writes (G18: D1, F1, J1 code).
+                expect(
+                  texts.filter((t) => t.text.includes('…') && !authored(data, t.text)),
+                  where,
+                ).toEqual([]);
                 // Short inline code stays on one line: no «admin' -» / «- reaches» (M2.3b).
                 const broken = await page.evaluate(() =>
                   Array.from(document.querySelectorAll('[data-testid="explain"] code'))
@@ -115,18 +129,21 @@ for (const phone of [
               await page.evaluate(() =>
                 window.__app?.commands.run('depth.set', { depth: 'simple' }),
               );
-              const prefix = lang === 'ru' ? 'strip' : 'strip-en';
-              await keep(
-                page,
-                testInfo,
-                `${prefix}-${lesson}-${mode}-step${String(step)}-${String(phone.width)}`,
-              );
+              if (lesson === 'B1' || lesson === 'I1') {
+                const prefix = lang === 'ru' ? 'strip' : 'strip-en';
+                await keep(
+                  page,
+                  testInfo,
+                  `${prefix}-${lesson}-${mode}-step${String(step)}-${String(phone.width)}`,
+                );
+              }
               checked += 1;
             }
           }
-        }
-        expect(checked).toBe(20);
-      });
+          expect(checked).toBe(expected);
+          expect(checked).toBeGreaterThan(0);
+        });
+      }
     }
   });
 }

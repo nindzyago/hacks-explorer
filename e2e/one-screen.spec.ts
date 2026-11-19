@@ -6,9 +6,13 @@
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
+import { stepsInMode } from '../src/core/scene-layout/message';
+import { LANGS, LESSONS, lessonData } from './lessons';
 import { expect, openApp, sceneReady, test } from './support';
 
 const TRAVEL_MS = 900;
+// G18: every lesson in content/lessons, in both languages.
+const PAIRS = LANGS.flatMap((lang) => LESSONS.map((lesson) => [lang, lesson] as const));
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
 async function run(page: Page, id: string, params?: unknown): Promise<void> {
@@ -73,12 +77,7 @@ for (const viewport of [
   test.describe(`one screen at ${size}`, () => {
     test.use({ viewport });
 
-    for (const [lang, lesson] of [
-      ['ru', 'B1'],
-      ['ru', 'I1'],
-      ['en', 'B1'],
-      ['en', 'I1'],
-    ] as const) {
+    for (const [lang, lesson] of PAIRS) {
       // M2.3b: English too, at every depth.
       test(`${lang} ${lesson}: every step of both modes fits, the current row is in view`, async ({
         page,
@@ -86,11 +85,14 @@ for (const viewport of [
         await openApp(page, `/${lang}/lesson/${lesson}`);
         await page.evaluate(() => window.__app?.clock.set(0));
         await expect(page.getByTestId('step-row-1')).toBeVisible();
+        const data = await lessonData(page, lesson, lang);
         for (const on of [false, true]) {
           await run(page, 'defence.set', { on });
           await run(page, 'player.goto', { step: 1 });
+          // G18: as many rows as the mode has steps in the lesson's data.
           const steps = await page.getByTestId('steps-table').locator('tbody tr').count();
-          expect(steps).toBeGreaterThanOrEqual(4);
+          expect(steps).toBe(stepsInMode(data.steps, on).length);
+          expect(steps).toBeGreaterThan(0);
           for (let n = 1; n <= steps; n += 1) {
             await run(page, 'player.goto', { step: n });
             await tick(page, TRAVEL_MS);
@@ -131,6 +133,7 @@ for (const viewport of [
           await run(page, 'player.goto', { step: 3 });
           await tick(page, TRAVEL_MS);
           const mode = on ? 'defence' : 'attack';
+          if (lesson !== 'B1' && lesson !== 'I1') continue;
           const name = lang === 'ru' ? `m21a-${lesson}` : `m23b-en-${lesson}`;
           await keep(page, testInfo, `${name}-${mode}-step3-${String(viewport.width)}`);
         }
@@ -178,12 +181,7 @@ test('the home page opens «Фишинг» (I1)', async ({ page }) => {
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  for (const [lang, lesson] of [
-    ['ru', 'B1'],
-    ['ru', 'I1'],
-    ['en', 'B1'],
-    ['en', 'I1'],
-  ] as const) {
+  for (const [lang, lesson] of PAIRS) {
     test(`${lang} ${lesson}: one column, the page scrolls, no inner scroll of the steps`, async ({
       page,
     }, testInfo) => {
@@ -207,6 +205,7 @@ test.describe('on a phone', () => {
         expect(m.sideways).toBeLessThanOrEqual(0);
         expect(m.areaScrolls).toBe(false);
         const mode = on ? 'defence' : 'attack';
+        if (lesson !== 'B1' && lesson !== 'I1') continue;
         const name = lang === 'ru' ? `m21a-${lesson}` : `m23b-en-${lesson}`;
         await keep(page, testInfo, `${name}-${mode}-step3-390`, true);
       }

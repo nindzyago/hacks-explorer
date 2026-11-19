@@ -3,10 +3,13 @@
 // 390 px, no sideways scroll, text at least 11 px; screenshots are byte-identical across
 // reloads; loading and broken data show a message, an unknown icon a placeholder (L0.1).
 // M1.2c: the message too — ring, plaque or token, word and trail — at both ends of every step of
-// B1 and I1 in both modes, with no slack.
+// B1 and I1 in both modes, with no slack. G18: the layout and the message checks play every
+// lesson in content/lessons, in Russian and English, with steps and names from its data.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, Route } from '@playwright/test';
+import { stepsInMode } from '../src/core/scene-layout/message';
+import { LANGS, LESSONS, lessonData, switchLesson } from './lessons';
 import { layoutProblems, messageProblems, sceneBoxes } from './scene-boxes';
 import { expect, openApp, sceneReady, test } from './support';
 
@@ -73,9 +76,8 @@ test('the scene draws its text at the advances the layout counts on, on every sy
   page,
 }) => {
   await openApp(page);
-  for (const lesson of ['B1', 'I1']) {
-    await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
-    await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
+  for (const lesson of LESSONS) {
+    await switchLesson(page, lesson);
     await sceneReady(page);
     const off = await page.evaluate(() => {
       const out: string[] = [];
@@ -110,83 +112,110 @@ for (const viewport of VIEWPORTS) {
   test.describe(`at ${String(viewport.width)}×${String(viewport.height)}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });
 
-    test('nothing leaves the scene or overlaps, no sideways scroll, text ≥ 11 px', async ({
-      page,
-    }) => {
-      await openApp(page);
-      for (const lesson of [
-        { id: 'B1', parts: 3 * 3 + 2 * 2 },
-        { id: 'I1', parts: 4 * 3 + 4 * 2 },
-      ]) {
-        await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson.id);
-        await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson.id);
-        await sceneReady(page);
-        const { scene, boxes } = await sceneBoxes(page);
-        expect(boxes.length).toBeGreaterThanOrEqual(lesson.parts);
-        expect(scene.width).toBeLessThanOrEqual(viewport.width);
-        expect(layoutProblems(scene, boxes), lesson.id).toEqual([]);
-        const texts = boxes.filter((b) => b.what !== 'icon' && b.what !== 'frame');
-        expect(Math.min(...texts.map((b) => b.fontSize))).toBeGreaterThanOrEqual(11);
-        expect(
-          await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-        ).toBe(true);
-      }
-    });
-
-    test('the message at rest covers nothing: every step of B1 and I1, both modes (M1.2c)', async ({
-      page,
-    }) => {
-      await openApp(page);
-      const seen: string[] = [];
-      for (const lesson of ['B1', 'I1']) {
-        await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
-        await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
-        await sceneReady(page);
-        for (const on of [false, true]) {
-          await page.evaluate((v) => window.__app?.commands.run('defence.set', { on: v }), on);
-          const count = Number(
-            /из (\d+)/.exec((await page.getByTestId('scene-step').textContent()) ?? '')?.[1],
+    for (const id of LESSONS) {
+      test(`${id}, ru and en: nothing leaves the scene or overlaps, no sideways scroll, text ≥ 11 px, names whole`, async ({
+        page,
+      }) => {
+        const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
+        for (const lang of LANGS) {
+          await openApp(page, `/${lang}/lesson/${id}`);
+          await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', id);
+          await sceneReady(page);
+          const data = await lessonData(page, id, lang);
+          const where = `${id} ${lang}`;
+          const { scene, boxes } = await sceneBoxes(page);
+          // Icon, name and note of each participant; frame and label of each zone.
+          expect(boxes.length, where).toBeGreaterThanOrEqual(
+            data.participants.length * 3 + data.zones.length * 2,
           );
-          expect(count).toBeGreaterThanOrEqual(5);
-          for (let step = 1; step <= count; step += 1) {
-            await page.evaluate((n) => {
-              window.__app?.clock.set(0);
-              window.__app?.commands.run('player.goto', { step: n });
-            }, step);
-            for (const [ms, progress] of [
-              [0, '0'],
-              [900, '1'],
-            ] as const) {
-              await page.evaluate((t) => window.__app?.clock.set(t), ms);
-              const message = page.getByTestId('message');
-              // A step from a participant to itself is there at once.
-              const still =
-                (await message.getAttribute('data-from')) ===
-                (await message.getAttribute('data-to'));
-              await expect(message).toHaveAttribute('data-progress', still ? '1' : progress);
-              const { scene, boxes, message: m } = await sceneBoxes(page);
-              if (m === null) throw new Error('no message');
-              const where = `${lesson} ${on ? 'defence' : 'attack'} step ${String(step)} at ${progress}`;
-              seen.push(`${where} ${String(await message.getAttribute('data-step'))}`);
-              expect(layoutProblems(scene, boxes), where).toEqual([]);
-              expect(messageProblems(scene, boxes, m), where).toEqual([]);
-              // Text of the message is not below 11 px either.
-              expect(m.word.fontSize, where).toBeGreaterThanOrEqual(11);
-              // M1.2d: and no plaque text is cut.
-              const label = page.getByTestId('message-label');
-              if ((await label.count()) > 0) {
-                expect(await label.textContent(), where).not.toContain('…');
+          expect(scene.width, where).toBeLessThanOrEqual(viewport.width);
+          expect(layoutProblems(scene, boxes), where).toEqual([]);
+          const texts = boxes.filter((b) => b.what !== 'icon' && b.what !== 'frame');
+          expect(Math.min(...texts.map((b) => b.fontSize)), where).toBeGreaterThanOrEqual(11);
+          expect(
+            await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+            where,
+          ).toBe(true);
+          // Nothing cut: every name and note drawn whole, as the lesson gives it (M1.2d).
+          const names = await page
+            .locator('[data-testid^="participant-"] [data-part="name"]')
+            .allTextContents();
+          expect(names.map(squash), where).toEqual(data.participants.map((p) => squash(p.name)));
+          const notes = await page
+            .locator('[data-testid^="participant-"] [data-part="note"]')
+            .allTextContents();
+          expect(notes.map(squash), where).toEqual(
+            data.participants.map((p) => squash(p.note)).filter((n) => n !== ''),
+          );
+          const drawn = await page.locator('[data-testid="scene"] svg').textContent();
+          expect(drawn ?? '', where).not.toContain('…');
+        }
+      });
+
+      test(`${id}, ru and en: the message at rest covers nothing, every step, both modes (M1.2c)`, async ({
+        page,
+      }) => {
+        for (const lang of LANGS) {
+          await openApp(page, `/${lang}/lesson/${id}`);
+          await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', id);
+          await sceneReady(page);
+          const data = await lessonData(page, id, lang);
+          const seen: string[] = [];
+          let expected = 0;
+          for (const on of [false, true]) {
+            await page.evaluate((v) => window.__app?.commands.run('defence.set', { on: v }), on);
+            const steps = stepsInMode(data.steps, on);
+            const count = Number(
+              /(?:из|of) (\d+)/.exec(
+                (await page.getByTestId('scene-step').textContent()) ?? '',
+              )?.[1],
+            );
+            expect(count, `${id} ${lang}`).toBe(steps.length);
+            expected += steps.length * 2;
+            for (let step = 1; step <= count; step += 1) {
+              await page.evaluate((n) => {
+                window.__app?.clock.set(0);
+                window.__app?.commands.run('player.goto', { step: n });
+              }, step);
+              for (const [ms, progress] of [
+                [0, '0'],
+                [900, '1'],
+              ] as const) {
+                await page.evaluate((t) => window.__app?.clock.set(t), ms);
+                const message = page.getByTestId('message');
+                // A step from a participant to itself is there at once.
+                const still =
+                  (await message.getAttribute('data-from')) ===
+                  (await message.getAttribute('data-to'));
+                await expect(message).toHaveAttribute('data-progress', still ? '1' : progress);
+                const { scene, boxes, message: m } = await sceneBoxes(page);
+                if (m === null) throw new Error('no message');
+                const where = `${id} ${lang} ${on ? 'defence' : 'attack'} step ${String(step)} at ${progress}`;
+                seen.push(
+                  `${on ? 'defence' : 'attack'} ${String(await message.getAttribute('data-step'))}`,
+                );
+                expect(layoutProblems(scene, boxes), where).toEqual([]);
+                expect(messageProblems(scene, boxes, m), where).toEqual([]);
+                // Text of the message is not below 11 px either.
+                expect(m.word.fontSize, where).toBeGreaterThanOrEqual(11);
+                // M1.2d: and no plaque text is cut.
+                const label = page.getByTestId('message-label');
+                if ((await label.count()) > 0) {
+                  expect(await label.textContent(), where).not.toContain('…');
+                }
               }
             }
           }
+          // Every step of the lesson in both modes, at both ends.
+          expect(seen, `${id} ${lang}`).toHaveLength(expected);
+          for (const on of [false, true]) {
+            for (const s of stepsInMode(data.steps, on)) {
+              expect(seen, `${id} ${lang}`).toContain(`${on ? 'defence' : 'attack'} ${s.id}`);
+            }
+          }
         }
-      }
-      // Every step of both lessons in both modes, at both ends.
-      expect(seen).toHaveLength(2 * 2 * 5 * 2);
-      for (const id of ['glue', 'param', 'autofill', 'leak', 'bait', 'refuse']) {
-        expect(seen.some((s) => s.endsWith(` ${id}`))).toBe(true);
-      }
-    });
+      });
+    }
 
     test('the message check sees a hidden ring, a hidden word and a plaque on a frame (M1.2c)', async ({
       page,

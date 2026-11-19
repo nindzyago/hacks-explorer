@@ -3,6 +3,7 @@
 // interface strings). Plus the language of a new visitor (D3, K96), the remembered choice and the
 // address winning over it, and no Russian left on any English step.
 import type { Page } from '@playwright/test';
+import { LESSONS } from './lessons';
 import { expect, openApp, sceneReady, test } from './support';
 
 const STORAGE_KEY = 'hacks-explorer.language';
@@ -217,8 +218,9 @@ test.describe('a hostile remembered language', () => {
   });
 });
 
-// M2.3b: every step of both English lessons, in both modes and at every depth, shows no Russian.
-for (const lesson of ['B1', 'I1']) {
+// M2.3b: every step of the English lessons (G18: all of them), in both modes and at every depth,
+// shows no Russian.
+for (const lesson of LESSONS) {
   test(`${lesson} in English has no Russian on any step, mode or depth`, async ({ page }) => {
     await openApp(page, `/en/lesson/${lesson}`);
     for (const defence of [false, true]) {

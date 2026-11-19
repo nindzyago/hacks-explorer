@@ -113,7 +113,7 @@ Cookie: session=…атакующий…
 ### `lookup` Поиск только по номеру
 
 `server → db` · `attack` · `without-defence`
-Сообщение: SELECT ... id = 1002 · Итог: атака
+Сообщение: WHERE id = 1002 · Итог: атака
 
 ```sql
 SELECT * FROM orders
