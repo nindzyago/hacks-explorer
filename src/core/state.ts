@@ -26,6 +26,11 @@ export interface AppState {
    * the step, the defence mode or the lesson keeps it (K71).
    */
   readonly depth: Depth;
+  /**
+   * The glossary term whose definition is open in place (M2.4, K7), or null. One at a time;
+   * `glossary.open` and `glossary.close` change it.
+   */
+  readonly glossary: string | null;
 }
 
 export function initialState(): AppState {
@@ -34,5 +39,6 @@ export function initialState(): AppState {
     lesson: 'I1',
     player: initialPlayer(),
     depth: 'simple',
+    glossary: null,
   });
 }

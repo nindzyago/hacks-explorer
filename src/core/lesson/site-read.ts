@@ -40,6 +40,8 @@ const MAX_ITEMS = 2000;
 const LESSON_ID = /^[A-Z][0-9]{1,2}$/;
 const LANGUAGE = /^[a-z]{2,3}$/;
 const HASH = /^[0-9a-f]{8}$/;
+/** A glossary term id (M2.4), as the lesson checker writes ids. */
+export const TERM_ID = /^[a-z][a-z0-9-]{0,31}$/;
 const SEVERITIES: readonly Severity[] = ['low', 'medium', 'high', 'critical'];
 const KINDS: readonly MessageKind[] = ['legit', 'attack', 'safe'];
 const MODES: readonly StepMode[] = ['both', 'with-defence', 'without-defence'];
@@ -47,11 +49,11 @@ const MODES: readonly StepMode[] = ['both', 'with-defence', 'without-defence'];
 /** Thrown only inside this module and always caught by `read`. */
 class Bad extends Error {}
 
-function fail(path: string, expected: string): never {
+export function fail(path: string, expected: string): never {
   throw new Bad(`${path === '' ? '(top)' : path}: expected ${expected}`);
 }
 
-function read<T>(input: unknown, reader: (input: unknown) => T): ReadResult<T> {
+export function read<T>(input: unknown, reader: (input: unknown) => T): ReadResult<T> {
   try {
     return { ok: true, value: reader(input) };
   } catch (error) {
@@ -64,19 +66,19 @@ function read<T>(input: unknown, reader: (input: unknown) => T): ReadResult<T> {
 // ---------------------------------------------------------------------------------------------
 // Primitives
 
-type Fields = Readonly<Record<string, unknown>>;
+export type Fields = Readonly<Record<string, unknown>>;
 
-function object(input: unknown, path: string): Fields {
+export function object(input: unknown, path: string): Fields {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) fail(path, 'an object');
   return input as Fields;
 }
 
 /** An own field only, so `__proto__` and inherited names never answer. */
-function field(o: Fields, name: string): unknown {
+export function field(o: Fields, name: string): unknown {
   return Object.hasOwn(o, name) ? o[name] : undefined;
 }
 
-function str(o: Fields, name: string, path: string): string {
+export function str(o: Fields, name: string, path: string): string {
   const value = field(o, name);
   if (typeof value !== 'string') fail(`${path}.${name}`, 'text');
   return value;
@@ -99,13 +101,13 @@ function oneOf<T extends string>(o: Fields, name: string, path: string, values: 
   return found;
 }
 
-function matching(o: Fields, name: string, path: string, pattern: RegExp): string {
+export function matching(o: Fields, name: string, path: string, pattern: RegExp): string {
   const value = str(o, name, path);
   if (!pattern.test(value)) fail(`${path}.${name}`, `text like ${pattern.source}`);
   return value;
 }
 
-function list<T>(
+export function list<T>(
   input: unknown,
   path: string,
   item: (value: unknown, path: string) => T,
@@ -116,7 +118,7 @@ function list<T>(
   return items.map((value, i) => item(value, `${path}[${String(i)}]`));
 }
 
-function listField<T>(
+export function listField<T>(
   o: Fields,
   name: string,
   path: string,
@@ -125,7 +127,7 @@ function listField<T>(
   return list(field(o, name), `${path}.${name}`, item);
 }
 
-function text(value: unknown, path: string): string {
+export function text(value: unknown, path: string): string {
   if (typeof value !== 'string') fail(path, 'text');
   return value;
 }
@@ -149,8 +151,14 @@ function inline(input: unknown, path: string, depth: number): SiteInline {
         type,
         children: listField(o, 'children', path, (v, p) => inline(v, p, depth + 1)),
       };
+    case 'term':
+      return {
+        type,
+        id: matching(o, 'id', path, TERM_ID),
+        children: listField(o, 'children', path, (v, p) => inline(v, p, depth + 1)),
+      };
     default:
-      return fail(`${path}.type`, 'text, code, break, strong or emphasis');
+      return fail(`${path}.type`, 'text, code, break, strong, emphasis or term');
   }
 }
 
@@ -193,7 +201,7 @@ function block(input: unknown, path: string, depth: number): SiteBlock {
   }
 }
 
-function blocks(input: unknown, path: string): readonly SiteBlock[] {
+export function blocks(input: unknown, path: string): readonly SiteBlock[] {
   return list(input, path, (v, p) => block(v, p, 0));
 }
 
@@ -233,6 +241,7 @@ function participant(input: unknown, path: string): SiteParticipant {
     name: str(o, 'name', path),
     note: str(o, 'note', path),
     icon: str(o, 'icon', path),
+    term: termRef(o, path),
   };
 }
 
@@ -243,6 +252,7 @@ function zone(input: unknown, path: string, ids: ReadonlySet<string>): SiteZone 
     label: str(o, 'label', path),
     members: listField(o, 'members', path, (v, p) => known(text(v, p), p, ids)),
     danger: bool(o, 'danger', path),
+    term: termRef(o, path),
   };
 }
 
@@ -273,6 +283,12 @@ function oneFrameEach(zones: readonly SiteZone[], order: readonly string[]): rea
     }
   });
   return zones;
+}
+
+/** `term` of a participant or zone (M2.4): a term id or null; absent (older data) is null. */
+function termRef(o: Fields, path: string): string | null {
+  const value = field(o, 'term');
+  return value === undefined || value === null ? null : matching(o, 'term', path, TERM_ID);
 }
 
 function known(id: string, path: string, ids: ReadonlySet<string>): string {

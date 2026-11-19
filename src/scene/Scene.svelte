@@ -11,6 +11,7 @@
   import { describeScene, describeStep, sceneTitle } from '../core/scene-layout/describe';
   import { layoutScene, RING_STROKE, type TextBlock } from '../core/scene-layout/layout';
   import { currentStep, layoutMessage, type MessageSign } from '../core/scene-layout/message';
+  import { openTerm } from '../ui/terms';
   import { iconUrl } from './icons';
 
   const {
@@ -59,6 +60,26 @@
   );
   const round = (n: number) => Math.round(n * 10) / 10;
 
+  // M2.4 (K7): a participant or zone with `term:` opens its glossary definition on a click,
+  // Enter or Space, through an invisible button over its icon and labels (or the zone label).
+  const terms = $derived(
+    new Map<string, { readonly term: string; readonly name: string }>([
+      ...lesson.participants.flatMap((p) =>
+        p.term === null ? [] : [[`p:${p.id}`, { term: p.term, name: p.name }] as const],
+      ),
+      ...lesson.zones.flatMap((z) =>
+        z.term === null ? [] : [[`z:${z.id}`, { term: z.term, name: z.label }] as const],
+      ),
+    ]),
+  );
+
+  function onTermKey(event: KeyboardEvent, id: string): void {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
+    event.preventDefault();
+    openTerm(id, event.currentTarget instanceof Element ? event.currentTarget : null);
+  }
+
   /** The sign that doubles the colour, drawn as a path (no font has to have the glyph). */
   const SIGNS: Readonly<Record<MessageSign, string>> = {
     attack: 'M0 -4.5 V0.8 M0 3.6 V3.7',
@@ -94,6 +115,37 @@
   />
 {/snippet}
 
+{#snippet hit(
+  key: string,
+  box: { readonly x: number; readonly y: number; readonly width: number; readonly height: number },
+  testid: string,
+  pad: number,
+)}
+  {@const link = terms.get(key)}
+  {#if link !== undefined}
+    <rect
+      class="hit"
+      role="button"
+      tabindex="0"
+      aria-haspopup="dialog"
+      aria-label="{link.name}: что это"
+      data-testid={testid}
+      data-term={link.term}
+      x={round(box.x - pad)}
+      y={round(box.y - pad)}
+      width={round(box.width + pad * 2)}
+      height={round(box.height + pad * 2)}
+      rx="8"
+      onclick={(event) => {
+        openTerm(link.term, event.currentTarget);
+      }}
+      onkeydown={(event) => {
+        onTermKey(event, link.term);
+      }}
+    />
+  {/if}
+{/snippet}
+
 <figure class="scene" data-testid="scene" data-lesson={lesson.id} bind:clientWidth={width}>
   <svg
     viewBox="0 0 {round(layout.width)} {round(layout.height)}"
@@ -126,6 +178,7 @@
         <text class="zone-label" data-part="label" font-size={zone.label.fontSize}>
           {@render lines(zone.label)}
         </text>
+        {@render hit(`z:${zone.id}`, zone.label.box, `zone-term-${zone.id}`, 4)}
       </g>
     {/each}
 
@@ -187,6 +240,7 @@
             {@render lines(p.note)}
           </text>
         {/if}
+        {@render hit(`p:${p.id}`, p.area, `participant-term-${p.id}`, 0)}
       </g>
     {/each}
 
@@ -355,6 +409,21 @@
 
   .danger .zone-label {
     fill: var(--scene-attack-text);
+  }
+
+  /* An invisible button over a participant or a zone label with a term (M2.4). */
+  .hit {
+    fill: var(--scene-paper);
+    fill-opacity: 0;
+    stroke: none;
+    cursor: pointer;
+  }
+
+  /* The focus ring is the page's own (S6); a mouse over it gets a dashed frame. */
+  .hit:hover {
+    stroke: var(--legit);
+    stroke-width: 2;
+    stroke-dasharray: 4 4;
   }
 
   .lane {

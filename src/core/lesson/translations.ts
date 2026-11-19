@@ -45,7 +45,8 @@ export function compareTranslation(
     }
   }
 
-  const shape = (l: Lesson) => l.participants.map((p) => `${p.id}:${p.icon}`);
+  const shape = (l: Lesson) =>
+    l.participants.map((p) => `${p.id}:${p.icon}${p.term === null ? '' : ` term:${p.term}`}`);
   if (!same(shape(base), shape(other))) {
     differ(
       other.participants[0]?.position ?? START,
@@ -55,7 +56,10 @@ export function compareTranslation(
   }
 
   const zoneShape = (l: Lesson) =>
-    l.zones.map((z) => `${z.id}[${z.members.join(',')}]${z.danger ? ' danger' : ''}`);
+    l.zones.map(
+      (z) =>
+        `${z.id}[${z.members.join(',')}]${z.danger ? ' danger' : ''}${z.term === null ? '' : ` term:${z.term}`}`,
+    );
   if (!same(zoneShape(base), zoneShape(other))) {
     differ(
       other.zones[0]?.position ?? START,

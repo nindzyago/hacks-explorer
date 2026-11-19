@@ -9,6 +9,7 @@ import { initialState, type AppState } from '../core/state';
 import { createStore, type Store } from '../core/store';
 import { registerClockCommands } from './clock';
 import { registerDepthCommands } from './depth';
+import { registerGlossaryCommands } from './glossary';
 import { registerPlayerCommands } from './player';
 import { createRegistry, type CommandRegistry } from './registry';
 import { registerThemeCommands } from './theme';
@@ -51,6 +52,7 @@ export function createApp(options: AppOptions = {}): AppContext {
   // Every group of commands is registered here, one line per group.
   registerThemeCommands(registry, store);
   registerDepthCommands(registry, store);
+  registerGlossaryCommands(registry, store);
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
   const player = registerPlayerCommands(registry, store, clock, {
     onTimeNeeded: options.onTimeNeeded,

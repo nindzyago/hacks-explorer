@@ -22,7 +22,23 @@ export function lessonFile(id: string, language: string, hash: string): string {
 // ---------------------------------------------------------------------------------------------
 // Text tree: the same nodes as the checker's, without source positions. Never HTML (E4).
 
-export type SiteInline = Inline;
+/**
+ * A word from the glossary in lesson text (M2.4): the build finds it (src/core/glossary/match.ts)
+ * and the site shows it as a button that opens the definition. The site never searches text.
+ */
+export interface SiteTerm {
+  readonly type: 'term';
+  /** The glossary term id, `sql-injection`. */
+  readonly id: string;
+  readonly children: readonly SiteInline[];
+}
+
+/** The checker's inline nodes (an `Inline` is a `SiteInline`), plus glossary terms. */
+export type SiteInline =
+  | Exclude<Inline, { readonly type: 'strong' | 'emphasis' }>
+  | { readonly type: 'strong'; readonly children: readonly SiteInline[] }
+  | { readonly type: 'emphasis'; readonly children: readonly SiteInline[] }
+  | SiteTerm;
 
 export interface SiteCodeSegment {
   readonly text: string;
@@ -71,6 +87,8 @@ export interface SiteParticipant {
   readonly name: string;
   readonly note: string;
   readonly icon: string;
+  /** The glossary term the scene opens for this participant (M2.4), or null. */
+  readonly term: string | null;
 }
 
 export interface SiteZone {
@@ -78,6 +96,8 @@ export interface SiteZone {
   readonly label: string;
   readonly members: readonly string[];
   readonly danger: boolean;
+  /** The glossary term the scene opens for this zone (M2.4), or null. */
+  readonly term: string | null;
 }
 
 export interface SiteLevels {
@@ -145,7 +165,8 @@ export interface SiteCatalog {
 // ---------------------------------------------------------------------------------------------
 // Lesson → site data
 
-function siteBlock(block: Block): SiteBlock {
+/** A checked text block without its source position. */
+export function siteBlock(block: Block): SiteBlock {
   switch (block.type) {
     case 'paragraph':
       return { type: 'paragraph', children: block.children };
@@ -195,12 +216,14 @@ export function toSiteLesson(lesson: Lesson): SiteLesson {
       name: x.name,
       note: x.note,
       icon: x.icon,
+      term: x.term,
     })),
     zones: lesson.zones.map((z) => ({
       id: z.id,
       label: z.label,
       members: [...z.members],
       danger: z.danger,
+      term: z.term,
     })),
     steps: lesson.steps.map((s) => ({
       id: s.id,

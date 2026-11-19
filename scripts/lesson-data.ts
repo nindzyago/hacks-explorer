@@ -18,6 +18,10 @@ import {
   lessonFile,
   toSiteLesson,
 } from '../src/core/lesson/site';
+import { glossaryMatcher, linkLessonTerms, toSiteGlossary } from '../src/core/glossary/build';
+import { checkGlossaries } from '../src/core/glossary/check';
+import type { Matcher } from '../src/core/glossary/match';
+import { MAX_GLOSSARY_FILE_BYTES, glossaryFile } from '../src/core/glossary/site';
 import { readContent } from './content-files.mjs';
 
 export interface DataFile {
@@ -36,19 +40,34 @@ function byteLength(text: string): number {
   return Buffer.byteLength(text, 'utf8');
 }
 
-/** The data files of all content, or the errors as `file:line:column: message`. */
+/**
+ * The data files of all content, or the errors as `file:line:column: message`. The glossaries
+ * (M2.4) are checked against the lessons; their terms are linked in lesson text and each
+ * language's glossary is written to `data/glossary/<lang>.json`.
+ */
 export function buildLessonData(content: {
   readonly lessons: readonly ContentFile[];
   readonly sources: ContentFile;
+  readonly glossaries: readonly ContentFile[];
 }): LessonDataResult {
   const checked = checkContent(content.lessons, content.sources);
-  if (checked.errors.length > 0) return { ok: false, errors: checked.errors.map(formatError) };
+  const glossaries = checkGlossaries(content.glossaries, {
+    lessons: checked.lessons,
+    lessonPaths: content.lessons.map((f) => f.path),
+  });
+  const problems = [...checked.errors, ...glossaries.errors];
+  if (problems.length > 0) return { ok: false, errors: problems.map(formatError) };
 
   const errors: string[] = [];
   const files: DataFile[] = [];
+  const matchers = new Map<string, Matcher>(
+    glossaries.glossaries.map((g) => [g.language, glossaryMatcher(g)]),
+  );
   const entries = new Map<string, { first: SiteLesson; lessons: SiteLesson[]; hashes: string[] }>();
   for (const lesson of checked.lessons) {
-    const site = toSiteLesson(lesson);
+    const plain = toSiteLesson(lesson);
+    const matcher = matchers.get(plain.language);
+    const site = matcher === undefined ? plain : linkLessonTerms(plain, matcher);
     const text = JSON.stringify(site);
     const bytes = byteLength(text);
     if (bytes > MAX_LESSON_FILE_BYTES) {
@@ -84,6 +103,22 @@ export function buildLessonData(content: {
   });
   const catalog: SiteCatalog = { format: SITE_FORMAT, lessons };
   files.unshift({ path: CATALOG_FILE, text: JSON.stringify(catalog) });
+
+  for (const glossary of glossaries.glossaries) {
+    const titles = new Map(
+      checked.lessons.filter((l) => l.language === glossary.language).map((l) => [l.id, l.title]),
+    );
+    const text = JSON.stringify(toSiteGlossary(glossary, titles));
+    const bytes = byteLength(text);
+    if (bytes > MAX_GLOSSARY_FILE_BYTES) {
+      errors.push(
+        `content/locales/${glossary.language}/glossary.md:1:1: the site data of this glossary is ${String(bytes)} bytes; at most ${String(MAX_GLOSSARY_FILE_BYTES)}: shorten the definitions`,
+      );
+      continue;
+    }
+    files.push({ path: glossaryFile(glossary.language), text });
+  }
+  if (errors.length > 0) return { ok: false, errors };
   return { ok: true, files };
 }
 

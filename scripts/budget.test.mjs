@@ -5,7 +5,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
-import { FIRST_LOAD_JS_GZIP, LESSON_FILE, firstLoadScripts, measure } from './budget.mjs';
+import {
+  FIRST_LOAD_JS_GZIP,
+  GLOSSARY_FILE,
+  LESSON_FILE,
+  firstLoadScripts,
+  measure,
+} from './budget.mjs';
 
 const work = mkdtempSync(join(tmpdir(), 'budget-'));
 afterAll(() => rmSync(work, { recursive: true, force: true }));
@@ -57,6 +63,17 @@ describe('measure', () => {
     const { problems } = measure(site('big-lesson', { lesson: 'x'.repeat(LESSON_FILE + 1) }));
     expect(problems).toEqual([
       'data/lessons/B1.ru.0123abcd.json: 30721 bytes; a lesson file is at most 30720',
+    ]);
+  });
+
+  it('measures the glossary files and fails one over 30 KB (M2.4)', () => {
+    const dir = site('glossary');
+    mkdirSync(join(dir, 'data', 'glossary'), { recursive: true });
+    writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), '{}');
+    expect(measure(dir).glossaries).toEqual([{ path: 'data/glossary/ru.json', bytes: 2 }]);
+    writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), 'x'.repeat(GLOSSARY_FILE + 1));
+    expect(measure(dir).problems).toEqual([
+      'data/glossary/ru.json: 30721 bytes; a glossary file is at most 30720',
     ]);
   });
 

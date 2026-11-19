@@ -40,16 +40,20 @@ export function normaliseText(text: string): string {
   return text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
 }
 
-/** Cheap limits checked before the Markdown parser runs, so no input can make it slow. */
-function preflight(
+/**
+ * Cheap limits checked before the Markdown parser runs, so no input can make it slow. `what`
+ * names the file in messages (the glossary uses the same limits, M2.4).
+ */
+export function preflight(
   text: string,
+  what = 'a lesson',
 ): { code: 'too-large' | 'too-complex' | 'too-deep'; line: number; message: string } | null {
   const bytes = utf8Length(text);
   if (bytes > MAX_LESSON_BYTES) {
     return {
       code: 'too-large',
       line: 1,
-      message: `the file is ${String(bytes)} bytes; a lesson is at most ${String(MAX_LESSON_BYTES)}`,
+      message: `the file is ${String(bytes)} bytes; ${what} is at most ${String(MAX_LESSON_BYTES)}`,
     };
   }
   const lines = text.split('\n');
@@ -59,7 +63,7 @@ function preflight(
     return {
       code: 'too-large',
       line: 1,
-      message: `the file has ${String(lineCount)} lines; a lesson has at most ${String(MAX_LINES)}`,
+      message: `the file has ${String(lineCount)} lines; ${what} has at most ${String(MAX_LINES)}`,
     };
   }
   const delimiters = text.match(/[*_[]/g)?.length ?? 0;
@@ -67,7 +71,7 @@ function preflight(
     return {
       code: 'too-complex',
       line: 1,
-      message: `the file has ${String(delimiters)} of the characters * _ [; a lesson has at most ${String(MAX_DELIMITERS)}`,
+      message: `the file has ${String(delimiters)} of the characters * _ [; ${what} has at most ${String(MAX_DELIMITERS)}`,
     };
   }
   for (let i = 0; i < lines.length; i += 1) {

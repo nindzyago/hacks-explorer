@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSyn
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { checkGlossaries } from '../src/core/glossary/check';
 import { checkContent, formatError } from '../src/core/lesson/check';
 import { unknownId } from '../src/core/lesson/ids';
 import { ROOT, readContent } from './content-files.mjs';
@@ -14,6 +15,19 @@ describe('content', () => {
 
   it('has lessons, the first being B1', () => {
     expect(lessons.map((f) => f.path)).toContain('content/lessons/B1/ru.md');
+  });
+
+  // M2.4 (K98): the glossary of every lesson language passes its checker, and the lessons'
+  // `term:` words name its terms.
+  it('has a Russian glossary that passes the glossary checker', () => {
+    const { glossaries } = readContent();
+    expect(glossaries.map((f) => f.path)).toContain('content/locales/ru/glossary.md');
+    const checked = checkGlossaries(glossaries, {
+      lessons: result.lessons,
+      lessonPaths: lessons.map((f) => f.path),
+    });
+    expect(checked.errors.map(formatError).join('\n')).toBe('');
+    expect(checked.glossaries[0]?.terms.length).toBeGreaterThanOrEqual(25);
   });
 
   it('passes the lesson checker', () => {
@@ -120,6 +134,7 @@ describe('readContent', () => {
     expect(readContent(empty)).toEqual({
       lessons: [],
       sources: { path: 'content/sources.md', text: '' },
+      glossaries: [],
     });
     rmSync(empty, { recursive: true, force: true });
   });

@@ -14,7 +14,8 @@
  * them itself (a checkbox, a slider, a list); Space on a button, link or control that is not the
  * player's — there Space presses the control itself, as everywhere on the web; Space and the
  * arrows in a focusable scroll region marked `data-own-keys` (the explanation panel, a code box):
- * there they scroll.
+ * there they scroll; every key inside an open definition of a glossary term (`data-dialog-keys`,
+ * M2.4): it closes on Esc and the reader moves in it with Tab and Enter.
  */
 
 /** What the decision needs to know about the element that has focus. */
@@ -33,6 +34,11 @@ export interface KeyTarget {
    * Space and the arrows scroll it, as everywhere on the web; the player leaves them alone.
    */
   readonly scroll?: boolean;
+  /**
+   * Inside an open definition of a glossary term (`data-dialog-keys`, M2.4): every key belongs
+   * to it (Esc closes it, Tab and Enter move and press), the player takes none.
+   */
+  readonly dialog?: boolean;
 }
 
 export interface KeyPress {
@@ -124,6 +130,7 @@ export function keyCommand(press: KeyPress, playing: boolean): KeyCommand | null
   if (press.ctrlKey || press.metaKey || press.altKey) return null;
   if (press.isComposing || press.key === 'Process') return null;
   if (typing(press.target)) return null;
+  if (press.target.dialog === true) return null;
   if (press.target.scroll === true && isScrollKey(press)) return null;
   if (press.key === ' ' || press.code === 'Space') {
     if (press.repeat) return null;
@@ -152,5 +159,6 @@ export function keyTarget(target: EventTarget | null): KeyTarget {
     role: (target.getAttribute('role') ?? '').toLowerCase(),
     player: target.closest('[data-player-keys]') !== null,
     scroll: target.hasAttribute('data-own-keys'),
+    dialog: target.closest('[data-dialog-keys]') !== null,
   };
 }
