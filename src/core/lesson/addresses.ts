@@ -164,6 +164,22 @@ function ipv6In(run: string, glued: boolean): { value: string; offset: number } 
   return null;
 }
 
+/**
+ * IPv4-mapped (`::ffff:a.b.c.d`) and the deprecated IPv4-compatible (`::a.b.c.d`) forms carry an
+ * IPv4 address in their last two groups.
+ */
+function embedsIpv4(groups: readonly number[]): boolean {
+  const zeros = groups.slice(0, 5).every((g) => g === 0);
+  return groups.length === 8 && zeros && (groups[5] === 0xffff || groups[5] === 0);
+}
+
+function isDocumentationIpv4(groups: readonly number[]): boolean {
+  const high = groups[6] ?? 0;
+  const low = groups[7] ?? 0;
+  const dotted = [high >> 8, high & 0xff, low >> 8, low & 0xff].join('.');
+  return DOC_IPV4.some((prefix) => dotted.startsWith(prefix));
+}
+
 function hasLatinAndCyrillic(name: string): boolean {
   return /[a-z]/i.test(name) && /[Ѐ-ӿ]/.test(name);
 }
@@ -197,14 +213,21 @@ export function findForeignAddresses(original: string): ForeignAddress[] {
     found.push({ value: match[0], kind: 'ip', index: at(match.index) });
   }
   for (const match of text.matchAll(IPV6_RUN)) {
+    const end = match.index + match[0].length;
     const before = text.charAt(match.index - 1);
-    const after = text.charAt(match.index + match[0].length);
-    if (/[\p{L}\p{N}_]/u.test(after) || before === '.') continue;
-    const ip = ipv6In(match[0], /[\p{L}\p{N}_]/u.test(before));
+    const after = text.charAt(end);
+    // Mixed notation (`::ffff:192.0.2.1`, RFC 4291 2.2): the run ends with the first octet of an
+    // IPv4 address, which the IPv4 pass judges. The head stands in for six groups.
+    const mixed = after === '.' && /\d/.test(text.charAt(end + 1)) && /:\d{1,3}$/.test(match[0]);
+    if ((!mixed && /[\p{L}\p{N}_]/u.test(after)) || before === '.') continue;
+    const head = mixed ? match[0].slice(0, match[0].lastIndexOf(':') + 1) : match[0];
+    const ip = ipv6In(mixed ? `${head}0:0` : head, /[\p{L}\p{N}_]/u.test(before));
     if (ip === null) continue;
-    const groups = ipv6Groups(ip.value);
-    if (groups?.[0] === 0x2001 && groups[1] === 0xdb8) continue;
-    found.push({ value: ip.value, kind: 'ip', index: at(match.index + ip.offset) });
+    const groups = ipv6Groups(ip.value) ?? [];
+    if (groups[0] === 0x2001 && groups[1] === 0xdb8) continue;
+    if (embedsIpv4(groups) && (mixed || isDocumentationIpv4(groups))) continue;
+    const value = mixed ? ip.value.slice(0, -'0:0'.length) : ip.value;
+    found.push({ value, kind: 'ip', index: at(match.index + ip.offset) });
   }
   for (const match of text.matchAll(DOMAIN)) {
     const name = match[0];

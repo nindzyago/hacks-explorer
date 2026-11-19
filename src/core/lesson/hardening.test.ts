@@ -153,7 +153,7 @@ describe('translations compare every service detail', () => {
     checkContent([ru, { path: 'content/lessons/X1/en.md', text }], sources);
   it.each([
     ['step icon', '`attacker → site` · `attack` · `icon:mail`', '`attacker → site` · `attack`'],
-    ['passport cves', '- `cves` CVE-2021-44228', '- `cves` CVE-2021-44229'],
+    ['passport cves', '- `cves` CVE-2021-44228', '- `cves` CVE-2014-0160'],
   ])('rejects an en.md that differs in %s', (_name, from, to) => {
     expect(codes(en(edit(validEn, from, to)).errors)).toEqual(['translation-mismatch']);
   });

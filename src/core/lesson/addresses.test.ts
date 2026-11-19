@@ -298,3 +298,66 @@ describe('code-like endings: holes and false positives', () => {
     },
   );
 });
+
+// M2.8 (oracle A R8): the edges of every documentation range, compressed and mixed IPv6 forms,
+// IPv4-mapped IPv6 and the reserved names, one by one.
+describe('documentation ranges, edge by edge (RFC 5737, RFC 3849, RFC 2606)', () => {
+  it.each([
+    '192.0.2.0',
+    '192.0.2.255',
+    '198.51.100.0',
+    '198.51.100.255',
+    '203.0.113.0',
+    '203.0.113.255',
+    '2001:db8::',
+    '2001:db8::/32',
+    '2001:db8:ffff:ffff:ffff:ffff:ffff:ffff',
+    '2001:0DB8:0000:0000:0000:0000:0000:0001',
+    '2001:db8:0:0::1',
+    '2001:db8::abcd:1',
+    '[2001:db8::1]:443',
+    'http://[2001:db8::10]/login',
+    '2001:db8::192.0.2.1',
+    '::ffff:192.0.2.1',
+    '::ffff:198.51.100.7',
+    '::ffff:c000:201',
+    'EXAMPLE.COM',
+    'a.b.c.example',
+    'host.localhost',
+    'mail.invalid',
+    'xn--80ak6aa92e.example',
+  ])('accepts %s', (text) => {
+    expect(values(text)).toEqual([]);
+  });
+
+  it.each([
+    ['192.0.1.255', '192.0.1.255'],
+    ['192.0.3.0', '192.0.3.0'],
+    ['198.51.99.255', '198.51.99.255'],
+    ['198.51.101.0', '198.51.101.0'],
+    ['198.50.100.1', '198.50.100.1'],
+    ['203.0.112.255', '203.0.112.255'],
+    ['203.0.114.0', '203.0.114.0'],
+    ['2001:db7:ffff::1', '2001:db7:ffff::1'],
+    ['2001:db80::1', '2001:db80::1'],
+    ['2001:0db9::', '2001:0db9::'],
+    ['2002:db8::1', '2002:db8::1'],
+    ['[2606:4700::1111]:443', '2606:4700::1111'],
+    ['::ffff:c0a8:101', '::ffff:c0a8:101'],
+    ['example.edu', 'example.edu'],
+    ['example.com.ru', 'example.com.ru'],
+    ['examp1e.com', 'examp1e.com'],
+  ])('rejects %s', (text, value) => {
+    expect(values(text)).toEqual([value]);
+  });
+
+  it('judges an IPv4-mapped IPv6 address by its IPv4 part, once', () => {
+    expect(values('::ffff:8.8.8.8')).toEqual(['8.8.8.8']);
+    expect(values('::FFFF:10.0.0.1')).toEqual(['10.0.0.1']);
+  });
+
+  it('judges the IPv6 head of a mixed address on its own', () => {
+    expect(values('2606:4700::8.8.8.8')).toEqual(['2606:4700::', '8.8.8.8']);
+    expect(values('2606:4700::192.0.2.1')).toEqual(['2606:4700::']);
+  });
+});

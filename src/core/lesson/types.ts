@@ -211,6 +211,7 @@ export type LessonErrorCode =
   | 'no-sources'
   | 'source-domain'
   | 'address'
+  | 'unknown-id'
   // translations
   | 'missing-base'
   | 'translation-mismatch';
