@@ -27,7 +27,7 @@ test('no file of the production build mentions __app', () => {
 });
 
 test('the interface works without the channel', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/ru/lesson/B1');
   // The lesson loads through the site's own loader and the scene draws it (M1.2a).
   await expect(page.getByTestId('participant-attacker')).toBeVisible();
   await expect(page.getByTestId('zone-site')).toBeVisible();

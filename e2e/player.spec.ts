@@ -104,14 +104,18 @@ test.describe('S1: the lesson goes step by step', () => {
     await expect(page.getByTestId('player-status')).toContainText('Шаг 1 из 5');
   });
 
-  // S1 «в ленте событий четыре строки» (M1.5): the feed is derived from the player state
-  // (K75), so back gives the feed of step 3 again.
-  test('the event feed has four lines after three steps, three after back', async ({ page }) => {
+  // S1 «в ходе атаки четыре шага отмечены как произошедшие» (M1.5, M2.1a: the feed is inside
+  // the table, K91): the marks are derived from the player state (K75), so back gives the
+  // marks of step 3 again.
+  test('four rows have happened after three steps, three after back', async ({ page }) => {
     await freshB1(page);
+    const happened = page.locator('[data-testid="steps-table"] tbody tr:not([data-mark="future"])');
     for (let i = 0; i < 3; i += 1) await run(page, 'player.step');
-    await expect(page.getByTestId('feed').getByRole('listitem')).toHaveCount(4);
+    await expect(happened).toHaveCount(4);
+    await expect(happened.last()).toHaveAttribute('data-step', 'answer');
     await run(page, 'player.back');
-    await expect(page.getByTestId('feed').getByRole('listitem')).toHaveCount(3);
+    await expect(happened).toHaveCount(3);
+    await expect(page.getByTestId('step-row-4')).toHaveAttribute('data-mark', 'future');
   });
 });
 

@@ -10,7 +10,6 @@
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
   import DefenceToggle from './DefenceToggle.svelte';
-  import EventFeed from './EventFeed.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
   import { loadErrorText, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
@@ -42,7 +41,7 @@
     document.documentElement.dataset['theme'] = $store.theme;
   });
 
-  // The lesson in the state (B1 until `lesson.open`; addresses are M2), in Russian.
+  // The lesson in the state (I1 «Фишинг» until `lesson.open` or an address, K7), in Russian.
   type Shown =
     | { readonly state: 'loading'; readonly attempt: number }
     | { readonly state: 'ready'; readonly lesson: SiteLesson }
@@ -199,14 +198,12 @@
         <ExplainPanel lesson={shown.lesson} current={step} depth={$store.depth} {run} />
       </div>
 
+      <!-- «Ход атаки» with the event feed inside (M2.1a, D2, K91): one area that scrolls by
+           itself on a laptop, the page does not. -->
       <section class="panel log" data-testid="log" aria-labelledby="log-title">
         <h2 id="log-title">Ход атаки</h2>
         {#if stepCount(player) > 0}
-          <StepsTable lesson={shown.lesson} {player} {run} />
-        {/if}
-        <!-- The event feed (M1.5, K75): one line per started step, under the table. -->
-        {#if stepCount(player) > 0}
-          <EventFeed lesson={shown.lesson} {player} clock={app.clock} />
+          <StepsTable lesson={shown.lesson} {player} clock={app.clock} {run} />
         {/if}
       </section>
     </div>
@@ -224,10 +221,12 @@
     gap: var(--space-3);
   }
 
+  /* K102: the height of the top bar is already that of the «Уроки» and «Словарь» buttons (M2.1b). */
   .top {
+    min-height: 44px;
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    align-items: center;
     gap: var(--space-1) var(--space-3);
   }
 
@@ -313,6 +312,28 @@
 
   .log {
     grid-area: log;
+  }
+
+  /*
+   * One screen (M2.1a, E1, K93): on a laptop the page is as tall as the window (100dvh); the
+   * scene row and the controls take their own height, the «Ход атаки» area the rest and scrolls
+   * inside it. When the window is too low for the smallest steps area the page grows and scrolls
+   * rather than squeezing the rows. The phone keeps one column and the page scrolls (S10).
+   */
+  @media (min-width: 761px) {
+    main {
+      height: 100dvh;
+    }
+
+    .work {
+      flex: 1 1 auto;
+      min-height: 0;
+      grid-template-rows: auto auto minmax(0, 1fr);
+    }
+
+    .log {
+      min-height: 10rem;
+    }
   }
 
   .panel {

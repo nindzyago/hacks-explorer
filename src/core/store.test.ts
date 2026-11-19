@@ -52,7 +52,7 @@ describe('initialState', () => {
     const state = initialState();
     expect(state).toEqual({
       theme: 'light',
-      lesson: 'B1',
+      lesson: 'I1',
       player: {
         step: 1,
         defence: false,

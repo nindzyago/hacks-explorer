@@ -1,5 +1,6 @@
 // M1.5 acceptance (oracle D): scenario S2 «Защита меняет исход» literally, the «Без защиты /
-// С защитой» toggle and the event feed (K75), on a laptop and on a phone. Screenshots go to
+// С защитой» toggle and the marks of the event feed (K75) — inside the «Ход атаки» table since
+// M2.1a (K91) — on a laptop and on a phone. Screenshots go to
 // DEFENCE_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -59,7 +60,10 @@ async function token(page: Page, name: string): Promise<string> {
   }, name);
 }
 
-const feedLines = (page: Page) => page.getByTestId('feed').getByRole('listitem');
+/** Rows that have happened: up to the current step, with the mark of the feed (K75, K91). */
+const happened = (page: Page) =>
+  page.locator('[data-testid="steps-table"] tbody tr:not([data-mark="future"])');
+const row = (page: Page, n: number) => page.getByTestId(`step-row-${String(n)}`);
 
 for (const viewport of [
   { name: 'desktop', width: 1280, height: 720 },
@@ -82,13 +86,13 @@ for (const viewport of [
       const message = page.getByTestId('message');
       await expect(message).toHaveAttribute('data-step', 'param');
       await expect(message).toHaveAttribute('data-stopped', 'false');
-      await expect(page.getByTestId('feed-line-3')).toHaveAttribute('data-mark', 'moving');
+      await expect(row(page, 3)).toHaveAttribute('data-mark', 'moving');
       // …drives to the defender and stays there with the shield.
       await tick(page, TRAVEL_MS);
       await expect(message).toHaveAttribute('data-stopped', 'true');
       await expect(page.getByTestId('message-sign')).toHaveAttribute('data-sign', 'stopped');
       await expect(page.getByTestId('message-word')).toHaveText('остановлено');
-      await expect(page.getByTestId('feed-line-3')).toHaveAttribute('data-mark', 'stopped');
+      await expect(row(page, 3)).toHaveAttribute('data-mark', 'stopped');
       await keep(page, testInfo, `m15-B1-defence-step3-${viewport.name}`);
 
       // Play to the end: the lesson stops by itself after the fifth message arrives.
@@ -99,37 +103,33 @@ for (const viewport of [
 
       // The table: the harmful step is marked «остановлено» with the shield, in green; the
       // database got the input only as data; the harmful query never runs in this course.
-      const row = page.getByTestId('step-row-3');
-      await expect(row).toHaveAttribute('data-step', 'param');
-      const result = row.getByTestId('step-result');
-      await expect(result).toContainText('остановлено');
-      await expect(result).toContainText('ввод остался данными');
-      await expect(result.getByTestId('stopped-mark')).toBeVisible();
-      expect(await result.evaluate((el) => getComputedStyle(el).color)).toBe(
-        await token(page, '--scene-message-stopped'),
-      );
+      const third = row(page, 3);
+      await expect(third).toHaveAttribute('data-step', 'param');
+      const result = third.getByTestId('step-result');
+      await expect(result).toHaveText('ввод остался данными, атака не сработала');
+      const mark = third.getByTestId('step-mark');
+      await expect(mark).toHaveText('остановлено');
+      await expect(mark.getByTestId('stopped-mark')).toBeVisible();
+      // Verifier M1.5: the stopped mark and result are the defence green of the tokens.
+      const green = await token(page, '--scene-message-stopped');
+      expect(await result.evaluate((el) => getComputedStyle(el).color)).toBe(green);
+      expect(await mark.evaluate((el) => getComputedStyle(el).color)).toBe(green);
       await expect(page.locator('[data-testid="steps-table"] [data-step="glue"]')).toHaveCount(0);
       await expect(page.locator('[data-testid="steps-table"] [data-step="answer"]')).toHaveCount(0);
 
-      // The feed: five lines, newest last; the third one stopped.
-      await expect(feedLines(page)).toHaveCount(5);
-      await expect(feedLines(page).last()).toHaveAttribute('data-step', 'refuse');
-      const third = page.getByTestId('feed-line-3');
-      await expect(third).toContainText("Веб-сервер → База данных: параметр: admin' --");
-      await expect(third).toContainText('остановлено');
-      await expect(third.getByTestId('stopped-mark')).toBeVisible();
-      // Verifier M1.5: the stopped mark of the feed is the defence green of the tokens.
-      expect(
-        await third.getByTestId('feed-mark').evaluate((el) => getComputedStyle(el).color),
-      ).toBe(await token(page, '--scene-message-stopped'));
+      // Every row has happened, the last one is the refusal; the third one stopped.
+      await expect(happened(page)).toHaveCount(5);
+      await expect(happened(page).last()).toHaveAttribute('data-step', 'refuse');
+      await expect(third).toContainText('Веб-сервер');
+      await expect(third).toContainText('База данных');
       // Verifier M1.5: the payload keeps its words together, «admin'» and «--» on one line.
-      const payload = third.getByTestId('feed-payload');
+      const payload = third.getByTestId('step-payload');
       expect(await payload.evaluate((el) => el.getClientRects().length)).toBe(1);
       expect(await payload.evaluate((el) => el.textContent.replace(/\u00a0/g, ' '))).toBe(
         "параметр: admin' --",
       );
-      await expect(page.getByTestId('feed-line-2')).toHaveAttribute('data-mark', 'attack');
-      await expect(page.getByTestId('feed-line-5')).toHaveAttribute('data-mark', 'safe');
+      await expect(row(page, 2)).toHaveAttribute('data-mark', 'attack');
+      await expect(row(page, 5)).toHaveAttribute('data-mark', 'safe');
       await expect(page.getByTestId('defence-on')).toHaveAttribute('aria-pressed', 'true');
       await expect(page.getByTestId('defence-name')).toHaveText('Защита: Параметризованный запрос');
       await keep(page, testInfo, `m15-B1-defence-step5-feed-${viewport.name}`);
@@ -141,17 +141,16 @@ for (const viewport of [
       await expect(page.getByTestId('step-row-5')).toHaveAttribute('aria-current', 'step');
       await expect(page.getByTestId('defence-off')).toHaveAttribute('aria-pressed', 'true');
       await expect(page.getByTestId('defence-name')).toHaveCount(0);
-      await expect(feedLines(page)).toHaveCount(5);
-      await expect(page.getByTestId('feed-line-3')).toHaveAttribute('data-step', 'glue');
-      await expect(page.getByTestId('feed-line-5')).toHaveAttribute('data-mark', 'moving');
+      await expect(happened(page)).toHaveCount(5);
+      await expect(row(page, 5)).toHaveAttribute('data-mark', 'moving');
       await tick(page, TRAVEL_MS);
-      await expect(page.getByTestId('feed-line-5')).toHaveAttribute('data-mark', 'attack');
-      await expect(page.locator('[data-testid="feed"] [data-testid="stopped-mark"]')).toHaveCount(
-        0,
-      );
+      await expect(row(page, 5)).toHaveAttribute('data-mark', 'attack');
+      await expect(
+        page.locator('[data-testid="steps-table"] [data-testid="stopped-mark"]'),
+      ).toHaveCount(0);
       await keep(page, testInfo, `m15-B1-attack-step5-feed-${viewport.name}`);
 
-      // The feed never makes the page scroll sideways.
+      // The table never makes the page scroll sideways.
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
@@ -219,81 +218,75 @@ test.describe('the «Без защиты / С защитой» toggle', () => {
   });
 });
 
-test.describe('the event feed', () => {
-  test('one line per started step; the current one is on its way until it arrives', async ({
+test.describe('the marks of the event feed in the table (K75, K91)', () => {
+  test('rows up to the current step are marked; the current one is on its way until it arrives', async ({
     page,
   }) => {
     await freshB1(page);
-    await expect(feedLines(page)).toHaveCount(1);
-    await expect(page.getByTestId('feed-line-1')).toHaveAttribute('data-mark', 'moving');
-    await expect(page.getByTestId('feed-line-1')).toContainText('в пути');
+    await expect(happened(page)).toHaveCount(1);
+    await expect(row(page, 1)).toHaveAttribute('data-mark', 'moving');
+    await expect(row(page, 1).getByTestId('step-mark')).toHaveText('…в пути');
+    await expect(row(page, 2)).toHaveAttribute('data-mark', 'future');
     await tick(page, TRAVEL_MS);
-    await expect(page.getByTestId('feed-line-1')).toHaveAttribute('data-mark', 'legit');
-    await expect(page.getByTestId('feed-line-1')).toContainText(
-      'Атакующий → Веб-сервер: GET /login',
-    );
+    await expect(row(page, 1)).toHaveAttribute('data-mark', 'legit');
+    await expect(row(page, 1).getByTestId('step-mark')).toHaveText('•обычное');
+    await expect(row(page, 1).getByTestId('step-payload')).toHaveText('GET /login');
 
     for (let i = 0; i < 3; i += 1) await run(page, 'player.step');
-    await expect(feedLines(page)).toHaveCount(4);
-    await expect(feedLines(page).last()).toHaveAttribute('data-step', 'answer');
+    await expect(happened(page)).toHaveCount(4);
+    await expect(happened(page).last()).toHaveAttribute('data-step', 'answer');
     await run(page, 'player.back');
-    await expect(feedLines(page)).toHaveCount(3);
+    await expect(happened(page)).toHaveCount(3);
     await run(page, 'player.goto', { step: 1 });
-    await expect(feedLines(page)).toHaveCount(1);
+    await expect(happened(page)).toHaveCount(1);
 
-    // Red only for harmful lines; the number and the word are there for colour-blind readers.
+    // Red only for harmful marks; the number and the word are there for colour-blind readers.
     await run(page, 'player.goto', { step: 5 });
     await tick(page, TRAVEL_MS);
     const red = await token(page, '--scene-message-attack');
     for (const n of [1, 2, 3, 4, 5]) {
-      const line = page.getByTestId(`feed-line-${String(n)}`);
+      const line = row(page, n);
       const mark = await line.getAttribute('data-mark');
       const colour = await line
-        .getByTestId('feed-mark')
+        .getByTestId('step-mark')
         .evaluate((el) => getComputedStyle(el).color);
-      expect(colour === red, `line ${String(n)} (${mark ?? ''})`).toBe(mark === 'attack');
-      await expect(line.getByTestId('feed-number')).toHaveText(String(n));
+      expect(colour === red, `row ${String(n)} (${mark ?? ''})`).toBe(mark === 'attack');
+      await expect(line.getByTestId(`step-goto-${String(n)}`)).toHaveText(String(n));
     }
   });
 
   test.describe('with reduced motion (S11)', () => {
     test.use({ reducedMotion: 'reduce' });
 
-    test('the current line has arrived at once', async ({ page }) => {
+    test('the current row has arrived at once', async ({ page }) => {
       await freshB1(page);
       await run(page, 'player.step');
-      await expect(page.getByTestId('feed-line-2')).toHaveAttribute('data-mark', 'attack');
+      await expect(row(page, 2)).toHaveAttribute('data-mark', 'attack');
     });
   });
 
   test.describe('on a phone', () => {
     test.use({ viewport: { width: 360, height: 800 } });
 
-    test('the feed is under the table, readable, without sideways scroll', async ({ page }) => {
+    test('the marks are readable, without sideways scroll', async ({ page }) => {
       await freshB1(page);
       await run(page, 'defence.set', { on: true });
       await run(page, 'player.goto', { step: 5 });
       await tick(page, TRAVEL_MS);
       const table = await page.getByTestId('steps-table').boundingBox();
-      const feed = await page.getByTestId('feed').boundingBox();
-      if (table === null || feed === null) throw new Error('table or feed not drawn');
-      expect(feed.y).toBeGreaterThanOrEqual(table.y + table.height);
-      expect(feed.width).toBeGreaterThan(360 * 0.8);
+      if (table === null) throw new Error('table not drawn');
+      expect(table.width).toBeGreaterThan(360 * 0.8);
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
       const sizes = await page
-        .getByTestId('feed')
-        .locator('*')
-        .evaluateAll((list) =>
-          list
-            .filter((el) => el.textContent.trim() !== '' && el.children.length === 0)
-            .map((el) => Number.parseFloat(getComputedStyle(el).fontSize)),
-        );
-      expect(sizes.length).toBeGreaterThan(0);
+        .getByTestId('steps-table')
+        .locator('[data-testid="step-mark"]')
+        .evaluateAll((list) => list.map((el) => Number.parseFloat(getComputedStyle(el).fontSize)));
+      expect(sizes).toHaveLength(5);
       expect(Math.min(...sizes)).toBeGreaterThanOrEqual(11);
-      // No line overflows its box.
-      const overflow = await feedLines(page).evaluateAll(
+      // No row overflows its box.
+      const overflow = await happened(page).evaluateAll(
         (list) => list.filter((el) => el.scrollWidth > el.clientWidth + 1).length,
       );
       expect(overflow).toBe(0);
@@ -348,20 +341,25 @@ for (const viewport of [
   });
 }
 
-// Verifier M1.5: I1's stopped autofill step says «остановлено» in its result already; the table
-// does not say it twice.
-test('a stopped result that says «остановлено» is not prefixed again (I1)', async ({ page }) => {
-  await openApp(page);
-  await run(page, 'lesson.open', { id: 'I1' });
+// Verifier M1.5: I1's stopped autofill step says «остановлено» in its result already. Since
+// M2.1a the shield and the word are the mark of the row (K91), the result is the result alone.
+test('a stopped step is marked once, its result is not prefixed (I1)', async ({ page }) => {
+  await openApp(page, '/ru/lesson/I1');
+  await page.evaluate(() => window.__app?.clock.set(0));
   await run(page, 'defence.set', { on: true });
-  const row = page.locator('[data-testid="steps-table"] tr[data-step="autofill"]');
-  await expect(row).toHaveCount(1);
-  const result = row.getByTestId('step-result');
-  await expect(result.getByTestId('stopped-mark')).toBeVisible();
-  expect((await result.textContent())?.trim()).toBe('остановлено');
-  // The other stopped step of I1 keeps the prefix before its own result.
-  const leak = page
-    .locator('[data-testid="steps-table"] tr[data-step="leak"]')
-    .getByTestId('step-result');
-  expect((await leak.textContent())?.trim()).toBe('остановлено: пароль верный, но вход не открыт');
+  const rows = page.locator('[data-testid="steps-table"] tbody tr');
+  await expect(rows.first()).toBeVisible();
+  await run(page, 'player.goto', { step: await rows.count() });
+  await tick(page, TRAVEL_MS);
+  for (const [id, text] of [
+    ['autofill', 'остановлено'],
+    ['leak', 'пароль верный, но вход не открыт'],
+  ] as const) {
+    const line = page.locator(`[data-testid="steps-table"] tr[data-step="${id}"]`);
+    await expect(line).toHaveCount(1);
+    await expect(line).toHaveAttribute('data-mark', 'stopped');
+    expect((await line.getByTestId('step-result').textContent())?.trim(), id).toBe(text);
+    await expect(line.getByTestId('step-mark')).toHaveText('остановлено');
+    await expect(line.getByTestId('step-mark').getByTestId('stopped-mark')).toBeVisible();
+  }
 });

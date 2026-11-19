@@ -4,7 +4,7 @@ import { createApp } from './app';
 
 function app() {
   const created = createApp();
-  created.lessonLoaded('B1', { without: 5, with: 6 });
+  created.lessonLoaded('I1', { without: 5, with: 6 });
   return created;
 }
 
@@ -39,7 +39,7 @@ describe('depth.set (S3)', () => {
     a.registry.run('player.back');
     a.registry.run('player.goto', { step: 4 });
     a.registry.run('defence.toggle');
-    a.registry.run('lesson.open', { id: 'I1' });
+    a.registry.run('lesson.open', { id: 'B1' });
     expect(a.store.get().depth).toBe('deep');
   });
 
