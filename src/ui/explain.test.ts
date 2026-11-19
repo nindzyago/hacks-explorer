@@ -226,4 +226,24 @@ describe('passport', () => {
     expect(rows.map((r) => r.key)).toEqual(['attack', 'cves', 'cvss']);
     expect(rows[0]?.value).toBe('T1566, T1566.002');
   });
+
+  it('shows the CVSS score and severity computed from the vector, the vector below (M2.5)', () => {
+    const row = (cvss: string) => passportRows({ ...empty, cvss }).find((r) => r.key === 'cvss');
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toEqual({
+      key: 'cvss',
+      label: 'CVSS',
+      value: '9.8 · критическая',
+      detail: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+    });
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H')?.value).toBe('10.0 · критическая');
+    expect(row('CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:C/C:L/I:N/A:N')?.value).toBe('3.4 · низкая');
+    expect(row('CVSS:3.1/AV:L/AC:H/PR:L/UI:N/S:C/C:H/I:N/A:N')?.value).toBe('5.6 · средняя');
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H')?.value).toBe('8.8 · высокая');
+    expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N')?.value).toBe('0.0 · нет');
+  });
+
+  it('shows an invalid CVSS vector as it is, without a score', () => {
+    const rows = passportRows({ ...empty, cvss: 'CVSS:3.1/AV:N/AC:L' });
+    expect(rows).toEqual([{ key: 'cvss', label: 'CVSS', value: 'CVSS:3.1/AV:N/AC:L' }]);
+  });
 });
