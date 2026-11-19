@@ -84,18 +84,28 @@
       focusInside();
     } else if (tab === null && element.open) {
       element.close();
+      // Focus returns now, together with the close, not in the close event: that event comes a
+      // task later, and by then focus may have moved on (CI2).
+      restoreFocus();
     }
   });
 
-  // The dialog closed by itself (Esc): the state follows. Focus returns either way.
+  /** Focus goes back where it was before the panel opened, else to «Уроки»; once per close. */
+  function restoreFocus(): void {
+    const back = returnTo?.isConnected === true ? returnTo : fallbackFocus();
+    returnTo = null;
+    back?.focus();
+  }
+
+  // The dialog closed by itself (Esc): the state follows and focus returns. A close by the state
+  // has already returned focus; its event changes nothing.
   function onclose(): void {
     // The close event comes a moment later: the panel may have opened again since (a command
     // right after a close). That close is over.
     if (dialog?.open === true) return;
-    if ($store.drawer !== null) run('drawer.close');
-    const back = returnTo?.isConnected === true ? returnTo : fallbackFocus();
-    returnTo = null;
-    back?.focus();
+    if ($store.drawer === null) return;
+    run('drawer.close');
+    restoreFocus();
   }
 
   // A press on the backdrop (the dialog element itself, outside its content) closes it.
