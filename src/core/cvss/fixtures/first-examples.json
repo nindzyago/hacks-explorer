@@ -1,0 +1,169 @@
+{
+  "source": "https://www.first.org/cvss/v3.1/examples",
+  "fetched": "2026-11-19",
+  "note": "Vectors assembled from the CVSS v3.1 metric tables of each worked example; scores are the published «CVSS v3.1 Base Score». Examples 24 (Badlock, two scores) and 31 (two products) are left out: one table, two scores.",
+  "examples": [
+    {
+      "n": 3,
+      "cve": "CVE-2013-0375",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:L/I:L/A:N",
+      "score": 6.4
+    },
+    {
+      "n": 4,
+      "cve": "CVE-2014-3566",
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:L/I:N/A:N",
+      "score": 3.1
+    },
+    {
+      "n": 5,
+      "cve": "CVE-2012-1516",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+      "score": 9.9
+    },
+    {
+      "n": 6,
+      "cve": "CVE-2009-0783",
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:L/I:L/A:L",
+      "score": 4.2
+    },
+    {
+      "n": 7,
+      "cve": "CVE-2012-0384",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+      "score": 7.2
+    },
+    {
+      "n": 8,
+      "cve": "CVE-2015-1098",
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "score": 7.8
+    },
+    {
+      "n": 9,
+      "cve": "CVE-2014-0160",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N",
+      "score": 7.5
+    },
+    {
+      "n": 10,
+      "cve": "CVE-2014-6271",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "score": 9.8
+    },
+    {
+      "n": 11,
+      "cve": "CVE-2008-1447",
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:N",
+      "score": 6.8
+    },
+    {
+      "n": 12,
+      "cve": "CVE-2014-2005",
+      "vector": "CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "score": 6.8
+    },
+    {
+      "n": 13,
+      "cve": "CVE-2010-0467",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:L/I:N/A:N",
+      "score": 5.8
+    },
+    {
+      "n": 14,
+      "cve": "CVE-2012-1342",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:N/I:L/A:N",
+      "score": 5.8
+    },
+    {
+      "n": 15,
+      "cve": "CVE-2013-6014",
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:C/C:H/I:N/A:H",
+      "score": 9.3
+    },
+    {
+      "n": 16,
+      "cve": "CVE-2019-7551",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:H/I:H/A:H",
+      "score": 9.0
+    },
+    {
+      "n": 17,
+      "cve": "CVE-2009-0658",
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "score": 7.8
+    },
+    {
+      "n": 18,
+      "cve": "CVE-2011-1265",
+      "vector": "CVSS:3.1/AV:A/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+      "score": 8.8
+    },
+    {
+      "n": 19,
+      "cve": "CVE-2014-2019",
+      "vector": "CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:U/C:N/I:H/A:N",
+      "score": 4.6
+    },
+    {
+      "n": 20,
+      "cve": "CVE-2015-0970",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "score": 8.8
+    },
+    {
+      "n": 21,
+      "cve": "CVE-2014-0224",
+      "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:N",
+      "score": 7.4
+    },
+    {
+      "n": 22,
+      "cve": "CVE-2012-5376",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H",
+      "score": 9.6
+    },
+    {
+      "n": 23,
+      "cve": "CVE-2016-1645",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "score": 8.8
+    },
+    {
+      "n": 25,
+      "cve": "CVE-2017-5942",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N",
+      "score": 6.1
+    },
+    {
+      "n": 26,
+      "cve": "CVE-2018-18913",
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H",
+      "score": 7.8
+    },
+    {
+      "n": 27,
+      "cve": "CVE-2016-5558",
+      "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:L",
+      "score": 8.6
+    },
+    {
+      "n": 28,
+      "cve": "CVE-2016-5729",
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:C/C:H/I:H/A:H",
+      "score": 8.2
+    },
+    {
+      "n": 29,
+      "cve": "CVE-2015-2890",
+      "vector": "CVSS:3.1/AV:L/AC:L/PR:H/UI:N/S:U/C:N/I:H/A:H",
+      "score": 6.0
+    },
+    {
+      "n": 30,
+      "cve": "CVE-2018-3652",
+      "vector": "CVSS:3.1/AV:P/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H",
+      "score": 7.6
+    }
+  ]
+}

@@ -4,6 +4,7 @@
  * The format is described in README.md.
  */
 import type { Heading, Nodes, Paragraph, Root, RootContent } from 'mdast';
+import { parseCvss31 } from '../cvss/cvss';
 import type { LanguageWords, LevelKey, SectionKey } from './headings';
 import { LEVEL_ORDER, SECTION_ORDER } from './headings';
 import type { Reporter } from './report';
@@ -216,7 +217,6 @@ const LIST_VALUE: Readonly<Record<string, { re: RegExp; hint: string }>> = {
   attack: { re: /^T\d{4}(\.\d{3})?$/, hint: 'ATT&CK techniques: T1566 or T1566.002' },
   cves: { re: /^CVE-\d{4}-\d{4,7}$/, hint: 'CVE ids: CVE-2021-44228' },
 };
-const CVSS = /^CVSS:(3\.[01]|4\.0)(\/[A-Z]{1,3}:[A-Z]{1,2}){4,32}$/;
 const PASSPORT_WORDS = [
   'class',
   'cwe',
@@ -290,13 +290,15 @@ function parsePassport(ctx: Context, nodes: readonly RootContent[]): Passport {
       else if (word === 'attack') passport.attack = parts;
       else passport.cves = parts;
     } else if (word === 'cvss') {
-      if (CVSS.test(value)) passport.cvss = value;
+      // M2.5 (K82): a CVSS v3.1 vector read by src/core/cvss, all eight base metrics.
+      const cvss = parseCvss31(value);
+      if (cvss.ok) passport.cvss = value;
       else
         ctx.reporter.add(
           at,
           path,
           'bad-value',
-          `\`cvss\` must be a vector string: CVSS:3.1/AV:N/AC:L/…`,
+          `\`cvss\` must be a CVSS v3.1 vector string: CVSS:3.1/AV:N/AC:L/…; ${cvss.error.message}`,
         );
     } else if (word === 'severity') {
       const severity = SEVERITIES.find((s) => s === value);
