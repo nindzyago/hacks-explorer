@@ -34,7 +34,10 @@ test('the B1 scene is on the page with its participants and zones', async ({ pag
     await expect(scene.getByTestId(`zone-${id}`)).toBeVisible();
   await expect(scene.getByTestId('zone-site')).toContainText('Сайт shop.example');
   await expect(scene.getByTestId('participant-server')).toContainText('Веб-сервер');
-  await expect(scene.getByRole('img', { name: 'Схема урока «SQL-инъекция»' })).toBeVisible();
+  // M2.7: a labelled group, not an image, so its term buttons stay reachable.
+  const group = scene.getByRole('group', { name: 'Схема урока «SQL-инъекция»' });
+  await expect(group).toBeVisible();
+  await expect(group).toHaveAccessibleDescription(/^Участники слева направо: Атакующий/);
   await expect(scene.getByTestId('scene-description')).toHaveText(
     'Участники слева направо: Атакующий (203.0.113.66), Веб-сервер (198.51.100.10), ' +
       'База данных (таблица users). Зоны доверия: Интернет: Атакующий; ' +
