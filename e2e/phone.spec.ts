@@ -1,7 +1,7 @@
 // M1.2c, scenario S10 «Телефон» (oracle D) and the step-3 screenshots for the verifier's R-UI
 // look (oracle C): at 390 × 844 (M1.2d: also 375 and 360) the page has no sideways scroll, no
 // text below 11 px and no text cut with «…» on every step of B1 and I1 in both modes; the
-// controls of the error state are at least 44 px.
+// controls of the error state are at least 44 px. M2.3b: in Russian and English, at every depth.
 // The player's own buttons come with M1.3 and get the same check there. Screenshots go to
 // SCENE_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
@@ -66,44 +66,68 @@ for (const phone of [
   test.describe(`S10 at ${String(phone.width)}×${String(phone.height)}`, () => {
     test.use({ viewport: { width: phone.width, height: phone.height } });
 
-    test('no sideways scroll, no text below 11 px, nothing cut on any step of B1 and I1', async ({
-      page,
-    }, testInfo) => {
-      await openApp(page);
-      let checked = 0;
-      for (const lesson of ['B1', 'I1']) {
-        await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
-        await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
-        await sceneReady(page);
-        for (const defence of [false, true]) {
-          const mode = defence ? 'defence' : 'attack';
-          for (let step = 1; step <= 5; step += 1) {
-            await show(page, defence, step, TRAVEL_MS);
-            await expect(page.getByTestId('scene-step')).toContainText(`Шаг ${String(step)} из 5.`);
-            await expect(page.getByTestId('message')).toHaveAttribute('data-arrived', 'true');
-            const where = `${lesson} ${mode} step ${String(step)} at ${String(phone.width)}`;
-            const scroll = await page.evaluate(() => ({
-              page: document.documentElement.scrollWidth,
-              body: document.body.scrollWidth,
-              window: window.innerWidth,
-            }));
-            expect(scroll.page, where).toBeLessThanOrEqual(scroll.window);
-            expect(scroll.body, where).toBeLessThanOrEqual(scroll.window);
-            const small = (await textSizes(page)).filter((t) => t.size < 11);
-            expect(small, where).toEqual([]);
-            const drawn = (await textSizes(page)).filter((t) => t.text.includes('…'));
-            expect(drawn, where).toEqual([]);
-            await keep(
-              page,
-              testInfo,
-              `strip-${lesson}-${mode}-step${String(step)}-${String(phone.width)}`,
-            );
-            checked += 1;
+    for (const lang of ['ru', 'en'] as const) {
+      // M2.3b: in English too, and at every depth (the explanation's length changes the page).
+      test(`${lang}: no sideways scroll, no text below 11 px, nothing cut on any step of B1 and I1`, async ({
+        page,
+      }, testInfo) => {
+        await openApp(page, `/${lang}/lesson/I1`);
+        let checked = 0;
+        for (const lesson of ['B1', 'I1']) {
+          await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
+          await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
+          await sceneReady(page);
+          for (const defence of [false, true]) {
+            const mode = defence ? 'defence' : 'attack';
+            for (let step = 1; step <= 5; step += 1) {
+              await show(page, defence, step, TRAVEL_MS);
+              await expect(page.getByTestId('scene-step')).toContainText(
+                lang === 'ru' ? `Шаг ${String(step)} из 5.` : `Step ${String(step)} of 5.`,
+              );
+              await expect(page.getByTestId('message')).toHaveAttribute('data-arrived', 'true');
+              for (const depth of ['simple', 'steps', 'deep'] as const) {
+                await page.evaluate(
+                  (d) => window.__app?.commands.run('depth.set', { depth: d }),
+                  depth,
+                );
+                const where = `${lang} ${lesson} ${mode} step ${String(step)} ${depth} at ${String(phone.width)}`;
+                const scroll = await page.evaluate(() => ({
+                  page: document.documentElement.scrollWidth,
+                  body: document.body.scrollWidth,
+                  window: window.innerWidth,
+                }));
+                expect(scroll.page, where).toBeLessThanOrEqual(scroll.window);
+                expect(scroll.body, where).toBeLessThanOrEqual(scroll.window);
+                const small = (await textSizes(page)).filter((t) => t.size < 11);
+                expect(small, where).toEqual([]);
+                const drawn = (await textSizes(page)).filter((t) => t.text.includes('…'));
+                expect(drawn, where).toEqual([]);
+                // Short inline code stays on one line: no «admin' -» / «- reaches» (M2.3b).
+                const broken = await page.evaluate(() =>
+                  Array.from(document.querySelectorAll('[data-testid="explain"] code'))
+                    .filter((c) => c.closest('pre') === null)
+                    .filter((c) => c.textContent.length <= 24)
+                    .filter((c) => c.getClientRects().length > 1)
+                    .map((c) => c.textContent),
+                );
+                expect(broken, where).toEqual([]);
+              }
+              await page.evaluate(() =>
+                window.__app?.commands.run('depth.set', { depth: 'simple' }),
+              );
+              const prefix = lang === 'ru' ? 'strip' : 'strip-en';
+              await keep(
+                page,
+                testInfo,
+                `${prefix}-${lesson}-${mode}-step${String(step)}-${String(phone.width)}`,
+              );
+              checked += 1;
+            }
           }
         }
-      }
-      expect(checked).toBe(20);
-    });
+        expect(checked).toBe(20);
+      });
+    }
   });
 }
 

@@ -122,7 +122,8 @@ test('the home page and forgiven addresses are rewritten to the canonical addres
     // M2.1a (E5, K7): the home page is «Фишинг».
     ['/', '/ru/lesson/I1'],
     ['/ru', '/ru/lesson/I1'],
-    ['/en/lesson/b1/#step-2', '/ru/lesson/B1#step-2'],
+    ['/en/lesson/b1/#step-2', '/en/lesson/B1#step-2'],
+    ['/de/lesson/b1/#step-2', '/ru/lesson/B1#step-2'],
   ] as const) {
     await openApp(page, from);
     expect(path(page), from).toBe(to);

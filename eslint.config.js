@@ -10,7 +10,6 @@ export default ts.config(
     ignores: [
       'dist/',
       'dist-e2e/',
-      'dist-e2e-i18n/',
       'test-results/',
       'node_modules/',
       'prototype/',

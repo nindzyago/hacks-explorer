@@ -150,21 +150,10 @@ export function buildLessonData(content: {
 export interface LessonDataOptions {
   /** The folder that holds `content/`; the repository root by default. */
   readonly contentRoot?: string;
-  /**
-   * The folder whose `content/locales/<lang>/ui.md` give the interface strings; `contentRoot` by
-   * default. The e2e build with a second language (M2.3, K106) takes its lessons from a fixture
-   * folder and the strings from the repository, so the strings it tests are the real ones.
-   */
-  readonly uiRoot?: string;
 }
 
 export function lessonData(options: LessonDataOptions = {}): Plugin {
-  const read = () => {
-    const content = readContent(options.contentRoot);
-    return options.uiRoot === undefined
-      ? content
-      : { ...content, ui: readContent(options.uiRoot).ui };
-  };
+  const read = () => readContent(options.contentRoot);
   const build = (): LessonDataResult => buildLessonData(read());
   let built: readonly DataFile[] = [];
   let locales: SiteLocalesData | null = null;
@@ -200,8 +189,8 @@ export function lessonData(options: LessonDataOptions = {}): Plugin {
         if (!result.ok) this.error(`lesson content has errors:\n${result.errors.join('\n')}`);
         data = result.locales;
       }
-      const uiRoot = options.uiRoot ?? options.contentRoot ?? ROOT;
-      for (const file of read().ui) this.addWatchFile(join(uiRoot, file.path));
+      const root = options.contentRoot ?? ROOT;
+      for (const file of read().ui) this.addWatchFile(join(root, file.path));
       return `export default ${JSON.stringify(data)};`;
     },
 

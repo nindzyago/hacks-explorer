@@ -49,7 +49,7 @@ if (app.timeNeeded()) driver.start();
 
 // The control channel exists in the dev server and in the e2e build (`vite build --mode e2e`).
 // In the production build this condition is the constant `false` and the bundler drops the code.
-if (import.meta.env.DEV || import.meta.env.MODE === 'e2e' || import.meta.env.MODE === 'e2e-i18n') {
+if (import.meta.env.DEV || import.meta.env.MODE === 'e2e') {
   installControl(window, app);
 }
 
