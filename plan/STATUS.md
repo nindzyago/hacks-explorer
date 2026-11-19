@@ -1,9 +1,9 @@
 # Status
 
-> Updated: 2026-11-17 by Claude (craftspec orchestrate)
+> Updated: 2026-11-19 by Claude (craftspec orchestrate)
 
 **Current milestone:** M2 — Оболочка: панель уроков, языки, глубина, телефон
-**Next task:** M2.3a (языки в коде) и затем M2.1b (панель уроков), M2.3b (английский), M2.6, M2.7
+**Next task:** M2.6 (телефон), M2.7 (доступность)
 **Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -33,7 +33,7 @@
 ## Checklist (current milestone)
 
 - [x] M2.1a Один экран
-- [ ] M2.1b Панель уроков и словаря
+- [x] M2.1b Панель уроков и словаря
 - [x] M2.2 Адреса: ссылка на урок, шаг и режим
 - [x] M2.3a Языки в коде, полнота в gate
 - [x] M2.3b Английские версии B1 и I1
