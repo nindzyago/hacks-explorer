@@ -26,9 +26,9 @@ export const test = base.extend<{ pageProblems: string[] }>({
 
 /**
  * Opens a page of the e2e build and waits for the application, the control channel and the
- * lesson scene (M1.2a: the page shows lesson B1).
+ * lesson scene. The default path is lesson B1 (M2.1a: the home page opens I1).
  */
-export async function openApp(page: Page, path = '/'): Promise<void> {
+export async function openApp(page: Page, path = '/ru/lesson/B1'): Promise<void> {
   await page.goto(path);
   await expect(page.getByTestId('app')).toBeVisible();
   await page.waitForFunction(() => window.__app !== undefined);

@@ -31,7 +31,7 @@ export interface AppState {
 export function initialState(): AppState {
   return Object.freeze({
     theme: 'light',
-    lesson: 'B1',
+    lesson: 'I1',
     player: initialPlayer(),
     depth: 'simple',
   });

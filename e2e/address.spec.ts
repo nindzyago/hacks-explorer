@@ -119,8 +119,9 @@ test('the home page and forgiven addresses are rewritten to the canonical addres
   page,
 }) => {
   for (const [from, to] of [
-    ['/', '/ru/lesson/B1'],
-    ['/ru', '/ru/lesson/B1'],
+    // M2.1a (E5, K7): the home page is «Фишинг».
+    ['/', '/ru/lesson/I1'],
+    ['/ru', '/ru/lesson/I1'],
     ['/en/lesson/b1/#step-2', '/ru/lesson/B1#step-2'],
   ] as const) {
     await openApp(page, from);
@@ -134,7 +135,7 @@ test('an unknown lesson in the address is a message with «На главную»
   await expect(error).toHaveAttribute('data-code', 'not-found');
   await expect(page.getByTestId('lesson-error-home')).toHaveText('На главную');
   await page.getByTestId('lesson-error-home').click();
-  await expect(page).toHaveURL(/\/ru\/lesson\/B1$/);
+  await expect(page).toHaveURL(/\/ru\/lesson\/I1$/);
   await expect(page.getByTestId('scene')).toBeVisible();
 });
 
@@ -165,7 +166,7 @@ test('an address that is no page of the site is a message with «На главн
     expect(before?.counts, 'no lesson loaded').toEqual({ without: 0, with: 0 });
   }
   await page.getByTestId('not-found-home').click();
-  await expect(page).toHaveURL(/\/ru\/lesson\/B1$/);
+  await expect(page).toHaveURL(/\/ru\/lesson\/I1$/);
   await expect(page.getByTestId('scene')).toBeVisible();
   await expect(page).toHaveTitle('Hacks Explorer');
 });

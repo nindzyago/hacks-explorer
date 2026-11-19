@@ -416,7 +416,7 @@ test('broken lesson data is a message with a way out, not an empty page', async 
   await page.route('**/data/catalog.json', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: '{"format": 1, "les' }),
   );
-  await page.goto('/');
+  await page.goto('/ru/lesson/B1');
   const error = page.getByTestId('lesson-error');
   await expect(error).toContainText('Не удалось открыть урок');
   // Russian for the reader (M1.2b); the loader's code stays on the element for tests.
@@ -446,7 +446,7 @@ test('a lesson that never arrives becomes a message with a retry after 15 s (M1.
     await held;
     await route.continue();
   });
-  await page.goto('/');
+  await page.goto('/ru/lesson/B1');
   await expect(page.getByTestId('lesson-loading')).toBeVisible();
   await page.clock.runFor(10_000);
   await expect(page.getByTestId('lesson-loading')).toBeVisible();
@@ -474,7 +474,7 @@ test('an icon that fails to download gets the placeholder too (M1.2b)', async ({
   await page.route(`**${icon}`, (route) =>
     route.fulfill({ status: 200, contentType: 'image/webp', body: 'not an image' }),
   );
-  await page.goto('/');
+  await page.goto('/ru/lesson/B1');
   const attacker = page.getByTestId('participant-attacker');
   await expect(attacker.getByTestId('icon-placeholder')).toBeVisible();
   await expect(attacker.locator('image')).toHaveCount(0);
@@ -501,7 +501,7 @@ test('while the lesson loads the page says so', async ({ page }) => {
     await held;
     await route.continue();
   });
-  await page.goto('/');
+  await page.goto('/ru/lesson/B1');
   await expect(page.getByTestId('lesson-loading')).toHaveText('Загружаем урок…');
   release();
   await expect(page.getByTestId('scene')).toBeVisible();

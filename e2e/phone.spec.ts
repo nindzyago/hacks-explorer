@@ -114,7 +114,7 @@ test.describe('S10 at 390×844', () => {
     await page.route('**/data/catalog.json', (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '{' }),
     );
-    await page.goto('/');
+    await page.goto('/ru/lesson/B1');
     await expect(page.getByTestId('lesson-error')).toBeVisible();
     for (const id of ['lesson-error-retry', 'lesson-error-home']) {
       const box = await page.getByTestId(id).boundingBox();
