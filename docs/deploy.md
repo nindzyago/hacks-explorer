@@ -2,7 +2,8 @@
 
 Решения: K10, K12, K14. Сайт — Cloudflare Workers со статикой. Cloudflare сам собирает
 репозиторий по событиям GitHub (Workers Builds через приложение Cloudflare в GitHub). В GitHub
-нет ни одного секрета Cloudflare; GitHub Actions только проверяет (`gate`).
+нет ни одного секрета Cloudflare; GitHub Actions проверяет (`gate`) и при выпуске двигает ветку
+`release` (раздел «Выпуск по тегу и откат», M4.6).
 
 ## Что откуда берётся
 
@@ -110,12 +111,68 @@ M4.7.
 - Сборка упала на `npm ci` с рассинхроном — указать точную версию в `packageManager` в
   `package.json` (образ Cloudflare использует npm 10.9.2).
 
+## Выпуск по тегу и откат (M4.6)
+
+Основная версия сайта — ветка `release`. Её никто не трогает руками: её двигает workflow
+`.github/workflows/release.yml` (проверяет `scripts/release.test.mjs`), а Cloudflare выкладывает её
+сам, как сейчас выкладывает `main`. Так в GitHub по-прежнему нет токена Cloudflare (K12).
+
+| Событие | Что происходит |
+|---|---|
+| push тега `vX.Y.Z` | GitHub Actions: gate на коммите тега → GitHub Release с описанием из раздела `## X.Y.Z` файла `CHANGELOG.md` (нет раздела — описание сочиняет GitHub из коммитов) → ветка `release` переставляется на тег. Cloudflare видит push в `release` и выкладывает его на основной адрес |
+| gate на теге красный | Release не создаётся, `release` не двигается, сайт остаётся прежним. Тег остаётся: исправить и выпустить следующий (`v0.1.1`) |
+| Run workflow с тегом (откат) | `release` переставляется на указанный тег без gate (он прошёл его при выпуске) и без новых Release; Cloudflare выкладывает |
+| push в `main` | как раньше собирается, но теперь это предпросмотр: `https://main-hacks-explorer.mike-antipiev.workers.dev` |
+
+Тег формата `v1.2.3-rc.1` workflow отвергает. Push тега старой версии тоже выкладывает её: тег —
+это команда «выложить эту версию».
+
+### Один раз (делает владелец)
+
+1. **Cloudflare:** Worker `hacks-explorer` → **Settings** → **Build** → **Branch control** →
+   основная ветка (Production branch) `release`; **Enable Preview Builds** оставить включённым.
+   Если панель предлагает только существующие ветки — сначала создать в GitHub ветку `release`
+   от `main` (**Code** → **Branches** → **New branch**); это выложит `main` как основную версию,
+   что для черновика безопасно.
+2. **GitHub, правила веток:** на `release` не ставить защиту от force push (workflow переставляет
+   ветку назад при откате). Рекомендуется правило (Settings → Rules → Rulesets) на теги `v*`:
+   создавать их может только владелец.
+3. **GitHub, права Actions:** ничего не менять. Workflow сам просит `contents: write` только в
+   двух заданиях. Если push в `release` падает с 403 — Settings → Actions → General → Workflow
+   permissions, и не запрещает ли это политика организации.
+
+### Как выпустить
+
+1. В `CHANGELOG.md` в заголовке `## 0.1.0 (готовится)` поставить дату выпуска, влить в `main`,
+   дождаться зелёного `gate` на `main`.
+2. `git tag -a v0.1.0 -m "Hacks Explorer 0.1.0"` на этом коммите `main`, затем
+   `git push origin v0.1.0`.
+3. GitHub → **Actions** → **release**: задания `gate` и `release` зелёные; **Releases** → `v0.1.0`
+   с описанием из CHANGELOG. Cloudflare → Worker → **Deployments**: новая сборка ветки `release`.
+
+### Как откатить
+
+- **Через ветку (основной путь):** GitHub → **Actions** → **release** → **Run workflow** → `tag`
+  = прошлый тег, например `v0.1.0`. Через минуту-две Cloudflare выкладывает эту версию. Это
+  держится до следующего выпуска.
+- **Мгновенно, в Cloudflare:** Worker → **Deployments** → прошлая версия → **Rollback** (или
+  `wrangler rollback` с компьютера владельца, где wrangler вошёл в учётную запись). Не меняет
+  ветку `release`: следующая сборка `release` (в том числе повторная) вернёт то, что в ветке.
+  Поэтому после мгновенного отката всё равно запустить откат через ветку.
+
+### Не проверено
+
+- Что push в `release`, сделанный workflow (токен `GITHUB_TOKEN`), запускает сборку Cloudflare.
+  По документации GitHub токен `GITHUB_TOKEN` не запускает другие workflow, а события для
+  приложений GitHub (Cloudflare подключён приложением) отправляются; на практике не проверялось —
+  смотреть на первом теге. Если сборка не началась: повторить сборку `release` из истории сборок
+  Cloudflare (**View build history**), если панель это позволяет; иначе `npm run build` и
+  `wrangler deploy` с компьютера владельца на коммите тега. Повторный откат на тот же тег не
+  поможет: ветка уже там, push без изменений сборку не запускает.
+- Что панель Cloudflare принимает ещё не существующую ветку как основную (пункт 1 выше).
+
 ## Позже
 
-- **M4.6, выпуск по тегу:** появляется ветка `release`; в **Settings** → **Build** →
-  **Branch control** основная ветка меняется на `release`. После этого `main` становится обычным
-  предпросмотром, и черновой адрес меняется на
-  `https://main-hacks-explorer.mike-antipiev.workers.dev`.
 - **M4.7, публикация:** **Settings** → **Domains & Routes** → **Add** → **Custom Domain** →
   `hacks.antipic.com` → **Add Custom Domain**. Cloudflare сам создаёт запись DNS и сертификат; у
   имени не должно быть записи CNAME.
