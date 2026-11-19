@@ -4,17 +4,12 @@
 // and the close button close it and focus returns; a ready lesson opens from it and the address
 // follows; the glossary tab lists the terms and opens a definition; the page stays one screen;
 // the phone gets a full-width sheet. Screenshots go to DRAWER_SHOTS when it names a folder.
-import { copyFileSync, mkdirSync, readdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
-
-// Ready lessons are the folders in content/lessons: lessons written in parallel add to it.
-const READY = readdirSync('content/lessons', { withFileTypes: true }).filter((e) =>
-  e.isDirectory(),
-).length;
 
 async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   await sceneReady(page);
@@ -36,6 +31,17 @@ const topics = (page: Page) =>
   page
     .getByTestId('catalog-topic')
     .evaluateAll((items) => items.map((item) => item.getAttribute('data-topic') ?? ''));
+
+/** Ready lessons in a language, from the built catalog: the count grows with every lesson. */
+async function readyCount(page: Page, language: string): Promise<number> {
+  return page.evaluate(async (lang) => {
+    const response = await fetch('/data/catalog.json');
+    const catalog = (await response.json()) as {
+      lessons: { translations: { language: string }[] }[];
+    };
+    return catalog.lessons.filter((l) => l.translations.some((t) => t.language === lang)).length;
+  }, language);
+}
 
 async function openLessons(page: Page): Promise<void> {
   await page.getByTestId('open-lessons').click();
@@ -67,7 +73,7 @@ test.describe('S7: the lessons panel', () => {
     await expect(page.getByTestId('catalog-group')).toHaveCount(12);
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
-      `Готово уроков: ${String(READY)} из 75`,
+      `Готово уроков: ${String(await readyCount(page, 'ru'))} из 75`,
     );
     const b = page.locator('[data-testid="catalog-group"][data-section="B"]');
     await expect(b.getByTestId('catalog-count')).toHaveText('готово 1 из 8');
@@ -127,7 +133,7 @@ test.describe('S7: the lessons panel', () => {
     await page.getByTestId('catalog-search').fill(' -- ');
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
-      `Готово уроков: ${String(READY)} из 75`,
+      `Готово уроков: ${String(await readyCount(page, 'ru'))} из 75`,
     );
   });
 
@@ -472,7 +478,7 @@ test.describe('in English (M2.3, K105)', () => {
     await openLessons(page);
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
-      `Lessons ready: ${String(READY)} of 75`,
+      `Lessons ready: ${String(await readyCount(page, 'en'))} of 75`,
     );
     await expect(
       page.locator('[data-testid="catalog-group"][data-section="B"] [data-testid="catalog-count"]'),
