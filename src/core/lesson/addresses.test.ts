@@ -360,4 +360,58 @@ describe('documentation ranges, edge by edge (RFC 5737, RFC 3849, RFC 2606)', ()
     expect(values('2606:4700::8.8.8.8')).toEqual(['2606:4700::', '8.8.8.8']);
     expect(values('2606:4700::192.0.2.1')).toEqual(['2606:4700::']);
   });
+
+  // IPv4-compatible (`::a.b.c.d`) is judged like IPv4-mapped: by the embedded IPv4 address.
+  it.each(['::192.0.2.1', '::c000:201', '::0:c000:201'])(
+    'accepts the embedded documentation address %s',
+    (text) => {
+      expect(values(text)).toEqual([]);
+    },
+  );
+
+  it.each([
+    ['::1:ffff:c000:201', '::1:ffff:c000:201'],
+    ['::1:0:c000:201', '::1:0:c000:201'],
+    ['::fffe:c000:201', '::fffe:c000:201'],
+    ['::808:808', '::808:808'],
+    ['::8.8.8.8', '8.8.8.8'],
+  ])('an embedded address needs five zero groups and ffff or 0: rejects %s', (text, value) => {
+    expect(values(text)).toEqual([value]);
+  });
+});
+
+// M2.8 review: browsers read an IPv4 host as one number, in hex or octal, or with fewer parts
+// (WHATWG URL «IPv4 parser»). In a host position all of them count; dotted hex or octal counts
+// anywhere; a plain number in prose does not.
+describe('numeric IPv4 forms', () => {
+  it.each([
+    ['http://2130706433/', '2130706433'],
+    ['http://0x7f000001/', '0x7f000001'],
+    ['https://0x08080808:443/', '0x08080808'],
+    ['http://127.1/', '127.1'],
+    ['http://8.8.2056/', '8.8.2056'],
+    ['http://0177.0.0.1/', '0177.0.0.1'],
+    ['anna@134744072', '134744072'],
+    ['0x8.0x8.0x8.0x8', '0x8.0x8.0x8.0x8'],
+    ['адрес 0x7f.1', '0x7f.1'],
+    ['0300.0250.0.1', '0300.0250.0.1'],
+  ])('rejects %s', (text, value) => {
+    expect(values(text)).toEqual([value]);
+  });
+
+  it.each([
+    'http://3221225985/',
+    'http://0xc0000201/',
+    'http://0xc0.0.2.1/',
+    'http://0300.0.2.1/',
+    'http://192.0.513/',
+    '0xc0.0x00.0x02.0x01',
+    'в базе 2130706433 строк',
+    'число 0x7f000001 в коде',
+    'версия 1.05 и 0.05 секунды',
+    'http://example.com:8080/',
+    'http://99999999999/',
+  ])('accepts %s', (text) => {
+    expect(values(text)).toEqual([]);
+  });
 });

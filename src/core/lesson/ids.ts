@@ -65,6 +65,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
 /** ATT&CK Enterprise technique or sub-technique → name as on its page. */
 export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1046', 'Network Service Discovery'],
+  ['T1071', 'Application Layer Protocol'],
   ['T1110', 'Brute Force'],
   ['T1110.004', 'Brute Force: Credential Stuffing'],
   ['T1189', 'Drive-by Compromise'],
