@@ -16,6 +16,9 @@ const READY = readdirSync('content/lessons', { withFileTypes: true }).filter((d)
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
+/** Lessons in content/lessons: the panel counts them as ready (grows as M3 lessons land). */
+const READY = readdirSync('content/lessons').filter((name) => /^[A-Z]\d+$/.test(name)).length;
+
 async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   await sceneReady(page);
   const path = testInfo.outputPath(`${name}.png`);
