@@ -6,7 +6,17 @@ import { timingConfig } from './scripts/timing-rules.mjs';
 import svelteConfig from './svelte.config.js';
 
 export default ts.config(
-  { ignores: ['dist/', 'dist-e2e/', 'test-results/', 'node_modules/', 'prototype/', 'reference/'] },
+  {
+    ignores: [
+      'dist/',
+      'dist-e2e/',
+      'test-results/',
+      'node_modules/',
+      'prototype/',
+      'reference/',
+      '.claude/',
+    ],
+  },
   js.configs.recommended,
   ...ts.configs.strictTypeChecked,
   ...svelte.configs.recommended,
