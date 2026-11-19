@@ -54,7 +54,7 @@ async function lesson(page: Page, path: string): Promise<void> {
 }
 
 const LOCALES = ['ru', 'en'] as const;
-const LESSONS = ['B1', 'I1'] as const;
+const LESSONS = ['B1', 'I1', 'C4'] as const;
 
 test.describe('axe finds no WCAG A/AA violations', () => {
   for (const locale of LOCALES) {

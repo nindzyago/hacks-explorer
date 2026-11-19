@@ -124,6 +124,47 @@ A fixed-length value that a hash function computes from data. For cryptographic 
 only way back is guessing. Well-built sites store not passwords but their hashes, computed with
 slow functions and a “salt”, for example Argon2 or bcrypt.
 
+## `csrf` CSRF
+
+`category` web · `see` csrf-token, session-cookie, samesite · `lessons` C4
+
+Forms: CSRF, cross-site request forgery
+
+Cross-Site Request Forgery: someone else's page makes the victim's browser send a request to a
+site where the victim is already logged in. The browser attaches the victim's cookie on its own,
+and the site carries out the action in the victim's name: a transfer, a password change. In the
+MITRE catalogue it is CWE-352.
+
+## `csrf-token` CSRF token
+
+`category` web · `see` csrf, session-cookie · `lessons` C4
+
+Forms: CSRF token, CSRF tokens
+
+A random secret string that a site puts into its own forms and checks on every request that
+changes something. Another site's page does not know it and cannot read it from the site's page,
+so a forged request arrives without the token and is rejected.
+
+## `session-cookie` Session cookie
+
+`category` web · `see` csrf, samesite · `lessons` C4
+
+Forms: session cookie, session cookies
+
+The pass a site gives the browser after login. The browser attaches it to every request to that
+site on its own, so the password is not asked again. Whoever holds the pass is the user as far as
+the site is concerned.
+
+## `samesite` SameSite
+
+`category` web · `see` session-cookie, csrf · `lessons` C4
+
+Forms: SameSite
+
+A cookie attribute that tells the browser whether to attach the cookie to requests coming from
+other sites. `Strict` means never, `Lax` only on an ordinary link navigation, `None` always. It
+protects against CSRF as an extra layer but does not replace a CSRF token.
+
 ## `phishing` Phishing
 
 `category` people · `see` fake-page, proxy-phishing, social-engineering, mitre-attack · `lessons` I1
