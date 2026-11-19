@@ -4,7 +4,7 @@
 
 **Current milestone:** M2 — Оболочка: панель уроков, языки, глубина, телефон
 **Next task:** волна A без дизайна: M2.2 адреса, M2.5 CVSS, M2.8 проверки контента; дизайны M2.1 и M2.3 — на утверждение владельцу
-**Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev. Решения владельца без срока: ревизия формата (класс атаки, пояснение к тяжести), G13 (версия wrangler), закрывать ли черновой адрес входом
+**Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
 ## Milestones
@@ -25,16 +25,21 @@
 | M1.1 Формат урока в Markdown | r2 | built 2026-11-18 (M1.1a–c) | https://claude.ai/artifact/Pert7Z6UKR1yd73v9vQukp · `plan/designs/M1.1.md` | 1a0a99f69726… |
 | M1.2 Сцена | r2 | built 2026-11-18 (M1.2a–d) | https://claude.ai/artifact/2TTAMfjL1v9Y3CLMrKXc7Q · `plan/designs/M1.2.md` | 744c2b1b8b61… |
 
-Ещё нужны перед M2.1 и M2.3.
+| M2.1 Один экран и панель уроков | r1 | approved 2026-11-19 r1 | https://claude.ai/artifact/EVskVTmiKxSKJuqEGP2xJq | 3d8120473027… |
+| M2.3 Языки | r2 | approved 2026-11-19 r2 (D1 словами владельца) | https://claude.ai/artifact/47Hamqgnwd7Wfwi2WMowd4 | 30c72746110c… |
+
+
 
 ## Checklist (current milestone)
 
-- [ ] M2.1 Один экран, выдвижная панель уроков и словаря [design]
+- [ ] M2.1a Один экран
+- [ ] M2.1b Панель уроков и словаря
 - [ ] M2.2 Адреса: ссылка на урок, шаг и режим
-- [ ] M2.3 Языки модулями, правило неполного перевода [design]
+- [ ] M2.3a Языки в коде, полнота в gate
+- [ ] M2.3b Английские версии B1 и I1
 - [ ] M2.4 Словарь терминов и всплывающие определения
-- [ ] M2.5 Калькулятор CVSS 3.1
-- [ ] M2.6 Телефон и две темы
+- [x] M2.5 Калькулятор CVSS 3.1
+- [ ] M2.6 Телефон (без тёмной темы)
 - [ ] M2.7 Доступность
 - [ ] M2.8 Проверки контента в gate
 

@@ -1,0 +1,1325 @@
+<title>Языки сайта M2.3</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one reading column; sketch, diagram and tables scroll inside their own boxes. Blueprint palette. */
+:root {
+  --bg: #f6f8fb; --surface: #ffffff; --sunk: #eef2f7; --fg: #17202e; --muted: #5b6678; --line: #d5dce7;
+  --accent: #1f5fbf; --accent-soft: #e3ecfa; --on-accent: #ffffff;
+  --ok: #1d7a4d; --ok-soft: #e2f3ea; --warn: #9a5208; --warn-soft: #fbeedd; --bad: #b3261e; --bad-soft: #fbe5e3;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f141c; --surface: #161d28; --sunk: #111821; --fg: #e4e9f1; --muted: #9aa6b8; --line: #2a3445;
+  --accent: #7aa7ff; --accent-soft: #1b2a44; --on-accent: #0f141c;
+  --ok: #5cc98f; --ok-soft: #14291f; --warn: #e3a256; --warn-soft: #2e2214; --bad: #ff8a80; --bad-soft: #351a19;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #0f141c; --surface: #161d28; --sunk: #111821; --fg: #e4e9f1; --muted: #9aa6b8; --line: #2a3445;
+  --accent: #7aa7ff; --accent-soft: #1b2a44; --on-accent: #0f141c;
+  --ok: #5cc98f; --ok-soft: #14291f; --warn: #e3a256; --warn-soft: #2e2214; --bad: #ff8a80; --bad-soft: #351a19;
+  color-scheme: dark;
+}
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--font-body); margin: 0; }
+main { max-width: 54rem; margin: 0 auto; display: grid; gap: 2rem; padding-block: 2rem 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+section { min-width: 0; }
+header { display: grid; gap: .5rem; }
+h1 { font-size: 1.75rem; line-height: 1.2; margin: 0; text-wrap: balance; }
+h2 { font-size: 1.05rem; margin: 0 0 .75rem; text-wrap: balance; }
+h3 { font-size: .95rem; margin: 0 0 .5rem; }
+.eng-q-h { margin: 1.25rem 0 .5rem; }
+p, li { max-width: 68ch; }
+code { font: .9em var(--font-mono); }
+.meta { font: 12px/1.4 var(--font-mono); color: var(--muted); display: flex; flex-wrap: wrap; gap: .25rem 1rem; align-items: center; }
+.hint { color: var(--muted); font-size: 13px; margin: 0; }
+.changes { margin: 0; padding: .6rem .8rem; border-left: 3px solid var(--accent); background: var(--accent-soft); font-size: 14px; }
+.pill { font: 600 12px/1 var(--font-mono); padding: .3rem .55rem; border-radius: 999px; background: var(--sunk); color: var(--muted); letter-spacing: .03em; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); } .pill.warn { background: var(--warn-soft); color: var(--warn); } .pill.bad { background: var(--bad-soft); color: var(--bad); }
+
+/* Summary */
+.summary { display: grid; gap: 1rem; }
+.intro { margin: 0; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 1.05rem; line-height: 1.55; max-width: 68ch; }
+.how { margin: 0; color: var(--muted); font-size: 13px; }
+
+/* "Your answer is needed": first thing after the summary, before the sketch */
+.todo { display: grid; gap: .6rem; padding: 1rem 1.25rem; border-radius: 10px; border: 2px solid var(--warn); background: var(--warn-soft); }
+.todo.done { border-color: var(--ok); background: var(--ok-soft); }
+.todo h2 { margin: 0; }
+.todo ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .3rem; }
+.todo .row { gap: .75rem; }
+.todo a { color: var(--accent); font-weight: 600; }
+
+.also { display: grid; gap: .25rem; margin: .1rem 0 0 2.6rem; }
+.also label { font-size: 13px; color: var(--muted); }
+.eng { margin: 0; padding: 0; list-style: none; display: grid; gap: .8rem; }
+.eng > li { display: grid; gap: .3rem; font-size: 14px; }
+.eng .id { font: 600 12px var(--font-mono); color: var(--muted); margin-right: .4rem; }
+.eng .why { color: var(--muted); }
+
+/* Sketch: a clickable Today / After mock-up with placeholders */
+.sketch-bar { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: var(--surface); color: var(--fg); padding: .4rem .9rem; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.frame { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow-x: auto; }
+.chrome { display: flex; gap: .35rem; align-items: center; padding: .45rem .75rem; border-bottom: 1px solid var(--line); background: var(--sunk); }
+.chrome i { width: .6rem; height: .6rem; border-radius: 50%; background: var(--line); }
+.chrome span { margin-left: .5rem; font: 12px var(--font-mono); color: var(--muted); overflow-wrap: anywhere; }
+.screen { min-width: 36rem; padding: 1rem; display: grid; gap: .75rem; }
+.track { display: flex; gap: .25rem; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.track button { border: 0; border-radius: 0; background: none; color: var(--muted); padding: .45rem .75rem; font-weight: 600; border-bottom: 2px solid transparent; white-space: nowrap; }
+.track button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: .75rem 1rem; display: grid; gap: .5rem; background: var(--bg); }
+.card h4 { margin: 0; font-size: 14px; display: flex; gap: .5rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.ph { display: inline-block; height: .7rem; border-radius: 4px; background: var(--line); vertical-align: middle; }
+.field { display: inline-block; padding: .3rem .6rem; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 13px; background: var(--surface); }
+.btn-s { display: inline-block; padding: .3rem .6rem; border-radius: 6px; border: 1px solid var(--line); font-size: 13px; font-weight: 600; background: var(--surface); }
+.callout { font: 600 11px var(--font-mono); color: var(--accent); background: var(--accent-soft); padding: .15rem .4rem; border-radius: 4px; }
+.row-f { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
+/* Flow diagram (non-UI changes) */
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+svg.flow { display: block; min-width: 40rem; width: 100%; height: auto; }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+svg .box.new { fill: var(--accent-soft); stroke: var(--accent); }
+svg .box.gone { fill: var(--surface); stroke: var(--bad); stroke-dasharray: 5 4; }
+svg text { fill: var(--fg); font: 13px var(--font-body); }
+svg text.sub { fill: var(--muted); font-size: 11px; }
+svg .label { fill: var(--muted); font: 600 11px var(--font-mono); letter-spacing: .06em; }
+svg .edge { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+svg .edge.new { stroke: var(--accent); }
+svg .edge.dash { stroke-dasharray: 5 4; }
+svg .arrow { fill: var(--muted); } svg .arrow.new { fill: var(--accent); }
+
+/* Questions */
+.approve { display: grid; gap: 1rem; padding: 1.25rem; border: 2px solid var(--accent); border-radius: 10px; background: var(--surface); scroll-margin-top: 1rem; }
+.approve-head { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; justify-content: space-between; }
+.progress { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; font-size: 14px; }
+.meter { width: 8rem; height: 6px; border-radius: 3px; background: var(--sunk); overflow: hidden; }
+.meter > i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .2s; }
+.status { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 14px; }
+.d { display: grid; gap: .6rem; padding-top: 1rem; border-top: 1px solid var(--line); scroll-margin-top: 1rem; }
+.q { display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+.q .id { font: 600 13px var(--font-mono); color: var(--accent); }
+.q .pill { margin-left: auto; }
+.see { font-size: 13px; color: var(--accent); }
+.opts { display: grid; gap: .5rem; }
+
+/* Option: nothing is picked in advance. Recommended = only a dashed label, no fill, no frame.
+   Picked = fill, a thick frame, a filled circle and "✓ Your pick". */
+.opt { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); transition: background .12s, border-color .12s; }
+.opt:hover { border-color: var(--accent); background: var(--sunk); }
+.opt.on { border: 2px solid var(--accent); background: var(--accent-soft); margin: -1px; }
+.opt-head { display: grid; grid-template-columns: auto auto 1fr auto; gap: .2rem .7rem; align-items: start; padding: .7rem .8rem; cursor: pointer; }
+.opt-head input { appearance: none; -webkit-appearance: none; width: 20px; height: 20px; margin: .1rem 0 0; border: 2px solid var(--muted); border-radius: 50%; background: var(--surface); cursor: pointer; display: grid; place-content: center; }
+.opt-head input::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--accent); transform: scale(0); transition: transform .12s; }
+.opt-head input:checked { border-color: var(--accent); }
+.opt-head input:checked::before { transform: scale(1); }
+.opt-head input:disabled { cursor: default; opacity: .5; }
+.opt-head .k { font: 600 13px var(--font-mono); color: var(--muted); padding-top: .1rem; }
+.opt-head .t { display: grid; gap: .15rem; min-width: 0; }
+.opt-head .why { color: var(--muted); font-size: 14px; }
+.rec { font: 600 11px var(--font-mono); color: var(--ok); border: 1px dashed var(--ok); padding: .05rem .4rem; border-radius: 4px; justify-self: start; }
+.mine { font: 600 12px var(--font-body); color: var(--on-accent); background: var(--accent); padding: .15rem .5rem; border-radius: 999px; white-space: nowrap; visibility: hidden; }
+.opt.on .mine, .todo .mine { visibility: visible; }
+.who-picked { grid-column: 3 / -1; display: flex; flex-wrap: wrap; gap: .3rem; }
+.who-picked:empty { display: none; }
+.chip { font-size: 12px; padding: .1rem .45rem; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.chip.guest { background: var(--warn-soft); color: var(--warn); }
+details.pc { margin: 0 .8rem .7rem 4.1rem; font-size: 14px; }
+details.pc summary { color: var(--muted); cursor: pointer; font-size: 13px; }
+.pc-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .5rem; margin-top: .4rem; }
+.pc-body ul { margin: 0; padding-left: 1.1rem; display: grid; gap: .2rem; }
+.pc-body .pro li::marker { content: "+  "; color: var(--ok); }
+.pc-body .con li::marker { content: "−  "; color: var(--bad); }
+textarea, input[type="text"], input[type="search"], input[type="number"], select { font: inherit; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--fg); min-width: 0; }
+textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+textarea.need { border-color: var(--warn); }
+ul.answers { margin: 0; padding: 0; list-style: none; display: grid; gap: .3rem; font-size: 13px; }
+ul.answers:empty { display: none; }
+ul.answers li { display: flex; flex-wrap: wrap; gap: .25rem .6rem; }
+ul.answers .who { font-weight: 600; } ul.answers .when { color: var(--muted); }
+.yes-t { color: var(--ok); } .no-t { color: var(--bad); }
+.stray { margin: 0; padding: .6rem .8rem; border-radius: 8px; background: var(--warn-soft); color: var(--fg); border: 1px solid var(--warn); display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 14px; }
+.stray b { color: var(--warn); }
+.panel { display: grid; gap: .6rem; padding: 1rem; border-radius: 8px; background: var(--sunk); }
+.approvers { margin: 0; padding: 0; list-style: none; display: grid; gap: .4rem; }
+.approvers li { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; font-size: 14px; }
+.approvers .gh { color: var(--muted); font: 12px var(--font-mono); }
+.row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.row > input { flex: 1 1 12rem; }
+ul.picker { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: .3rem; }
+.answer { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.answer output { flex: 1 1 16rem; min-width: 0; font: 13px var(--font-mono); padding: .5rem .75rem; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; white-space: pre-wrap; }
+.msg { margin: 0; font-size: 13px; color: var(--ok); } .msg.err { color: var(--bad); } .msg:empty { display: none; }
+button { font: 600 14px var(--font-body); padding: .45rem .85rem; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button:disabled { opacity: .5; cursor: default; }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Views: Design | As built */
+main.wide { max-width: 104rem; }
+.views { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); width: fit-content; }
+.views button { border: 0; background: transparent; display: inline-flex; gap: .5rem; align-items: center; }
+.views button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.view { display: grid; gap: 2rem; min-width: 0; }
+.viewer { display: grid; gap: .9rem; }
+.viewer-head { display: flex; flex-wrap: wrap; gap: .4rem 1.25rem; align-items: baseline; justify-content: space-between; }
+kbd { font: 600 12px var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 .3rem; }
+.viewer-body { display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.shot-list { display: grid; gap: 4px; position: sticky; top: 1rem; }
+.shot-list button { text-align: left; font-weight: 500; border-color: transparent; background: transparent; }
+.shot-list button:hover { background: var(--surface); }
+.shot-list button[aria-selected="true"] { background: var(--fg); color: var(--bg); }
+.shot-list button.was { color: var(--warn); margin-bottom: .4rem; border: 1px dashed var(--line); }
+.shot-list button.was[aria-selected="true"] { background: var(--warn); color: var(--bg); border-style: solid; }
+.shot { margin: 0; display: grid; gap: .6rem; min-width: 0; }
+.shot-open { padding: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; cursor: zoom-in; display: block; width: 100%; }
+.shot-open img { display: block; width: 100%; height: auto; }
+dialog#lightbox { padding: 0; border: 0; width: 100vw; height: 100vh; max-width: 100vw; max-height: 100vh; background: rgba(10,12,16,.94); color: #fff; }
+dialog#lightbox::backdrop { background: rgba(0,0,0,.6); }
+.lb-bar { position: sticky; top: 0; display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: .6rem 1rem; font-size: 14px; }
+.lb-bar button { background: #fff; color: #111; border-color: #fff; }
+.lb-scroll { overflow: auto; height: calc(100vh - 3.4rem); display: grid; justify-items: center; padding: 1rem; }
+.lb-scroll img { max-width: none; width: auto; height: auto; background: #fff; border-radius: 6px; }
+@media (max-width: 52rem) {
+  .viewer-body { grid-template-columns: 1fr; }
+  .shot-list { position: static; display: flex; overflow-x: auto; padding-bottom: 4px; }
+  .shot-list button { white-space: nowrap; flex: none; }
+  .shot-list button.was { margin-bottom: 0; }
+}
+
+/* Folded details. "Show" / "Hide" come from page-text (data-show / data-hide). */
+details.more { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+details.more > summary { list-style: none; cursor: pointer; padding: .75rem 1rem; display: grid; grid-template-columns: 1fr auto; gap: .15rem 1rem; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary .t { font-weight: 600; }
+details.more > summary .o { grid-column: 1; color: var(--muted); font-size: 14px; }
+details.more > summary::after { content: attr(data-show); grid-column: 2; grid-row: 1; font: 600 12px var(--font-mono); color: var(--accent); }
+details.more[open] > summary::after { content: attr(data-hide); }
+details.more .body { padding: 0 1rem 1rem; display: grid; gap: .6rem; min-width: 0; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: .5rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.dl { display: grid; gap: .5rem; }
+.dl > div { display: grid; grid-template-columns: minmax(8rem, 12rem) 1fr; gap: .2rem 1rem; }
+@media (max-width: 34rem) {
+  .dl > div { grid-template-columns: 1fr; }
+  details.pc { margin-left: .8rem; }
+  .opt-head { grid-template-columns: auto auto 1fr; }
+  .mine { grid-column: 3; justify-self: start; }
+  .opt:not(.on) .mine { display: none; }
+  .also { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+.wf{display:grid;gap:6px;font-size:12px}
+.wf .bar{display:flex;gap:6px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.wf .bar b{margin-right:auto}
+.wf .row{display:grid;grid-template-columns:2fr 1fr;gap:6px}
+.wf .box{border:1px solid var(--line);border-radius:6px;padding:8px;background:var(--surface);display:grid;gap:5px;align-content:start}
+.wf .scene{min-height:110px}
+.wf .t{font:600 11px var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.wf .tr{display:grid;grid-template-columns:22px 1fr 70px;gap:6px;align-items:center}
+.wf .dot{width:16px;height:16px;border-radius:50%;background:var(--line)}
+.wf .red{color:#b5361f;font-weight:600}.wf .grn{color:#087a6a;font-weight:600}
+.wf .drawer{display:grid;grid-template-columns:230px 1fr;gap:0;min-height:260px}
+.wf .side{border:1px solid var(--line);border-radius:6px 0 0 6px;background:var(--surface);padding:8px;display:grid;gap:5px;align-content:start}
+.wf .shade{background:color-mix(in srgb,var(--line) 45%,transparent);border-radius:0 6px 6px 0}
+.wf .sec{font-weight:600;margin-top:4px}
+.wf .soon{color:var(--muted)}
+.wf .tabs{display:flex;gap:10px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.wf .tabs span:first-child{font-weight:700;border-bottom:2px solid var(--accent)}
+.wf .fold{border-top:2px dashed var(--accent);margin-top:2px;padding-top:2px;color:var(--accent);font-size:11px}
+</style>
+
+<main>
+  <header>
+    <div class="meta">
+      <span class="pill warn" id="status-pill" data-t="status_waiting"></span>
+      <span>M2.3</span><span id="rev"></span><span id="sha" title="sha256 of plan/designs/&lt;task-id&gt;.md"></span><span>2026-11-18</span><span>Hacks Explorer</span>
+    </div>
+    <h1>M2.3 — Языки: русский и английский</h1>
+    
+    <p class="changes"><b data-t="changes_since"></b> r1: Ты ответил на D1 своими словами: в CI проверять, что все уроки есть на всех языках; новый язык — переводятся все уроки, новый урок — сразу на всех языках. D1 переписан так и утверждён твоим ответом.</p>
+    <nav class="views" role="tablist" id="views" hidden>
+      <button type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected="true" data-t="tab_design"></button>
+      <button type="button" role="tab" id="tab-built" aria-controls="view-built" aria-selected="false"><span data-t="tab_built"></span> <span class="pill ok" id="built-pill"></span></button>
+    </nav>
+  </header>
+
+  <div id="view-design" role="tabpanel" aria-labelledby="tab-design" class="view">
+
+  
+  <section class="summary" id="summary">
+    <p class="intro">Сайт работает на русском и английском: переключатель «RU / EN» в верхней строке, адрес начинается с /ru/ или /en/, при смене языка остаётся тот же урок, шаг и режим. Новый язык добавляется папкой файлов через pull request. Уроки «SQL-инъекция» и «Фишинг» получают английскую версию.</p>
+    <p class="how">Для инженеров: content/lessons/&lt;id&gt;/en.md, тексты интерфейса в content/locales/&lt;lang&gt;/ui.md, сервис src/services/i18n, команда locale.set, адрес из M2.2, проверка полноты печатает недостающее и не падает (S9).</p>
+  </section>
+
+  
+  <section class="todo" id="todo" aria-labelledby="todo-h">
+    <h2 id="todo-h"></h2>
+    <ol>
+      <li data-th="todo_1"></li>
+      <li data-th="todo_2"></li>
+      <li data-th="todo_3"></li>
+    </ol>
+    <div class="row">
+      <button type="button" class="primary" id="accept-all-top" data-t="accept_all"></button>
+      <a href="#approve" data-t="to_questions"></a>
+    </div>
+  </section>
+
+  
+  <section id="sketch" aria-labelledby="sketch-h">
+    <div class="sketch-bar">
+      <h2 id="sketch-h" style="margin:0" data-t="sketch_h"></h2>
+      <div class="seg" role="group">
+        <button type="button" id="v-before" aria-pressed="false" data-t="today"></button>
+        <button type="button" id="v-after" aria-pressed="true" data-t="after"></button>
+      </div>
+    </div>
+    <div class="frame">
+      <div class="chrome"><i></i><i></i><i></i><span id="addr">hacks-explorer.mike-antipiev.workers.dev/en/lesson/I1</span></div>
+      <div class="screen" id="after-view">
+        <div class="track" role="tablist"><button role="tab" type="button" data-tab="bar" data-path="" aria-selected="true">Переключатель</button><button role="tab" type="button" data-tab="menu" data-path="" aria-selected="false">Неполный перевод</button></div>
+        <div data-panel="bar" role="tabpanel"><div class="card"><h4>Верхняя строка <span class="callout">D3</span></h4><div class="wf"><div class="bar"><span class="btn-s">☰ Lessons</span><span class="btn-s">Glossary</span><b>Phishing</b><span class="btn-s">RU</span><span class="btn-s" style="font-weight:700">EN</span></div>
+<div class="row"><div class="box scene"><span class="t">Scene</span></div><div class="box"><span class="t">Explanation</span><span class="ph" style="width:80%"></span></div></div></div>
+<p class="hint">Адрес /en/lesson/I1; при смене языка остаются урок, шаг, режим и глубина.</p></div></div><div data-panel="menu" role="tabpanel" hidden><div class="card"><h4>Неполный перевод <span class="callout">D1</span></h4><div class="wf"><div class="box"><span class="t">Сборка</span>
+<span>de: переведено 34 урока из 36, нет ui-ключей: 3</span><span class="soon">→ в меню языков нет «DE», gate проходит и печатает список</span></div></div></div></div>
+      </div>
+      <div class="screen" id="before-view" hidden><div class="card"><h4>Сейчас</h4><p style="margin:0">Только русский; строки интерфейса записаны прямо в коде.</p></div></div>
+    </div>
+    <p class="hint" data-t="sketch_hint"></p>
+  </section>
+
+  
+  <section id="flow" aria-labelledby="flow-h">
+    <h2 id="flow-h" data-t="flow_h"></h2>
+    <div class="scroll">
+      <svg class="flow" viewBox="0 0 680 250" role="img" aria-label="Сейчас только русский; после — файлы переводов и переключатель"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow" d="M0 0L10 5L0 10z"/></marker><marker id="an" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="arrow new" d="M0 0L10 5L0 10z"/></marker></defs><text class="label" x="20" y="28">СЕЙЧАС</text><rect class="box " x="20" y="44" width="150" height="48" rx="6"/><text x="95" y="73" text-anchor="middle">Только русский</text><rect class="box gone" x="265" y="44" width="150" height="48" rx="6"/><text x="340" y="73" text-anchor="middle">Строки в коде</text><rect class="box " x="510" y="44" width="150" height="48" rx="6"/><text x="585" y="73" text-anchor="middle">Нет переключателя</text><path class="edge " d="M170 68H263" marker-end="url(#a)"/><path class="edge " d="M415 68H508" marker-end="url(#a)"/><text class="label" x="20" y="158">ПОСЛЕ</text><rect class="box new" x="20" y="174" width="150" height="48" rx="6"/><text x="95" y="195" text-anchor="middle">ru.md и en.md</text><text x="95" y="211" text-anchor="middle">урока</text><rect class="box new" x="265" y="174" width="150" height="48" rx="6"/><text x="340" y="195" text-anchor="middle">ui.md</text><text x="340" y="211" text-anchor="middle">по языкам</text><rect class="box new" x="510" y="174" width="150" height="48" rx="6"/><text x="585" y="195" text-anchor="middle">RU / EN</text><text x="585" y="211" text-anchor="middle">в верхней строке</text><path class="edge new" d="M170 198H263" marker-end="url(#an)"/><path class="edge new" d="M415 198H508" marker-end="url(#an)"/></svg>
+    </div>
+  </section>
+
+  
+  <section id="approve" class="approve" aria-labelledby="approve-h">
+    <div class="approve-head">
+      <h2 id="approve-h" style="margin:0" data-t="approve_h"></h2>
+      <div class="progress"><span class="meter" aria-hidden="true"><i id="meter"></i></span><b id="progress"></b></div>
+    </div>
+    <div class="status" id="quorum-status"><span class="pill" data-t="loading"></span></div>
+    <p class="hint" data-t="approve_hint"></p>
+    <p class="msg err" id="stale-msg" hidden></p>
+    <div id="strays"></div>
+    <div id="d-list"></div>
+    <div class="row">
+      <button type="button" id="accept-all" data-t="accept_all"></button>
+      <span class="hint" id="accept-hint"></span>
+    </div>
+    
+    <details class="more" id="eng-box">
+      <summary><span class="t" data-t="eng_title"></span><span class="o" id="eng-sum"></span></summary>
+      <div class="body"><ul class="eng" id="eng-list"></ul></div>
+    </details>
+    <div class="panel" id="approvers-panel" hidden>
+      <h3 data-t="approvers_h"></h3>
+      <ul class="approvers" id="approvers"></ul>
+      <p class="hint" id="quorum-rule"></p>
+      <div id="editor-tools" hidden>
+        <div class="row">
+          <label for="quorum-select" class="hint" data-t="quorum_label"></label>
+          <select id="quorum-select">
+            <option value="open" data-t="quorum_open"></option>
+            <option value="all" data-t="quorum_all"></option>
+            <option value="any" data-t="quorum_any"></option>
+            <option value="n" data-t="quorum_n"></option>
+          </select>
+          <input id="quorum-n" type="number" min="1" step="1" style="flex:0 0 5rem" hidden>
+          <button type="button" id="quorum-save" data-t="quorum_save"></button>
+        </div>
+        <div class="row"><input id="person-q" type="search" autocomplete="off"></div>
+        <ul class="picker" id="picker"></ul>
+        <div class="row" id="add-row" hidden>
+          <span id="picked-name" style="font-weight:600"></span>
+          <input id="gh-login" type="text" autocomplete="off">
+          <button type="button" class="primary" id="add-approver" data-t="add_approver"></button>
+        </div>
+        <p class="hint" data-t="relink_hint"></p>
+      </div>
+      <p class="msg" id="cfg-msg" aria-live="polite"></p>
+    </div>
+    <div class="answer">
+      <output id="answer" aria-live="polite"></output>
+      <button type="button" id="copy" data-t="copy"></button>
+    </div>
+    <p class="hint" id="answer-hint" data-t="answer_hint_local"></p>
+    <p class="msg" id="ans-msg" aria-live="polite"></p>
+  </section>
+
+  
+  <section style="display:grid;gap:.6rem">
+    <details class="more" id="oracle">
+      <summary><span class="t" data-t="tests_t"></span><span class="o">Уровень D: сценарии S5 и S9; факты английского текста сверяет проверяющий</span></summary>
+      <div class="body"><div class="scroll"><table>
+        <tr><th data-t="th_check"></th><th data-t="th_proof"></th><th data-t="th_level"></th></tr><tr><td>S5</td><td>B1, шаг 3, ru → locale.set en → тот же шаг и режим, все строки на английском, адрес /en/</td><td>D</td></tr><tr><td>S9</td><td>локаль с недостающим уроком → её нет в меню; gate печатает недостающее и проходит</td><td>D</td></tr><tr><td>Перевод</td><td>en.md B1 и I1 проходят проверку и сверку служебных строк с ru.md</td><td>D</td></tr><tr><td>Факты</td><td>проверяющий сверяет английский текст по рубрике</td><td>C</td></tr>
+      </table></div></div>
+    </details>
+    <details class="more" id="risks">
+      <summary><span class="t" data-t="risks_t"></span><span class="o">Главный риск — английский без вычитки носителем; откат — revert</span></summary>
+      <div class="body dl"><div><b>Неуклюжий английский</b><span>Открытый вопрос «вычитка носителем» до открытого выпуска</span></div><div><b>Строки интерфейса забыты в коде</b><span>Проверка: в src/ui нет русских букв вне тестов</span></div>
+        <div><b data-t="rollback"></b><span>Revert.</span></div>
+        <div><b data-t="needs_human"></b><span>Нет.</span></div>
+      </div>
+    </details>
+    <details class="more" id="files">
+      <summary><span class="t" data-t="files_t"></span><span class="o">Новый сервис языков и файлы переводов</span></summary>
+      <div class="body">
+        <div class="scroll"><table>
+          <tr><th data-t="th_where"></th><th data-t="th_change"></th></tr><tr><td><code>src/services/i18n/, src/commands/locale.ts</code></td><td>новые</td></tr><tr><td><code>content/locales/ru/ui.md, content/locales/en/ui.md</code></td><td>новые</td></tr><tr><td><code>content/lessons/B1/en.md, content/lessons/I1/en.md</code></td><td>новые</td></tr><tr><td><code>src/ui/*</code></td><td>правка: строки из ui.md</td></tr><tr><td><code>scripts/lesson-data.ts</code></td><td>правка: полнота и каталог по языкам</td></tr>
+        </table></div>
+        <p class="hint"><span data-t="files_full"></span> <code>plan/designs/M2.3.md</code>.</p>
+      </div>
+    </details>
+    <details class="more" id="tasks">
+      <summary><span class="t" data-t="tasks_t"></span><span class="o">2 задачи, около 7 агент-часов</span></summary>
+      <div class="body"><div class="scroll"><table>
+        <tr><th data-t="th_id"></th><th data-t="th_task"></th><th data-t="th_hours"></th><th data-t="th_after"></th></tr><tr><td><code>M2.3a</code></td><td>Языки в коде: ui.md, сервис, locale.set, адрес, правило полноты</td><td>4</td><td>M2.2</td></tr><tr><td><code>M2.3b</code></td><td>Английские версии уроков B1 и I1</td><td>3</td><td>M2.3a</td></tr>
+      </table></div></div>
+    </details>
+    <p class="hint"><span data-t="source_of_truth"></span> <code>plan/designs/M2.3.md</code>.</p>
+  </section>
+  </div>
+
+  
+  <div id="view-built" role="tabpanel" aria-labelledby="tab-built" class="view" hidden>
+    <section class="viewer">
+      <div class="viewer-head">
+        <h2 style="margin:0" data-t="shots_h"></h2>
+        <p class="hint" data-th="shots_hint"></p>
+      </div>
+      <div class="viewer-body">
+        <div class="shot-list" role="tablist" id="shot-list"></div>
+        <figure class="shot">
+          <figcaption id="shot-cap"></figcaption>
+          <button type="button" class="shot-open" id="shot-open"><img id="shot-img" alt=""></button>
+        </figure>
+      </div>
+    </section>
+    <section class="approve" style="border-color:var(--ok)" aria-labelledby="built-h">
+      <h2 id="built-h" style="margin:0" data-t="built_h"></h2>
+      <p style="margin:0"></p>
+      <div class="dl">
+        <div><b data-t="b_gate"></b><span></span></div>
+        <div><b data-t="b_how"></b><span></span></div>
+        <div><b data-t="b_rules"></b><span></span></div>
+        <div><b data-t="b_diff"></b><span></span></div>
+        <div><b data-t="b_live"></b><span></span></div>
+        <div><b data-t="b_not"></b><span></span></div>
+        <div><b data-t="b_unmeasured"></b><span></span></div>
+        <div><b data-t="b_touches"></b><span></span></div>
+      </div>
+    </section>
+  </div>
+
+  <dialog id="lightbox">
+    <div class="lb-bar"><span id="lb-cap"></span><button type="button" id="lb-close" data-t="lb_close"></button></div>
+    <div class="lb-scroll"><img id="lb-img" alt=""></div>
+  </dialog>
+</main>
+
+
+<script type="application/json" id="design-data">
+{
+ "revision": "r2",
+ "design_sha256": "4bed5edf10e45e88e2a5f14db4d6fa221086e2d9aa25d9b4fe4dc8de1238782d",
+ "decisions": [
+  {
+   "id": "D1",
+   "tab": "menu",
+   "q": "Когда язык появляется в меню?",
+   "options": [
+    {
+     "key": "a",
+     "title": "Каждый урок на каждом языке, gate проверяет",
+     "why": "Твоими словами: недостающий перевод — ошибка; добавляешь язык — переводишь все уроки; добавляешь урок — сразу на всех языках.",
+     "pros": [
+      "неполного языка на сайте не бывает"
+     ],
+     "cons": [
+      "новый язык — большая работа сразу"
+     ],
+     "rec": true
+    },
+    {
+     "key": "b",
+     "title": "(r1) Язык в меню, когда переведён весь выпуск",
+     "why": "До этого gate только печатает недостающее.",
+     "pros": [],
+     "cons": []
+    }
+   ]
+  },
+  {
+   "id": "D2",
+   "q": "Кто пишет английский для первого выпуска?",
+   "options": [
+    {
+     "key": "a",
+     "title": "Агент переводит, проверяющий сверяет факты",
+     "why": "Носитель языка вычитает позже — это записывается в открытые вопросы.",
+     "pros": [
+      "английский готов вместе с уроками"
+     ],
+     "cons": [
+      "текст без вычитки носителем"
+     ],
+     "rec": true
+    },
+    {
+     "key": "b",
+     "title": "Ждём переводчика-человека",
+     "why": "До него английского нет.",
+     "pros": [
+      "язык выше качеством"
+     ],
+     "cons": [
+      "выпуск только на русском"
+     ]
+    }
+   ],
+   "since": "r1"
+  },
+  {
+   "id": "D3",
+   "tab": "bar",
+   "q": "Какой язык видит новый посетитель?",
+   "options": [
+    {
+     "key": "a",
+     "title": "По языку браузера",
+     "why": "Русский для тех, у кого браузер на русском (или украинском, белорусском, казахском), остальным английский; выбор запоминается.",
+     "pros": [
+      "иностранец сразу понимает сайт"
+     ],
+     "cons": [
+      "часть русскоязычных с английским браузером увидит английский"
+     ],
+     "rec": true
+    },
+    {
+     "key": "b",
+     "title": "Всегда русский",
+     "why": "Английский — по кнопке.",
+     "pros": [
+      "просто и предсказуемо"
+     ],
+     "cons": [
+      "иностранец может уйти, не поняв, что есть английский"
+     ]
+    }
+   ],
+   "since": "r1"
+  }
+ ],
+ "engineering": [
+  {
+   "id": "E1",
+   "title": "Адрес /<язык>/lesson/<урок>#…; смена языка — команда locale.set",
+   "why": "Сохраняет урок, шаг, режим и глубину (S5)."
+  },
+  {
+   "id": "E2",
+   "title": "Тексты интерфейса — content/locales/<язык>/ui.md",
+   "why": "Ключ служебным словом и текст, в Markdown, как уроки; ключи сверяются с русским файлом."
+  },
+  {
+   "id": "E3",
+   "title": "Проверка полноты при сборке",
+   "why": "Список недостающих уроков и ключей по языкам; неполный язык не попадает в меню; gate печатает список и не падает (S9)."
+  },
+  {
+   "id": "E4",
+   "title": "Английские заголовки разделов урока уже есть",
+   "why": "Таблица языков из K24."
+  },
+  {
+   "id": "E5",
+   "title": "Разделы каталога и словарь — тоже по языкам",
+   "why": "Для панели M2.1 и словаря M2.4."
+  },
+  {
+   "id": "E6",
+   "title": "Язык запоминается в браузере, адрес важнее",
+   "why": "Архитектура §5."
+  }
+ ]
+}
+</script>
+
+
+<script type="application/json" id="built-data">
+{
+  "pr": "",
+  "shots": []
+}
+</script>
+
+
+
+<script type="application/json" id="page-text">
+{
+ "lang": "ru",
+ "status_waiting": "ждёт ответа",
+ "status_ready": "ответ готов",
+ "rev": "ревизия {r}",
+ "changes_since": "Что изменилось с",
+ "tab_design": "Дизайн",
+ "tab_built": "Как сделано",
+ "todo_need": "Нужен ваш ответ: {n} {questions}",
+ "todo_left": "Нужен ваш ответ: осталось {n} {questions}",
+ "todo_done": "✓ Вы ответили на все вопросы",
+ "questions": {
+  "one": "вопрос",
+  "few": "вопроса",
+  "many": "вопросов",
+  "other": "вопроса"
+ },
+ "todo_1": "<b>Заранее ничего не выбрано.<\/b> Метка <span class=\"rec\">Рекомендуем<\/span> только подсказывает — это ещё не ответ.",
+ "todo_2": "Кликните вариант в каждом вопросе. Выбранный вариант заливается цветом и получает метку <span class=\"mine\">✓ Ваш выбор<\/span>. Ответ сохраняется сразу, кнопки «Отправить» нет.",
+ "todo_3": "Согласны со всеми рекомендациями — нажмите одну кнопку ниже, она выберет их за вас.",
+ "accept_all": "Принять все рекомендации",
+ "to_questions": "или перейти к вопросам ↓",
+ "sketch_h": "Как это будет выглядеть",
+ "today": "Сейчас",
+ "after": "После",
+ "sketch_hint": "Это набросок, а не готовый экран. Серые полосы — место для настоящих данных.",
+ "flow_h": "Что меняется",
+ "approve_h": "Вопросы к вам",
+ "progress": "Отвечено {n} из {m}",
+ "loading": "загрузка…",
+ "approve_hint": "Рекомендованный вариант — то, что сделает дизайн: выбор его одобряет вопрос, а «И ещё…» или комментарий достраиваются сверху. Другой вариант или «Что-то другое» с комментарием — просьба о новой ревизии. Плюсы и минусы — под каждым вариантом.",
+ "accept_hint": "Выберет рекомендованный вариант во всех вопросах без ответа.",
+ "accept_hint_done": "Ответ есть на все вопросы. Поменять можно кликом по другому варианту.",
+ "recommended": "Рекомендуем",
+ "your_pick": "✓ Ваш выбор",
+ "other_title": "Что-то другое",
+ "other_why": "Напишите в комментарии, что именно.",
+ "pros_cons": "Плюсы и минусы",
+ "pros": "Плюсы",
+ "cons": "Минусы",
+ "see_sketch": "Показать на наброске",
+ "also_label": "И ещё…",
+ "also_ph": "Что добавить к выбранному варианту (необязательно)",
+ "note_ph": "Комментарий (обязателен при «Что-то другое»)",
+ "eng_note_ph": "Комментарий (необязательно)",
+ "comment": "комментарий",
+ "comments": "комментарии",
+ "state_none": "нет ответа",
+ "state_rec": "✓ ответ: {c} (рекомендуем)",
+ "state_other": "✓ ответ: {c}",
+ "state_something": "✓ ответ: другое",
+ "picked_by": "выбрал(а): {name}",
+ "approver": "Одобряющий",
+ "not_approver": "Не одобряющий: в кворум не идёт",
+ "not_approver_short": " · не одобряющий",
+ "you": " (вы)",
+ "someone": "Кто-то",
+ "option_n": "вариант {c}",
+ "something_else": "другое",
+ "answered_in": " · ответ из {r}",
+ "and_also": "И ещё: {t}",
+ "no_answer_text": "(нет ответа)",
+ "comment_required_text": "(нужен комментарий)",
+ "eng_q_h": "Инженерные вопросы",
+ "eng_title": "Решено агентом",
+ "eng_sum": {
+  "one": "{n} инженерное решение, которое дизайн принимает сам",
+  "few": "{n} инженерных решения, которые дизайн принимает сам",
+  "many": "{n} инженерных решений, которые дизайн принимает сам",
+  "other": "{n} инженерного решения, которые дизайн принимает сам"
+ },
+ "eng_sum_none": ". Не согласны — оставьте комментарий.",
+ "eng_sum_some": "; с комментариями: {k}.",
+ "pick_first": "Сначала выберите вариант — комментарий сохранится вместе с ним.",
+ "saved": "Сохранено: {id} — {title}.",
+ "saved_other_hint": " Напишите в комментарии, что именно.",
+ "saved_eng": "Комментарий к {id} сохранён.",
+ "saved_all": "Сохранено: рекомендации приняты ({ids}).",
+ "picked_all_local": "Выбраны рекомендации. Скопируйте ответ в чат.",
+ "all_answered": "На все вопросы уже есть ответ.",
+ "stale_save": "Не сохранено: ревизию {r} заменила {live}. Перезагрузите страницу.",
+ "stale_tab": "Эта вкладка показывает ревизию {r}, а действует {live}. Перезагрузите страницу.",
+ "read_only": "Вы можете смотреть страницу, но не отвечать. Попросите владельца дать доступ «Участник» или выше.",
+ "save_failed": "Не сохранилось. ",
+ "try_again": "Попробуйте ещё раз.",
+ "no_db_pill": "ответ текстом",
+ "no_db": "Здесь ответы не сохраняются. Выберите варианты и скопируйте ответ в чат.",
+ "answer_hint_local": "Ваш выбор текстом — чтобы вставить в чат, если так удобнее.",
+ "answer_hint_db": "Ответы сохраняются сразу при выборе. Тот же выбор текстом — если хотите ответить и в чате.",
+ "approvers_h": "Кто одобряет",
+ "not_linked": "не привязан",
+ "changes_list": "изменения: {list}",
+ "approved_notes": "одобрено с пометками",
+ "all_recommended": "все рекомендации",
+ "answered_short": "отвечено {k}/{m}",
+ "gh": "GitHub @{gh}",
+ "link_account": "Привязать аккаунт",
+ "remove": "Убрать",
+ "remove_aria": "Убрать одобряющего {who}",
+ "loading_cap": "Загрузка…",
+ "no_answers": "Ответов пока нет.",
+ "no_approvers": "Одобряющие не назначены.",
+ "stray": " ответил(а), но не одобряющий — в кворум не идёт.",
+ "make_approver": "Сделать одобряющим",
+ "ask_owner": "Попросите владельца добавить вас.",
+ "older_config": " Настройки одобрения записаны для {r}.",
+ "rule_open": {
+  "one": "Ответить может любой, с кем поделились страницей. Ревизию {r} одобряет {n} полный ответ на все вопросы.",
+  "few": "Ответить может любой, с кем поделились страницей. Ревизию {r} одобряют {n} полных ответа на все вопросы.",
+  "many": "Ответить может любой, с кем поделились страницей. Ревизию {r} одобряют {n} полных ответов на все вопросы.",
+  "other": "Ответить может любой, с кем поделились страницей. Ревизию {r} одобряют {n} полного ответа на все вопросы."
+ },
+ "rule_named": "Кворум: {q} должны ответить на все вопросы ревизии {r}.",
+ "q_all": "все одобряющие",
+ "q_any": "любой один",
+ "q_n": "{n} одобряющих",
+ "changes_requested": "просят изменений",
+ "approved": "одобрено",
+ "awaiting": "ждёт ответа",
+ "quorum_line": "Полных ответов: {done} из {need} нужных (ревизия {r})",
+ "quorum_label": "Кворум",
+ "quorum_open": "любой, с кем поделились",
+ "quorum_all": "все одобряющие",
+ "quorum_any": "любой один одобряющий",
+ "quorum_n": "N одобряющих",
+ "quorum_n_aria": "Сколько ответов нужно",
+ "quorum_save": "Сохранить кворум",
+ "quorum_saved": "Кворум сохранён.",
+ "quorum_opened": "Теперь одобрить может любой, с кем поделились.",
+ "quorum_bad_n": "Введите число от 1.",
+ "person_ph": "Добавить одобряющего: найти человека",
+ "gh_ph": "Логин GitHub",
+ "add_approver": "Добавить",
+ "relink_hint": "Логин GitHub, у которого уже есть место, перепривязывает это место к выбранному человеку (на случай, когда у двоих одинаковое имя).",
+ "guest": " (гость)",
+ "pick_person": "Выберите человека и введите логин GitHub.",
+ "other_slot": "Этот человек уже занимает другое место.",
+ "already_approver": "Уже одобряющий.",
+ "linked": "@{gh} привязан к {name}.",
+ "added": "Добавлен @{gh}.",
+ "removed": "Убран {who}.",
+ "an_approver": "одобряющий",
+ "linked_own": "Ваше место одобряющего привязано к вашему аккаунту.",
+ "cfg_failed": "Не сохранилось: ",
+ "copy": "Скопировать ответ",
+ "copied": "Скопировано.",
+ "show": "Показать",
+ "hide": "Скрыть",
+ "tests_t": "Как проверяем",
+ "th_check": "Проверка",
+ "th_proof": "Что доказывает",
+ "th_level": "Уровень",
+ "risks_t": "Риски и откат",
+ "rollback": "Откат",
+ "needs_human": "Нужен человек",
+ "files_t": "Файлы",
+ "th_where": "Где",
+ "th_change": "Что меняется",
+ "files_full": "Полный список с владельцами: раздел 7 в",
+ "tasks_t": "Задачи",
+ "th_id": "Id",
+ "th_task": "Задача",
+ "th_hours": "ч",
+ "th_after": "После",
+ "source_of_truth": "Источник правды:",
+ "shots_h": "Снимки экрана",
+ "shots_hint": "Выберите экран. Клик или <kbd>F<\/kbd> — во весь размер; <kbd>←<\/kbd> <kbd>→<\/kbd> — листать.",
+ "shot_alt": "Снимок: {label}",
+ "shot_full": "{label} · во весь размер",
+ "open_full": "Открыть во весь размер",
+ "built_h": "Что сделано",
+ "b_gate": "Проверки",
+ "b_how": "Как делали",
+ "b_rules": "Неявные правила",
+ "b_diff": "Отличия от дизайна",
+ "b_live": "Проверено вживую",
+ "b_not": "Не проверено",
+ "b_unmeasured": "Не измерено на реальных данных",
+ "b_touches": "Участие человека",
+ "lb_close": "Закрыть (Esc)",
+ "bad_json": "Блок с вопросами — не JSON.",
+ "bench_title": "Тюнинг-стенд",
+ "bench_intro": "Двигайте ползунки: превью меняется сразу. Ваш черновик сохраняется сам. «Зафиксировать» записывает общий снимок; одобрение дизайна возьмёт его, и агенты соберут по нему.",
+ "bench_theme_aria": "Тема превью",
+ "bench_light": "Светлая",
+ "bench_dark": "Тёмная",
+ "bench_reset": "Как сейчас",
+ "bench_reset_done": "Вернули значения «как сейчас в продукте».",
+ "bench_knobs_aria": "Ползунки",
+ "bench_preview_aria": "Превью",
+ "bench_checks_h": "Контраст",
+ "bench_check_text": "Текст на фоне ({theme})",
+ "bench_check_muted": "Второстепенный текст ({theme})",
+ "bench_check_button": "Текст кнопки ({theme})",
+ "bench_check_badge": "Метка статуса ({theme})",
+ "bench_theme_light": "светл.",
+ "bench_theme_dark": "тёмн.",
+ "bench_aa_ok": "AA ✓",
+ "bench_aa_large": "только крупный",
+ "bench_aa_fail": "✗",
+ "bench_raw_h": "Сырые токены",
+ "bench_raw_hint": "Точечная правка поверх ползунков. Изменённые помечены и попадают в снимок отдельно.",
+ "bench_raw_clear": "Сбросить правки",
+ "bench_overrides": "правок: {n}",
+ "bench_preview_hint": "Экран задачи — реплика из реальных компонентов, значения через переменные",
+ "bench_product_h": "Сейчас в продукте",
+ "bench_product_none": "Скриншота продукта нет",
+ "bench_specimen": "Витрина токенов",
+ "bench_ramp_h": "Шкала шрифтов",
+ "bench_palette_h": "Палитра",
+ "bench_spacing_h": "Отступы",
+ "bench_ramp_sample": "Съешь ещё этих мягких булок",
+ "bench_draft_local": "Черновик: только в этом окне",
+ "bench_draft_on": "Черновик: сохраняется сам",
+ "bench_draft_saved": "Черновик: <b>сохранён<\/b> {time}",
+ "bench_draft_loaded": "Черновик: <b>загружен<\/b>",
+ "bench_draft_ro": "Черновик: у вас доступ только на просмотр",
+ "bench_draft_unavailable": "Черновик: сохранение недоступно в этом просмотре",
+ "bench_draft_err": "Черновик не сохранился: ошибка записи, сдвиньте ползунок ещё раз",
+ "bench_chosen_none": "Зафиксировано: ещё нет",
+ "bench_chosen_v": "Зафиксировано: <b>v{v}<\/b> · {at}",
+ "bench_commit": "Зафиксировать",
+ "bench_commit_ro": "Фиксирует владелец или редактор",
+ "bench_load_chosen": "Вернуть зафиксированное",
+ "bench_loaded_v": "Загрузили v{v}.",
+ "bench_committed": "Зафиксировали v{v}. Страница дизайна возьмёт этот снимок при одобрении.",
+ "bench_committed_low": "Зафиксировали v{v}, но контраст ниже AA: на странице дизайна это станет отдельным вопросом.",
+ "bench_commit_err_ro": "Не получилось зафиксировать: это может сделать только владелец или редактор.",
+ "bench_commit_err": "Не получилось зафиксировать: ошибка записи. Попробуйте ещё раз.",
+ "bench_json": "Токены (W3C DTCG), как их получит агент",
+ "bench_copy": "Скопировать JSON",
+ "bench_copied": "JSON скопирован."
+}
+</script>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // ---- Page text: one block, one language ----
+  let TX = {};
+  try { TX = JSON.parse($("page-text").textContent) || {}; } catch {}
+  const LANG = TX.lang || "en";
+  document.documentElement.lang = LANG;
+  const rules = new Intl.PluralRules(LANG);
+  const fill = (s, v) => String(s ?? "").replace(/\{(\w+)\}/g, (m, k) => (v && k in v ? v[k] : m));
+  const t = (key, v) => fill(TX[key] ?? key, v);
+  const tp = (key, n, v) => { const f = TX[key]; const s = f && typeof f === "object" ? (f[rules.select(n)] ?? f.other) : f; return fill(s ?? key, { n, ...v }); };
+  document.querySelectorAll("[data-t]").forEach((n) => { n.textContent = t(n.dataset.t); });
+  document.querySelectorAll("[data-th]").forEach((n) => { n.innerHTML = TX[n.dataset.th] ?? ""; });
+  document.querySelectorAll("details.more > summary").forEach((s) => { s.dataset.show = t("show"); s.dataset.hide = t("hide"); });
+  $("quorum-n").setAttribute("aria-label", t("quorum_n_aria"));
+  $("person-q").placeholder = t("person_ph"); $("person-q").setAttribute("aria-label", t("person_ph"));
+  $("gh-login").placeholder = t("gh_ph"); $("gh-login").setAttribute("aria-label", t("gh_ph"));
+  $("shot-open").setAttribute("aria-label", t("open_full"));
+
+  // ---- Sketch: Today / After and tabs ----
+  const showView = (after) => {
+    if (!$("after-view")) return;
+    $("after-view").hidden = !after; $("before-view").hidden = after;
+    $("v-after").setAttribute("aria-pressed", String(after)); $("v-before").setAttribute("aria-pressed", String(!after));
+  };
+  const showTab = (name) => {
+    const tabs = document.querySelectorAll('#sketch [role="tab"]');
+    let base = ($("addr")?.dataset.base) ?? ($("addr") ? ($("addr").dataset.base = $("addr").textContent) : "");
+    tabs.forEach((b) => {
+      const on = b.dataset.tab === name;
+      b.setAttribute("aria-selected", String(on));
+      if (on && $("addr")) $("addr").textContent = base + (b.dataset.path || "");
+    });
+    document.querySelectorAll("#sketch [data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== name; });
+  };
+  $("v-before")?.addEventListener("click", () => showView(false));
+  $("v-after")?.addEventListener("click", () => showView(true));
+  document.querySelectorAll('#sketch [role="tab"]').forEach((b) => b.addEventListener("click", () => showTab(b.dataset.tab)));
+
+  // ---- Views: Design | As built (#as-built) ----
+  let BUILT = { shots: [] };
+  try { BUILT = JSON.parse($("built-data").textContent) || BUILT; } catch {}
+  const SHOTS = (BUILT.shots || []).filter((s) => s && s.key && s.src);
+  let shotKey = (SHOTS.find((s) => !s.was) || SHOTS[0])?.key;
+  const shotIdx = () => SHOTS.findIndex((s) => s.key === shotKey);
+  function setPageView(built, push) {
+    built = built && SHOTS.length > 0;
+    $("tab-design").setAttribute("aria-selected", String(!built)); $("tab-built").setAttribute("aria-selected", String(built));
+    $("view-design").hidden = built; $("view-built").hidden = !built;
+    document.querySelector("main").classList.toggle("wide", built);
+    if (push) history.replaceState(null, "", built ? "#as-built" : "#design");
+    if (built) showShot(shotKey);
+  }
+  function showShot(k) {
+    const s = SHOTS.find((x) => x.key === k); if (!s) return; shotKey = k;
+    $("shot-list").querySelectorAll("button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.shot === k)));
+    $("shot-img").src = s.src; $("shot-img").alt = t("shot_alt", { label: s.label || s.key });
+    $("shot-cap").textContent = s.caption || "";
+  }
+  function openBox() {
+    const s = SHOTS[shotIdx()]; if (!s) return;
+    $("lb-img").src = s.src; $("lb-img").alt = t("shot_full", { label: s.label || s.key });
+    $("lb-cap").textContent = t("shot_full", { label: s.label || s.key });
+    const d = $("lightbox"); if (d.open) return; if (d.showModal) d.showModal(); else d.setAttribute("open", "");
+  }
+  if (SHOTS.length) {
+    $("views").hidden = false;
+    $("built-pill").textContent = BUILT.pr || ""; $("built-pill").hidden = !BUILT.pr;
+    for (const s of SHOTS) {
+      const b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "tab"); b.dataset.shot = s.key; b.textContent = s.label || s.key;
+      if (s.was) b.className = "was";
+      b.addEventListener("click", () => showShot(s.key));
+      $("shot-list").append(b);
+    }
+    $("tab-design").addEventListener("click", () => setPageView(false, true));
+    $("tab-built").addEventListener("click", () => setPageView(true, true));
+    $("shot-open").addEventListener("click", openBox);
+    $("lb-close").addEventListener("click", () => $("lightbox").close());
+    $("lightbox").addEventListener("click", (e) => { if (e.target === $("lightbox")) $("lightbox").close(); });
+    document.addEventListener("keydown", (e) => {
+      if ($("view-built").hidden || /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || "")) return;
+      const box = $("lightbox").open;
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        e.preventDefault();
+        const n = SHOTS.length; showShot(SHOTS[(shotIdx() + (e.key === "ArrowRight" ? 1 : -1) + n) % n].key);
+        if (box) openBox();
+      } else if ((e.key === "f" || e.key === "F") && !box) openBox();
+    });
+    setPageView(location.hash === "#as-built", false);
+    window.addEventListener("hashchange", () => setPageView(location.hash === "#as-built", false));
+  }
+
+  // ---- Decisions ----
+  let DATA;
+  try { DATA = JSON.parse($("design-data").textContent); }
+  catch { $("d-list").textContent = t("bad_json"); return; }
+  const REVISION = DATA.revision || "r1";
+  $("rev").textContent = t("rev", { r: REVISION });
+  if (/^[0-9a-f]{64}$/.test(DATA.design_sha256 || "")) $("sha").textContent = "sha256 " + DATA.design_sha256.slice(0, 12);
+  // Product questions first, then engineering ones (full and deep involvement), each in data order.
+  const isEng = (d) => (d.kind === "engineering" ? 1 : 0);
+  const DS = (DATA.decisions || []).slice().sort((a, b) => isEng(a) - isEng(b));
+  const ES = DATA.engineering || [];
+  const revNum = (r) => parseInt(String(r || "").replace(/^r/, ""), 10) || 0;
+  const OTHER = { key: "other", title: t("other_title"), why: t("other_why") };
+  const el = (tag, props = {}, kids = []) => {
+    const n = document.createElement(tag);
+    for (const [k, v] of Object.entries(props)) {
+      if (k === "text") n.textContent = v; else if (k === "cls") n.className = v; else n.setAttribute(k, v);
+    }
+    for (const c of [].concat(kids)) if (c != null) n.append(c);
+    return n;
+  };
+  const fmt = (iso) => { try { return new Date(iso).toLocaleString(LANG, { dateStyle: "medium", timeStyle: "short" }); } catch { return iso || ""; } };
+  const recOf = (d) => d.options.find((o) => o.rec)?.key;
+  const choiceOf = (it) => it?.choice || null;
+
+  let db = null, user = null, me = null, canEdit = false, isOwner = false, readOnly = false;
+  let config = null, answers = new Map(), names = {}, picked = null, liveRev = null;
+  const local = {}; // picks when there is no db: {id: {choice, also, comment}}
+  // No approval/config yet = the default: one answer from anyone the page is shared with.
+  const DEFAULT_CONFIG = { open: true, quorum: "1", approvers: [] };
+
+  const dNodes = {};
+  for (const d of DS) {
+    const opts = {};
+    const group = el("div", { cls: "opts", role: "radiogroup", "aria-label": d.id + " " + d.q });
+    for (const o of [...d.options, OTHER]) {
+      const input = el("input", { type: "radio", name: "ans-" + d.id, value: o.key, id: "ans-" + d.id + "-" + o.key });
+      const who = el("span", { cls: "who-picked" });
+      const head = el("label", { cls: "opt-head", for: input.id }, [
+        input,
+        el("span", { cls: "k", text: o.key === "other" ? "…" : o.key + "." }),
+        el("span", { cls: "t" }, [el("b", { text: o.title }), o.rec ? el("span", { cls: "rec", text: t("recommended") }) : null, el("span", { cls: "why", text: o.why })]),
+        el("span", { cls: "mine", text: t("your_pick") }),
+        who,
+      ]);
+      const kids = [head];
+      if ((o.pros && o.pros.length) || (o.cons && o.cons.length)) {
+        kids.push(el("details", { cls: "pc" }, [
+          el("summary", { text: t("pros_cons") }),
+          el("div", { cls: "pc-body" }, [
+            el("ul", { cls: "pro", "aria-label": t("pros") }, (o.pros || []).map((x) => el("li", { text: x }))),
+            el("ul", { cls: "con", "aria-label": t("cons") }, (o.cons || []).map((x) => el("li", { text: x }))),
+          ]),
+        ]));
+      }
+      group.append(el("div", { cls: "opt" }, kids));
+      opts[o.key] = { input, who };
+      input.addEventListener("change", () => pick(d.id, o.key));
+    }
+    const alsoIn = el("textarea", { rows: "1", id: "also-" + d.id, placeholder: t("also_ph") });
+    const also = el("div", { cls: "also", hidden: "" }, [el("label", { for: alsoIn.id, text: t("also_label") }), alsoIn]);
+    const note = el("textarea", { rows: "1", id: "note-" + d.id, placeholder: t("note_ph"), "aria-label": d.id + " " + t("comment") });
+    const notes = el("ul", { cls: "answers", "aria-label": d.id + " " + t("comments") });
+    const see = d.tab && document.querySelector('#sketch [data-tab="' + d.tab + '"]')
+      ? el("a", { href: "#sketch", cls: "see", text: t("see_sketch") }) : null;
+    see?.addEventListener("click", () => { showView(true); showTab(d.tab); });
+    const state = el("span", { cls: "pill warn", text: t("state_none") });
+    // Engineering questions sit under their own heading.
+    if (isEng(d) && !$("eng-q-h")) $("d-list").append(el("h3", { id: "eng-q-h", cls: "eng-q-h", text: t("eng_q_h") }));
+    $("d-list").append(el("div", { cls: "d", id: d.id.toLowerCase(), "data-id": d.id }, [
+      el("div", { cls: "q" }, [el("span", { cls: "id", text: d.id }), el("b", { text: d.q }), see, state]),
+      group, also, note, notes,
+    ]));
+    dNodes[d.id] = { opts, also, alsoIn, note, notes, state };
+    note.addEventListener("change", () => pick(d.id, null));
+    alsoIn.addEventListener("change", () => pick(d.id, null));
+  }
+
+  // Engineering calls: listed, not voted; each takes a comment ({comment, at} under its E id).
+  const eNodes = {};
+  if (!ES.length) $("eng-box").hidden = true;
+  for (const e of ES) {
+    const note = el("textarea", { rows: "1", id: "note-" + e.id, placeholder: t("eng_note_ph"), "aria-label": e.id + " " + t("comment") });
+    const notes = el("ul", { cls: "answers", "aria-label": e.id + " " + t("comments") });
+    $("eng-list").append(el("li", {}, [
+      el("div", {}, [el("span", { cls: "id", text: e.id }), el("b", { text: e.title })]),
+      el("span", { cls: "why", text: e.why || "" }), note, notes,
+    ]));
+    eNodes[e.id] = { note, notes };
+    note.addEventListener("change", () => commentEng(e.id));
+  }
+
+  // A person's answer to a question for this revision. A question marked "since": "r<k>" is
+  // unchanged since r<k>, so the newest answer from r<k>..now counts (carried forward).
+  function itemOf(uid, id) {
+    const by = answers.get(uid)?.byRevision || {};
+    if (by[REVISION]?.[id]) return by[REVISION][id];
+    const d = DS.find((x) => x.id === id); if (!d?.since) return null;
+    const from = revNum(d.since), to = revNum(REVISION);
+    for (let r = to - 1; r >= from; r--) { const it = by["r" + r]?.[id]; if (it?.choice) return { ...it, carried: "r" + r }; }
+    return null;
+  }
+  const myItem = (id) => (db && me ? itemOf(me, id) : local[id]) || null;
+  const openMode = () => !!config?.open;
+  const isApprover = (uid) => openMode() || (config?.approvers || []).some((a) => a.userId === uid);
+  const stale = () => liveRev && revNum(liveRev) > revNum(REVISION);
+  const nameOf = (id) => {
+    const a = (config?.approvers || []).find((x) => x.userId === id);
+    return names[id] || a?.label || (a?.github ? "@" + a.github : "") || t("someone");
+  };
+
+  // The chat answer. Fixed syntax (approve r1, D2: b, + also:), not translated.
+  function answerText() {
+    const all = DS.map((d) => {
+      const it = myItem(d.id); const c = choiceOf(it); const cm = (it?.comment || "").trim(); const al = (it?.also || "").trim();
+      if (!c) return d.id + ": " + t("no_answer_text");
+      if (c === recOf(d) && !cm && !al) return null;
+      return `${d.id}: ${c}${al ? " + also: " + al : ""}${cm ? " — " + cm : c === "other" ? " — " + t("comment_required_text") : ""}`;
+    }).filter(Boolean);
+    if (!db) for (const e of ES) { const x = (local[e.id]?.comment || "").trim(); if (x) all.push(`${e.id}: ${x}`); }
+    return all.length ? `${REVISION} ` + all.join("\n") : `approve ${REVISION}`;
+  }
+
+  async function pick(id, key) {
+    if (readOnly) return;
+    const d = DS.find((x) => x.id === id);
+    const cur = myItem(id);
+    const choice = key || choiceOf(cur);
+    const comment = dNodes[id].note.value.trim();
+    const also = choice && choice !== "other" ? dNodes[id].alsoIn.value.trim() : "";
+    if (!choice) { say("ans-msg", t("pick_first"), true); return; }
+    if (!db || !me) { local[id] = { choice, also, comment }; render(); return; }
+    if (cur && !cur.carried && cur.choice === choice && (cur.also || "") === also && (cur.comment || "") === comment) return;
+    await commit({ [id]: { choice, also, answer: choice === recOf(d) ? "yes" : "no", comment } }, () => {
+      const o = choice === "other" ? OTHER : d.options.find((x) => x.key === choice);
+      say("ans-msg", t("saved", { id, title: o.title }) + (choice === "other" && !comment ? t("saved_other_hint") : ""));
+    });
+  }
+  // Every question this person has not answered gets its recommended option, in one write
+  // (answer: "yes", like a click). Answered questions are left alone.
+  async function acceptAll() {
+    if (readOnly || stale()) return;
+    const todo = DS.filter((d) => !choiceOf(myItem(d.id)) && recOf(d));
+    if (!todo.length) { say("ans-msg", t("all_answered")); return; }
+    const items = {};
+    for (const d of todo) items[d.id] = { choice: recOf(d), also: dNodes[d.id].alsoIn.value.trim(), comment: dNodes[d.id].note.value.trim() };
+    if (!db || !me) { Object.assign(local, items); render(); say("ans-msg", t("picked_all_local")); return; }
+    for (const it of Object.values(items)) it.answer = "yes";
+    await commit(items, () => say("ans-msg", t("saved_all", { ids: todo.map((d) => d.id).join(", ") })));
+  }
+  async function commentEng(id) {
+    if (readOnly) return;
+    const comment = eNodes[id].note.value.trim();
+    if (!db || !me) { local[id] = { comment }; render(); return; }
+    const cur = answers.get(me)?.byRevision?.[REVISION]?.[id];
+    if ((cur?.comment || "") === comment) return;
+    await commit({ [id]: { comment } }, () => say("ans-msg", t("saved_eng", { id })));
+  }
+  // One write path. Re-reads approval/config first: a tab left open on an older revision must
+  // not write answers that look current.
+  async function commit(items, ok) {
+    try {
+      const snap = await db.doc("approval/config").get();
+      if (snap.exists) liveRev = snap.data()?.revision || liveRev;
+    } catch {}
+    if (stale()) { render(); say("ans-msg", t("stale_save", { live: liveRev, r: REVISION }), true); return; }
+    const at = new Date().toISOString();
+    const prev = answers.get(me) || {};
+    const byRevision = { ...(prev.byRevision || {}) };
+    const rev = { ...(byRevision[REVISION] || {}) };
+    for (const [id, it] of Object.entries(items)) rev[id] = { ...it, at };
+    byRevision[REVISION] = rev;
+    const next = { byRevision, updatedAt: at };
+    answers.set(me, next); render();
+    try {
+      await db.collection("answers").doc(me).set(next);
+      ok();
+    } catch (e) {
+      if (e && (e.code === "not_granted" || e.code === "permission_denied" || e.code === "invalid_argument")) { readOnly = true; say("ans-msg", t("read_only"), true); }
+      else say("ans-msg", t("save_failed") + ((e && e.message) || t("try_again")), true);
+      render();
+    }
+  }
+  function say(id, text, err) { const m = $(id); m.className = "msg" + (err ? " err" : ""); m.textContent = text; }
+
+  function quorumNeeded() {
+    if (openMode()) { const k = parseInt(config?.quorum, 10); return Number.isFinite(k) && k >= 1 ? k : 1; }
+    const n = config?.approvers?.length || 0; const q = config?.quorum ?? "all";
+    if (q === "all") return n; if (q === "any") return Math.min(1, n);
+    const k = parseInt(q, 10); return Number.isFinite(k) ? Math.min(Math.max(k, 1), n) : n;
+  }
+  function approverStatus(a) {
+    const its = DS.map((d) => [d, a.userId ? itemOf(a.userId, d.id) : null]);
+    const count = its.filter(([, it]) => choiceOf(it)).length;
+    const off = its.filter(([d, it]) => choiceOf(it) && it.choice !== recOf(d)).map(([d, it]) => d.id + (it.choice === "other" ? " (other)" : " → " + it.choice));
+    const notes = its.filter(([d, it]) => choiceOf(it) && it.choice === recOf(d) && ((it.also || "").trim() || (it.comment || "").trim())).length;
+    return { done: count === DS.length, off, count, notes };
+  }
+  async function resolveNames() {
+    if (!user) return;
+    const ids = new Set([...answers.keys(), ...(config?.approvers || []).map((a) => a.userId)].filter(Boolean));
+    if (!ids.size) return;
+    try { const ps = await user.profiles([...ids]); for (const id of ids) names[id] = ps?.[id]?.name || ""; } catch {}
+    render();
+  }
+
+  function render() {
+    const off = readOnly || stale();
+    let mineCount = 0;
+    for (const d of DS) {
+      const n = dNodes[d.id]; const mine = choiceOf(myItem(d.id));
+      if (mine) mineCount++;
+      const pickers = {}; const rows = [];
+      for (const uid of answers.keys()) {
+        const it = itemOf(uid, d.id); const c = choiceOf(it);
+        if (!c) continue;
+        (pickers[c] ||= []).push(uid);
+        if (it.comment || it.also) rows.push([uid, c, it]);
+      }
+      for (const [key, o] of Object.entries(n.opts)) {
+        o.input.checked = mine === key; o.input.disabled = off;
+        o.input.closest(".opt").classList.toggle("on", mine === key);
+        // Other people's picks; your own shows as "✓ Your pick".
+        o.who.replaceChildren(...(pickers[key] || []).filter((uid) => uid !== me).map((uid) => el("span", {
+          cls: "chip" + (isApprover(uid) ? "" : " guest"),
+          title: isApprover(uid) ? t("approver") : t("not_approver"),
+          text: t("picked_by", { name: nameOf(uid) }) + (isApprover(uid) ? "" : t("not_approver_short")) })));
+      }
+      n.state.className = mine ? (mine === recOf(d) ? "pill ok" : "pill bad") : "pill warn";
+      n.state.textContent = !mine ? t("state_none") : mine === "other" ? t("state_something") : t(mine === recOf(d) ? "state_rec" : "state_other", { c: mine });
+      if (document.activeElement !== n.note && myItem(d.id)) n.note.value = myItem(d.id).comment || "";
+      if (document.activeElement !== n.alsoIn && myItem(d.id)) n.alsoIn.value = myItem(d.id).also || "";
+      n.also.hidden = !mine || mine === "other";
+      n.note.disabled = off; n.alsoIn.disabled = off;
+      n.note.classList.toggle("need", mine === "other" && !n.note.value.trim());
+      rows.sort((a, b) => String(a[2].at).localeCompare(String(b[2].at)));
+      n.notes.replaceChildren(...rows.map(([uid, c, it]) => el("li", {}, [
+        el("span", { cls: "who", text: nameOf(uid) + (uid === me ? t("you") : "") }),
+        el("span", { cls: c === recOf(d) ? "yes-t" : "no-t", text: c === "other" ? t("something_else") : t("option_n", { c }) }),
+        el("span", { cls: "when", text: fmt(it.at) + (it.carried ? t("answered_in", { r: it.carried }) : "") }),
+        it.also ? el("span", { text: t("and_also", { t: it.also }) }) : null,
+        it.comment ? el("span", { text: it.comment }) : null,
+      ])));
+    }
+    for (const e of ES) {
+      const n = eNodes[e.id]; const rows = [];
+      for (const [uid, doc] of answers) { const it = doc?.byRevision?.[REVISION]?.[e.id]; if (it?.comment) rows.push([uid, it]); }
+      if (document.activeElement !== n.note) n.note.value = (db && me ? answers.get(me)?.byRevision?.[REVISION]?.[e.id]?.comment : local[e.id]?.comment) || "";
+      n.note.disabled = off;
+      n.notes.replaceChildren(...rows.map(([uid, it]) => el("li", {}, [
+        el("span", { cls: "who", text: nameOf(uid) + (uid === me ? t("you") : "") }),
+        el("span", { cls: "when", text: fmt(it.at) }), el("span", { text: it.comment }),
+      ])));
+    }
+
+    // Progress and "Your answer is needed"
+    const total = DS.length, left = total - mineCount;
+    $("progress").textContent = t("progress", { n: mineCount, m: total });
+    $("meter").style.width = (total ? (100 * mineCount) / total : 0) + "%";
+    $("todo").classList.toggle("done", left === 0);
+    $("todo-h").textContent = left === 0 ? t("todo_done") : t(mineCount ? "todo_left" : "todo_need", { n: left, questions: tp("questions", left) });
+    for (const b of [$("accept-all"), $("accept-all-top")]) b.disabled = off || left === 0;
+    $("accept-hint").textContent = t(left === 0 ? "accept_hint_done" : "accept_hint");
+
+    const commented = ES.filter((e) => [...answers.values()].some((doc) => doc?.byRevision?.[REVISION]?.[e.id]?.comment)).length;
+    $("eng-sum").textContent = tp("eng_sum", ES.length) + (commented ? t("eng_sum_some", { k: commented }) : t("eng_sum_none"));
+    $("stale-msg").hidden = !stale();
+    if (stale()) $("stale-msg").textContent = t("stale_tab", { r: REVISION, live: liveRev });
+    $("answer").textContent = answerText();
+
+    const st = $("quorum-status"); const sp = $("status-pill");
+    if (!db) {
+      st.replaceChildren(el("span", { cls: "pill", text: t("no_db_pill") }), el("span", { text: t("no_db") }));
+      sp.className = left === 0 ? "pill ok" : "pill warn"; sp.textContent = t(left === 0 ? "status_ready" : "status_waiting");
+      return;
+    }
+    $("approvers-panel").hidden = false;
+    $("answer-hint").textContent = t("answer_hint_db");
+    const apprs = openMode()
+      ? [...answers.keys()].filter((uid) => DS.some((d) => choiceOf(itemOf(uid, d.id)))).map((uid) => ({ userId: uid }))
+      : config?.approvers || [];
+    let done = 0, changes = 0, notes = 0;
+    const ul = $("approvers"); ul.replaceChildren();
+    apprs.forEach((a, i) => {
+      const s = approverStatus(a);
+      if (s.done) done++; if (s.done && s.off.length) changes++; if (s.done && s.notes) notes++;
+      const pill = !a.userId ? el("span", { cls: "pill warn", text: t("not_linked") })
+        : s.done ? el("span", { cls: s.off.length ? "pill bad" : "pill ok", text: s.off.length ? t("changes_list", { list: s.off.join(", ") }) : s.notes ? t("approved_notes") : t("all_recommended") })
+        : el("span", { cls: "pill", text: t("answered_short", { k: s.count, m: DS.length }) });
+      const li = el("li", {}, [el("b", { text: a.userId ? nameOf(a.userId) + (a.userId === me ? t("you") : "") : (a.label || "@" + a.github) }), el("span", { cls: "gh", text: a.github ? t("gh", { gh: a.github }) : "" }), pill]);
+      if (canEdit && !openMode() && !a.userId) {
+        const b = el("button", { type: "button", text: t("link_account") });
+        b.addEventListener("click", () => { $("gh-login").value = a.github || ""; $("person-q").value = (a.label || "").split(" ")[0]; $("person-q").focus(); runSearch(); });
+        li.append(b);
+      }
+      if (canEdit && !openMode()) { const rm = el("button", { type: "button", text: t("remove"), "aria-label": t("remove_aria", { who: a.github || a.label || "" }) }); rm.addEventListener("click", () => removeApprover(i)); li.append(rm); }
+      ul.append(li);
+    });
+    if (!apprs.length) ul.append(el("li", { cls: "hint", text: !config ? t("loading_cap") : openMode() ? t("no_answers") : t("no_approvers") }));
+
+    // Answers from people who are not approvers: say so loudly (the classic cause of "0 of N").
+    const strays = config && !openMode() ? [...answers.keys()].filter((uid) => !isApprover(uid) && DS.some((d) => choiceOf(answers.get(uid)?.byRevision?.[REVISION]?.[d.id]))) : [];
+    $("strays").replaceChildren(...strays.map((uid) => {
+      const kids = [el("span", {}, [el("b", { text: nameOf(uid) + (uid === me ? t("you") : "") }), t("stray")])];
+      if (canEdit) {
+        const b = el("button", { type: "button", cls: "primary", text: t("make_approver") });
+        b.addEventListener("click", () => { picked = uid; $("picked-name").textContent = nameOf(uid); $("add-row").hidden = false; $("gh-login").focus(); });
+        kids.push(b);
+      } else kids.push(el("span", { cls: "hint", text: t("ask_owner") }));
+      return el("p", { cls: "stray" }, kids);
+    }));
+
+    const need = quorumNeeded(); const q = config?.quorum ?? "all";
+    const older = config?.revision && revNum(config.revision) < revNum(REVISION) ? t("older_config", { r: config.revision }) : "";
+    $("quorum-rule").textContent = !config ? "" : openMode()
+      ? tp("rule_open", need, { r: REVISION }) + older
+      : t("rule_named", { q: q === "all" ? t("q_all") : q === "any" ? t("q_any") : t("q_n", { n: q }), r: REVISION }) + older;
+    st.replaceChildren();
+    if (config) {
+      const met = apprs.length > 0 && done >= need;
+      const pill = met ? el("span", { cls: changes ? "pill bad" : "pill ok", text: changes ? t("changes_requested") : notes ? t("approved_notes") : t("approved") }) : el("span", { cls: "pill warn", text: t("awaiting") });
+      st.append(pill, el("span", { text: t("quorum_line", { done, need, r: REVISION }) }));
+      sp.className = pill.className; sp.textContent = pill.textContent;
+    }
+    $("editor-tools").hidden = !canEdit;
+    if (canEdit && config && document.activeElement !== $("quorum-select") && document.activeElement !== $("quorum-n")) {
+      const isN = !openMode() && q !== "all" && q !== "any";
+      $("quorum-select").value = openMode() ? "open" : isN ? "n" : q; $("quorum-n").hidden = !isN; if (isN) $("quorum-n").value = q;
+      $("person-q").closest(".row").hidden = openMode();
+    }
+  }
+
+  async function writeConfig(patch, okMsg) {
+    try { await db.doc("approval/config").set({ ...(config || {}), ...patch, updatedAt: new Date().toISOString(), updatedBy: me }); say("cfg-msg", okMsg); }
+    catch (e) { say("cfg-msg", t("cfg_failed") + ((e && e.message) || t("try_again")), true); }
+  }
+  function removeApprover(i) {
+    const list = [...(config?.approvers || [])]; const [gone] = list.splice(i, 1);
+    writeConfig({ approvers: list }, t("removed", { who: gone?.github ? "@" + gone.github : t("an_approver") }));
+  }
+  $("quorum-select").addEventListener("change", () => { $("quorum-n").hidden = $("quorum-select").value !== "n"; });
+  $("quorum-save").addEventListener("click", () => {
+    let q = $("quorum-select").value;
+    if (q === "open") { writeConfig({ open: true, quorum: "1" }, t("quorum_opened")); return; }
+    if (q === "n") { const k = parseInt($("quorum-n").value, 10); if (!(k >= 1)) { say("cfg-msg", t("quorum_bad_n"), true); return; } q = k; }
+    writeConfig({ open: false, quorum: q }, t("quorum_saved"));
+  });
+  let seq = 0;
+  async function runSearch() {
+    if (!user?.search) return;
+    const mySeq = ++seq; let hits = [];
+    try { hits = await user.search($("person-q").value.trim()); } catch {}
+    if (mySeq !== seq) return;
+    $("picker").replaceChildren(...(hits || []).slice(0, 8).map((h) => {
+      const b = el("button", { type: "button", text: (h.name || t("someone")) + (h.guest ? t("guest") : "") });
+      b.addEventListener("click", () => { picked = h.id; $("picked-name").textContent = h.name || t("someone"); $("add-row").hidden = false; $("picker").replaceChildren(); $("gh-login").focus(); });
+      return el("li", {}, [b]);
+    }));
+  }
+  $("person-q").addEventListener("focus", runSearch);
+  $("person-q").addEventListener("input", runSearch);
+  $("add-approver").addEventListener("click", () => {
+    const gh = $("gh-login").value.trim().replace(/^@/, "");
+    if (!picked || !/^[A-Za-z0-9-]{1,39}$/.test(gh)) { say("cfg-msg", t("pick_person"), true); return; }
+    const list = [...(config?.approvers || [])];
+    const named = openMode() ? { open: false, quorum: "all" } : {}; // naming someone switches to named approvers
+    const slot = list.findIndex((a) => (a.github || "").toLowerCase() === gh.toLowerCase());
+    if (slot >= 0) {
+      // Same GitHub login as an existing slot: relink that slot to the picked person.
+      if (list.some((a, i) => i !== slot && a.userId === picked)) { say("cfg-msg", t("other_slot"), true); return; }
+      list[slot] = { ...list[slot], userId: picked };
+      writeConfig({ ...named, approvers: list }, t("linked", { gh, name: nameOf(picked) }));
+    } else {
+      if (list.some((a) => a.userId === picked)) { say("cfg-msg", t("already_approver"), true); return; }
+      list.push({ github: gh, userId: picked });
+      writeConfig({ ...named, approvers: list }, t("added", { gh }));
+    }
+    picked = null; $("add-row").hidden = true; $("gh-login").value = ""; $("person-q").value = "";
+  });
+  $("copy").addEventListener("click", () => {
+    const out = $("answer");
+    const select = () => { const r = document.createRange(); r.selectNodeContents(out); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(out.textContent).then(() => say("ans-msg", t("copied")), select); } catch { select(); }
+  });
+  $("accept-all").addEventListener("click", acceptAll);
+  $("accept-all-top").addEventListener("click", acceptAll);
+
+  render();
+
+  (async () => {
+    if (!window.claude?.use) return;
+    [db, user] = await Promise.all([claude.use("db"), claude.use("user")]);
+    if (user) {
+      try { me = await user.id(); } catch {}
+      try { canEdit = await user.canEdit(); } catch {}
+      try { isOwner = await user.isOwner(); } catch {}
+      try { if ((await user.can("data.write")) === false) readOnly = true; } catch {}
+    }
+    if (!db || !me) { db = null; render(); return; }
+    db.doc("approval/config").onSnapshot((snap) => {
+      config = snap.exists ? snap.data() : DEFAULT_CONFIG;
+      if (config?.revision) liveRev = config.revision;
+      // The owner claims a slot seeded for them ({owner: true}, no userId yet).
+      if (isOwner && snap.exists) {
+        const slot = (config.approvers || []).findIndex((a) => a.owner && !a.userId);
+        if (slot >= 0 && !(config.approvers || []).some((a) => a.userId === me)) {
+          writeConfig({ approvers: config.approvers.map((a, i) => (i === slot ? { ...a, userId: me } : a)) }, t("linked_own"));
+        }
+      }
+      render(); resolveNames();
+    }, () => { config = config || DEFAULT_CONFIG; render(); });
+    db.collection("answers").onSnapshot((snap) => {
+      answers = new Map(snap.docs.map((d) => [d.id, d.data()]));
+      render(); resolveNames();
+    }, () => render());
+    render();
+  })();
+})();
+</script>
