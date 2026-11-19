@@ -65,7 +65,7 @@ Structured Query Language, the language of queries to relational databases. For 
 `SELECT * FROM users WHERE login = 'anna'` means “find the rows in the users table whose login is
 anna”.
 
-## `query` Query
+## `query` Query (request)
 
 `category` web · `see` sql, web-server, parameterized-query · `lessons` B1
 
@@ -80,7 +80,7 @@ a web server over HTTP; a server sends queries to a database in SQL.
 
 Forms: injection, injections
 
-A class of attacks in which a program takes data from a user for part of a command and runs it.
+A class of attacks in which a program treats data from a user as part of a command and runs it.
 There are injections into database queries, into operating system commands, into web pages.
 
 ## `sql-injection` SQL injection
@@ -190,7 +190,7 @@ SMS and apps can be phished on a fake page; FIDO2 keys and passkeys cannot.
 Forms: passkey, passkeys
 
 A login without a password, with a key stored on a device or in a password manager. The key is
-bound to the site's domain, so the browser will not let it be used on a fake page. It works on the
+bound to the site's domain, so the browser will not let it be used on a fake page. It is built on the
 WebAuthn and FIDO2 standards, like FIDO2 hardware keys, which often serve as a second factor next
 to a password.
 
@@ -233,9 +233,10 @@ compares them.
 
 Forms: DMARC
 
-A domain's policy (RFC 7489) that ties the SPF and DKIM checks to the address in the “From” field
-and tells the recipient what to do with an email that fails: nothing (`none`), send it to spam
-(`quarantine`) or reject it (`reject`). It does not protect against email from look-alike domains:
+A domain's policy (RFC 9989, formerly RFC 7489) that ties the SPF and DKIM checks to the address
+in the “From” field and tells the recipient how the domain owner wants an email that fails to be
+treated: no preference (`none`), as suspicious, for example sent to spam (`quarantine`), or
+rejected (`reject`). It does not protect against email from look-alike domains:
 they have their own records.
 
 ## `cwe` CWE

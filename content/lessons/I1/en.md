@@ -63,7 +63,7 @@ bank's logo and a link. The sender's name looks like the bank's; the address doe
 The sender's display name can be set to anything. Faking the address itself on the bank's domain
 is blocked by SPF, DKIM and DMARC, if the bank has set them up and the recipient's mail server
 checks them. They do not help against a look-alike domain: it is a different domain with its own
-records. That is why attackers usually pick a look-alike domain. In MITRE ATT&CK phishing is
+records. That is why attackers more often pick a look-alike domain. In MITRE ATT&CK phishing is
 technique T1566, and an email with a link aimed at people of one organization is its
 sub-technique T1566.002 “Spearphishing Link”.
 
@@ -109,7 +109,7 @@ The form sends the login and password to the attacker's server.
 #### Deeper
 
 The page can instantly forward what was typed to the real bank and show the real bank's response.
-The victim does not notice such proxy phishing at all, and it captures not only the password but
+The victim may not notice such proxy phishing at all, and it captures not only the password but
 also the one-time code.
 
 ### `steal` The attacker has the password
@@ -162,8 +162,8 @@ this page:  ⟦bank-login.example⟧
 
 #### Simple
 
-The password manager remembers that the bank password belongs to the address bank.example. On a
-different address it **simply does not offer it**, and that is a reason to be suspicious.
+The password manager remembers that the bank password belongs to the address bank.example. On any
+other site it **simply does not offer it**, and that is a reason to be suspicious.
 
 #### Step by step
 
@@ -186,7 +186,7 @@ Message: leaked password · Result: password correct, but no way in
 #### Simple
 
 Suppose the password leaked anyway, say from an old database. The attacker tries to log in to the
-bank. The password is correct, but the login has a second factor turned on: the bank waits for a
+bank. The password is correct, but the account has a second factor turned on: the bank waits for a
 confirmation from the victim's second device, which the attacker does not have. This is where the
 attack stops.
 
@@ -214,7 +214,7 @@ Without the second factor, no session opens.
 
 #### Deeper
 
-An SMS code or a push approval can also be phished: with the same phishing, or with a flood of
+An SMS code or a push approval can also be stolen: by the same phishing, or by a flood of
 notifications until the person taps “yes” (in MITRE ATT&CK this is technique T1621). Under NIST SP
 800-63B, methods where the person types in a code are not considered phishing-resistant. FIDO2
 security keys and passkeys are: they check which site they are answering.
