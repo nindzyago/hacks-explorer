@@ -124,6 +124,50 @@ A fixed-length value that a hash function computes from data. For cryptographic 
 only way back is guessing. Well-built sites store not passwords but their hashes, computed with
 slow functions and a “salt”, for example Argon2 or bcrypt.
 
+## `xss` XSS
+
+`category` web · `see` injection, output-encoding, csp, session-cookie · `lessons` C1
+
+Forms: XSS, cross-site scripting
+
+A site puts text sent to it into its own page in such a way that the browser runs it as the
+site's script. Reflected XSS returns input from the request straight in the response, stored XSS
+saves it first, and DOM XSS is built by the page itself in the browser. The weakness class is
+CWE-79; in the OWASP Top 10:2021 it is part of A03 Injection.
+
+## `output-encoding` Output encoding
+
+`category` web · `see` xss, csp · `lessons` C1
+
+Forms: output encoding
+
+Replacing special characters with safe forms at the moment data is put into a page: `<` becomes
+`&lt;`, `"` becomes `&quot;`. The browser shows such characters as text, but they can no longer
+start a tag or an attribute. Each place has its own rule: page text, attribute, JavaScript, CSS,
+URL. The primary defence against XSS according to OWASP.
+
+## `csp` Content Security Policy
+
+`category` web · `see` xss, output-encoding · `lessons` C1
+
+Forms: Content Security Policy, CSP
+
+A response header with which a site tells the browser where scripts and other resources may be
+loaded from. Without `'unsafe-inline'` in the `script-src` rule the browser does not run scripts
+written right into the page. Defined in a W3C specification; it protects as a second layer if
+encoding was forgotten somewhere.
+
+## `session-cookie` Session cookie
+
+`category` web · `see` xss, web-server · `lessons` C1
+
+Forms: session cookie, session cookies
+
+A small record a site leaves in the browser after login. The browser attaches it to every request
+to that site, and by it the site recognizes the user without a password. Whoever steals such a
+cookie can log in as its owner. The `HttpOnly` attribute (RFC 6265) forbids page scripts from
+reading it.
+
 ## `phishing` Phishing
 
 `category` people · `see` fake-page, proxy-phishing, social-engineering, mitre-attack · `lessons` I1
