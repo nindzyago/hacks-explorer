@@ -3,7 +3,7 @@
 > Updated: 2026-11-19 by Claude (craftspec orchestrate)
 
 **Current milestone:** M3 — Первый выпуск: 10 уроков (K120), затем M4 — выпуск 0.1 на hacks.antipic.com
-**Next task:** G18 браузерные тесты на все уроки, M4.3, M4.5, M4.7, тег v0.1.0
+**Next task:** M4.7 домен hacks.antipic.com и тег v0.1.0
 **Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -15,7 +15,7 @@
 | M1 | Один урок насквозь: SQL-инъекция | done, принят владельцем 2026-11-19 | 6 / 6 |
 | M2 | Оболочка: панель уроков, языки, глубина, телефон | done, принят владельцем 2026-11-19 | 10 / 10 |
 | M3 | Первый выпуск: 10 уроков (K120) | done 2026-11-19 (браузерные тесты на все уроки — G18) | 10 / 10 |
-| M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | not started | 0 / 7 |
+| M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | in progress | 6 / 7 |
 | M5 | Остальные уроки (65) | not started | 0 / 17 |
 
 ## Designs

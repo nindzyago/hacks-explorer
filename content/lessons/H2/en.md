@@ -240,7 +240,7 @@ network into parts and separating important systems to limit lateral movement.
 ### `restore` Restoring from a backup
 
 `backup → pc` · `safe` · `with-defence`
-Message: last backup · Result: files restored
+Message: latest backup · Result: files restored
 
 ```text
 backup:  yesterday's, storage disconnected from the network
@@ -255,7 +255,7 @@ are collected, the infected computer is wiped and the files come back from the c
 #### Step by step
 
 Backups are kept apart: the storage is disconnected from the office network or refuses delete
-commands. Recovery has been rehearsed, so it takes hours, not weeks.
+commands. Recovery has been rehearsed, so it goes quickly and to plan.
 
 #### Deeper
 

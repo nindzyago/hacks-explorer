@@ -149,7 +149,7 @@ record in the database was made.
 ### `crack` Guessing from a word list
 
 `attacker → copy` · `attack` · `without-defence`
-Message: guess hashes · Result: passwords found
+Message: hashed guesses · Result: passwords found
 
 ```text
 sha256("sunny2024") = ⟦965ccdd7…e5775ac7⟧  → alice, bob
@@ -197,7 +197,7 @@ other services too.
 ### `crack-slow` Guessing becomes too costly
 
 `attacker → copy` · `attack` · `with-defence` · `stopped`
-Message: guess hashes · Result: every guess is costly, guessing stalls
+Message: hashed guesses · Result: every guess is costly, guessing stalls
 
 ```text
 argon2id("sunny2024", <salt 1>) → ⟦no match⟧

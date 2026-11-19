@@ -187,7 +187,7 @@ from the attacker's server, no foreign code loaded.
 #### Deeper
 
 According to NVD, Log4j versions from 2.0-beta9 are affected; 2.15.0 turned lookups in messages
-off by default, and from 2.16.0 (and in 2.12.2 and 2.3.1 for older Java) the feature is removed.
+off by default, and from 2.16.0 (and in 2.12.2, 2.12.3 and 2.3.1 for older Java) the feature is removed.
 The 2.15.0 fix proved incomplete: with certain logging settings the attack still worked
 (CVE-2021-45046), and 2.16.0 closed it. Other related flaws were found later, and CISA recommended 2.17.1 for Java 8, 2.12.4 for Java 7 and
 2.3.2 for Java 6. Updating Java alone is not enough: the library itself must be updated. CISA added

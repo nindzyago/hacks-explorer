@@ -182,8 +182,8 @@ it can no longer start a tag. This is where the attack stops.
 
 #### Step by step
 
-The server runs the `q` parameter through an encoding function for HTML text. Five characters
-that could open a tag, an attribute or a character reference are replaced with character references.
+The server runs the `q` parameter through an encoding function for HTML text. The five HTML
+special characters (`<`, `>`, `&`, `"`, `'`) are replaced with character references.
 
 #### Deeper
 
@@ -254,7 +254,7 @@ extra layer, not a replacement for encoding.
   sanitizer, not a home-made filter.
 - **Content Security Policy.** A `Content-Security-Policy` header with a `script-src` rule that
   has no `'unsafe-inline'` forbids inline scripts: if encoding was forgotten somewhere, the browser
-  still will not run the attacker's code.
+  will not run a script injected into the page. It is a second layer, not a replacement for encoding.
 - **HttpOnly for the session cookie.** A script cannot read the cookie and send it to the
   attacker. This reduces the damage but does not stop XSS.
 - **For users:** a link to a real site can be dangerous too. If an unexpected link has a long,
