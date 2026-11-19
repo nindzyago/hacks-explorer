@@ -113,6 +113,12 @@ export const RING_STROKE = 2;
  */
 const TEXT_INSET = 8;
 /**
+ * A name keeps 1 px more at each side (CI4): at 11-13 px Chromium on Linux draws bold Onest up
+ * to 0.85 px past the advance of its last letter (macOS draws it inside), so a name as wide as
+ * the line came 1.3-1.5 px from the ring there.
+ */
+const NAME_INK = 1;
+/**
  * Where the middle of the ring's line stands inside the column frame (M1.2d: 4.5, was 2.5),
  * rounded to whole pixels so the 2 px line is drawn sharp: the ring keeps at least 2.25 px of
  * paper from the zone frame's line, so that a red ring inside the red «Подделка» frame reads
@@ -157,20 +163,69 @@ function chars(text: string): string[] {
 /** The two scene fonts: JetBrains Mono (notes, zone labels) and bold Onest (names). */
 export type SceneFont = 'mono' | 'sans';
 
-// Bold Onest (M1.2d): advance widths in em, measured in Chromium and rounded up. The mono font
-// is 0.6 em for every character. M1.2b took Onest as 0.6 em too, but bold Cyrillic runs wider
-// («Атакующий» is 0.64 em a letter), and on a 360 px phone a name came 0.4 px from the ring.
-const SANS_NARROW = new Set(Array.from(" .,:;!'|iljI1"));
-const SANS_SLIM = new Set(Array.from('ftr()"-гт'));
-const SANS_WIDE = new Set(Array.from('жшщюыфмmw'));
-const SANS_CAPS_WIDE = new Set(Array.from('ЖШЩЮЫМФWM'));
+// Bold Onest: the advance of each letter in em, measured in Chromium at 100 px (the same on
+// macOS and on Linux without hinting, K117) and rounded up to 0.01 (CI4). The mono font is
+// 0.6 em for every character. M1.2d had a table of five classes; it was up to 17% too wide
+// («ы» 0.87 for 0.745), so a word that fits was taken as too wide and drawn *wider* to the
+// line by `textLength` (F1 «данных», 40.4 px stretched to 43.2), and a few letters were
+// narrower than real («д», «т», «Д», digits).
+const SANS_ADVANCES: ReadonlyArray<readonly [number, string]> = [
+  [0.26, 'il'],
+  [0.29, 'j.:'],
+  [0.3, " I'|"],
+  [0.31, ',;!'],
+  [0.36, '()'],
+  [0.39, 'f1'],
+  [0.4, 'r'],
+  [0.42, 't'],
+  [0.45, 'г'],
+  [0.47, '-'],
+  [0.5, '"'],
+  [0.51, 'z'],
+  [0.52, 's'],
+  [0.53, 'т'],
+  [0.54, 'з7'],
+  [0.55, 'чь'],
+  [0.56, 'хэkvx'],
+  [0.57, 'авa'],
+  [0.58, 'еёклсуяce2'],
+  [0.59, 'нпГuJ'],
+  [0.6, 'оъoL'],
+  [0.61, 'цhnF'],
+  [0.62, 'бийрТyZ35'],
+  [0.63, 'ЕЁbdgpqE689'],
+  [0.64, 'T'],
+  [0.66, 'РP04'],
+  [0.67, 'дЗУХЬSX'],
+  [0.68, 'БВКBK'],
+  [0.69, 'ЧRY'],
+  [0.71, 'ЛЯ'],
+  [0.72, 'ЭV'],
+  [0.73, 'мАСACD'],
+  [0.74, 'ПU'],
+  [0.75, 'ыНЦGH'],
+  [0.76, 'ИЙЪ'],
+  [0.77, 'N'],
+  [0.78, 'фО'],
+  [0.79, 'ДOQ'],
+  [0.81, 'ж'],
+  [0.82, 'ю'],
+  [0.84, 'ш'],
+  [0.86, 'щm'],
+  [0.87, 'w'],
+  [0.88, 'Ф'],
+  [0.9, 'ЫM'],
+  [0.91, 'М'],
+  [0.95, 'Ж'],
+  [1.0, 'Ш'],
+  [1.01, 'W'],
+  [1.02, 'ЩЮ'],
+];
+const SANS_EM = new Map(SANS_ADVANCES.flatMap(([em, cs]) => Array.from(cs, (c) => [c, em])));
+/** Not in the table (another script, a symbol): as wide as the wide letters, to err wide. */
+const SANS_UNKNOWN_EM = 0.87;
 function sansEm(c: string): number {
-  if (SANS_NARROW.has(c)) return 0.3;
-  if (SANS_SLIM.has(c)) return 0.5;
-  if (SANS_WIDE.has(c)) return 0.87;
-  if (SANS_CAPS_WIDE.has(c)) return 1.02;
-  if (c !== c.toLowerCase()) return 0.77;
-  return 0.62;
+  return SANS_EM.get(c) ?? SANS_UNKNOWN_EM;
 }
 
 /** Estimated width of `text` in px: font size, letter spacing and the font's advances. */
@@ -395,16 +450,17 @@ export function layoutScene(input: SceneInput & { readonly width: number }): Sce
   // Text may use the whole frame of the column but TEXT_INSET at each side, where the ring
   // runs (M1.2c, M1.2d); an address too long for a phone column breaks after a dot.
   const textWidthMax = Math.max(0, 2 * half - 2 * TEXT_INSET);
+  const nameWidthMax = Math.max(0, textWidthMax - 2 * NAME_INK);
 
   const participants = input.participants.map((p, i): ParticipantLayout => {
     const x = cx(i);
     const icon = { x: x - iconWidth / 2, y: iconTop, width: iconWidth, height: iconHeight };
-    const size = nameSize(p.name, column, textWidthMax);
+    const size = nameSize(p.name, column, nameWidthMax);
     const name = block(p.name, {
       anchor: 'middle',
       x,
       firstBaseline: bottom(icon) + 18,
-      maxWidth: textWidthMax,
+      maxWidth: nameWidthMax,
       fontSize: size,
       lineHeight: Math.round(size * 1.25),
       font: 'sans',
