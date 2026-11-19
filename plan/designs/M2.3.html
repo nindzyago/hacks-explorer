@@ -248,7 +248,7 @@ tr:last-child td { border-bottom: 0; }
     </div>
     <h1>M2.3 — Языки: русский и английский</h1>
     
-    <p class="changes" hidden></p>
+    <p class="changes"><b data-t="changes_since"></b> r1: Ты ответил на D1 своими словами: в CI проверять, что все уроки есть на всех языках; новый язык — переводятся все уроки, новый урок — сразу на всех языках. D1 переписан так и утверждён твоим ответом.</p>
     <nav class="views" role="tablist" id="views" hidden>
       <button type="button" role="tab" id="tab-design" aria-controls="view-design" aria-selected="true" data-t="tab_design"></button>
       <button type="button" role="tab" id="tab-built" aria-controls="view-built" aria-selected="false"><span data-t="tab_built"></span> <span class="pill ok" id="built-pill"></span></button>
@@ -437,8 +437,8 @@ tr:last-child td { border-bottom: 0; }
 
 <script type="application/json" id="design-data">
 {
- "revision": "r1",
- "design_sha256": "30c72746110c23f0cfa432c03dd75f2e84227d0ab00b725458afab5cf498dca3",
+ "revision": "r2",
+ "design_sha256": "4bed5edf10e45e88e2a5f14db4d6fa221086e2d9aa25d9b4fe4dc8de1238782d",
  "decisions": [
   {
    "id": "D1",
@@ -447,27 +447,22 @@ tr:last-child td { border-bottom: 0; }
    "options": [
     {
      "key": "a",
-     "title": "Когда переведён весь выпуск",
-     "why": "До этого перевод собирается и проверяется, но в меню его нет; gate печатает, чего не хватает.",
+     "title": "Каждый урок на каждом языке, gate проверяет",
+     "why": "Твоими словами: недостающий перевод — ошибка; добавляешь язык — переводишь все уроки; добавляешь урок — сразу на всех языках.",
      "pros": [
-      "читатель не попадёт на полупереведённый сайт",
-      "так записано в сценарии S9"
+      "неполного языка на сайте не бывает"
      ],
      "cons": [
-      "переводчику не видно промежуточного результата на сайте"
+      "новый язык — большая работа сразу"
      ],
      "rec": true
     },
     {
      "key": "b",
-     "title": "Сразу, с первого переведённого урока",
-     "why": "Непереведённые уроки показываются на русском с пометкой.",
-     "pros": [
-      "перевод виден по частям"
-     ],
-     "cons": [
-      "смешанный язык на одном экране"
-     ]
+     "title": "(r1) Язык в меню, когда переведён весь выпуск",
+     "why": "До этого gate только печатает недостающее.",
+     "pros": [],
+     "cons": []
     }
    ]
   },
@@ -498,7 +493,8 @@ tr:last-child td { border-bottom: 0; }
       "выпуск только на русском"
      ]
     }
-   ]
+   ],
+   "since": "r1"
   },
   {
    "id": "D3",
@@ -528,7 +524,8 @@ tr:last-child td { border-bottom: 0; }
       "иностранец может уйти, не поняв, что есть английский"
      ]
     }
-   ]
+   ],
+   "since": "r1"
   }
  ],
  "engineering": [
