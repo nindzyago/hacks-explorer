@@ -2,9 +2,9 @@
 
 > Updated: 2026-11-19 by Claude (craftspec orchestrate)
 
-**Current milestone:** M3 — Первый выпуск: 10 уроков (K120), затем M4 — выпуск 0.1 на hacks.antipic.com
-**Next task:** M4.7 домен hacks.antipic.com и тег v0.1.0
-**Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev
+**Current milestone:** выпуск 0.1 на https://hacks.antipic.com (M3, M4 готовы); ждёт приёмки владельца
+**Next task:** приёмка 0.1 владельцем; решения до открытия репозитория (G10 лицензия иконок, контакт CoC/SECURITY, ветка `release` в Cloudflare); затем M5
+**Blockers (need a human):** нет. Сайт: https://hacks.antipic.com · черновик: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
 ## Milestones
@@ -15,7 +15,7 @@
 | M1 | Один урок насквозь: SQL-инъекция | done, принят владельцем 2026-11-19 | 6 / 6 |
 | M2 | Оболочка: панель уроков, языки, глубина, телефон | done, принят владельцем 2026-11-19 | 10 / 10 |
 | M3 | Первый выпуск: 10 уроков (K120) | done 2026-11-19 (браузерные тесты на все уроки — G18) | 10 / 10 |
-| M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | in progress | 6 / 7 |
+| M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | done 2026-11-19, v0.1.0 | 7 / 7 |
 | M5 | Остальные уроки (65) | not started | 0 / 17 |
 
 ## Designs
