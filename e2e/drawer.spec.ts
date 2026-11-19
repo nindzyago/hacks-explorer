@@ -239,6 +239,37 @@ test.describe('S7: the lessons panel', () => {
     await expect(page.getByTestId('open-lessons')).toBeFocused();
   });
 
+  test('focus moves once on close: the late close event does not take it back', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await page.getByTestId('open-glossary').click();
+    await expect(page.getByTestId('drawer')).toBeVisible();
+    // The browser removes `open` at once and fires the close event a task later. Focus moved in
+    // between (the reader went on, here to «Уроки») stays where it went.
+    const focused = await page.evaluate(async () => {
+      const dialog = document.querySelector('[data-testid="drawer"]');
+      const other = document.querySelector('[data-testid="open-lessons"]');
+      if (!(dialog instanceof HTMLDialogElement) || !(other instanceof HTMLElement)) return null;
+      const closed = new Promise((resolve) => {
+        dialog.addEventListener('close', resolve, { once: true });
+      });
+      const observer = new MutationObserver(() => {
+        if (!dialog.open) other.focus();
+      });
+      observer.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+      window.__app?.commands.run('drawer.close');
+      await closed;
+      observer.disconnect();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      return document.activeElement instanceof HTMLElement
+        ? (document.activeElement.dataset['testid'] ?? null)
+        : null;
+    });
+    expect(focused).toBe('open-lessons');
+    await expect.poll(() => page.evaluate(() => window.__app?.state.get().drawer)).toBeNull();
+  });
+
   test('a ready lesson opens from the panel and the address follows; Back returns', async ({
     page,
   }) => {
