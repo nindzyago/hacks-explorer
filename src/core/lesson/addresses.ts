@@ -21,8 +21,21 @@ export interface ForeignAddress {
   readonly index: number;
 }
 
-const IPV4 = /(?<![\p{N}.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?!\p{N}|\.\p{N})/gu;
+const IPV4 =
+  /(?<![\p{N}.]|0x[0-9a-f]*)(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?!\p{N}|\.\p{N})/giu;
 const IPV6_RUN = /[0-9A-Fa-f:]{3,}/g;
+/** A number part of an IPv4 host as a browser reads it: decimal, `0x` hex or `0` octal. */
+const PART = '(?:0x[0-9a-f]+|\\d+)';
+/** A numeric host right after `scheme://` or `@`: `2130706433`, `0x7f000001`, `127.1`. */
+const HOST_NUMBER = new RegExp(
+  `(?<=[a-z][a-z0-9+.-]*://|@)${PART}(?:\\.${PART}){0,3}(?=$|[/:?#\\]\\s])`,
+  'giu',
+);
+/** Dotted numbers anywhere; only those with a hex part or four parts with an octal one count. */
+const DOTTED_NUMBER = new RegExp(
+  `(?<![\\p{L}\\p{N}_.])${PART}(?:\\.${PART}){1,3}(?![\\p{L}\\p{N}_]|\\.[\\p{L}\\p{N}])`,
+  'giu',
+);
 const LABEL = '[\\p{L}\\p{N}](?:[\\p{L}\\p{N}\\p{M}-]{0,61}[\\p{L}\\p{N}\\p{M}])?';
 const TLD = '(?:xn--[a-z0-9-]{1,59}|\\p{L}[\\p{L}\\p{M}]{1,62})';
 const DOMAIN = new RegExp(
@@ -119,6 +132,31 @@ function normalise(original: string): Normalised {
   return { text, origin };
 }
 
+/**
+ * The WHATWG URL IPv4 parser: one to four parts, each decimal, `0x` hex or `0`-led octal; the
+ * last part fills the remaining bytes. Returns the dotted form, or null when it is no address.
+ */
+export function numericIpv4(host: string): string | null {
+  const parts = host.split('.');
+  if (parts.length > 4) return null;
+  const numbers: number[] = [];
+  for (const part of parts) {
+    let n: number;
+    if (/^0x[0-9a-f]+$/i.test(part)) n = parseInt(part.slice(2), 16);
+    else if (/^0[0-7]+$/.test(part)) n = parseInt(part.slice(1), 8);
+    else if (/^(0|[1-9]\d*)$/.test(part)) n = Number(part);
+    else return null;
+    numbers.push(n);
+  }
+  const last = numbers.pop() ?? 0;
+  if (numbers.some((n) => n > 255) || last >= 256 ** (4 - numbers.length)) return null;
+  let value = last;
+  numbers.forEach((n, i) => {
+    value += n * 256 ** (3 - i);
+  });
+  return [value >>> 24, (value >>> 16) & 0xff, (value >>> 8) & 0xff, value & 0xff].join('.');
+}
+
 /** Parses an IPv6 address into 8 groups, or null when it is not one. */
 function ipv6Groups(text: string): number[] | null {
   const halves = text.split('::');
@@ -164,6 +202,22 @@ function ipv6In(run: string, glued: boolean): { value: string; offset: number } 
   return null;
 }
 
+/**
+ * IPv4-mapped (`::ffff:a.b.c.d`) and the deprecated IPv4-compatible (`::a.b.c.d`) forms carry an
+ * IPv4 address in their last two groups.
+ */
+function embedsIpv4(groups: readonly number[]): boolean {
+  const zeros = groups.slice(0, 5).every((g) => g === 0);
+  return groups.length === 8 && zeros && (groups[5] === 0xffff || groups[5] === 0);
+}
+
+function isDocumentationIpv4(groups: readonly number[]): boolean {
+  const high = groups[6] ?? 0;
+  const low = groups[7] ?? 0;
+  const dotted = [high >> 8, high & 0xff, low >> 8, low & 0xff].join('.');
+  return DOC_IPV4.some((prefix) => dotted.startsWith(prefix));
+}
+
 function hasLatinAndCyrillic(name: string): boolean {
   return /[a-z]/i.test(name) && /[Ѐ-ӿ]/.test(name);
 }
@@ -196,15 +250,39 @@ export function findForeignAddresses(original: string): ForeignAddress[] {
     if (DOC_IPV4.some((prefix) => dotted.startsWith(prefix))) continue;
     found.push({ value: match[0], kind: 'ip', index: at(match.index) });
   }
+  // Numeric hosts. Plain dotted decimal with four parts is the IPv4 pass's.
+  const numeric = (value: string, index: number) => {
+    const dotted = numericIpv4(value);
+    if (dotted === null || DOC_IPV4.some((prefix) => dotted.startsWith(prefix))) return;
+    if (found.some((f) => f.index === at(index))) return;
+    found.push({ value, kind: 'ip', index: at(index) });
+  };
+  for (const match of text.matchAll(HOST_NUMBER)) {
+    if (/^(0|[1-9]\d{0,2})(\.(0|[1-9]\d{0,2})){3}$/.test(match[0])) continue;
+    numeric(match[0], match.index);
+  }
+  for (const match of text.matchAll(DOTTED_NUMBER)) {
+    const parts = match[0].split('.');
+    const hex = parts.some((p) => /^0x/i.test(p));
+    const octal = parts.length === 4 && parts.some((p) => /^0\d/.test(p));
+    if (hex || octal) numeric(match[0], match.index);
+  }
   for (const match of text.matchAll(IPV6_RUN)) {
+    const end = match.index + match[0].length;
     const before = text.charAt(match.index - 1);
-    const after = text.charAt(match.index + match[0].length);
-    if (/[\p{L}\p{N}_]/u.test(after) || before === '.') continue;
-    const ip = ipv6In(match[0], /[\p{L}\p{N}_]/u.test(before));
+    const after = text.charAt(end);
+    // Mixed notation (`::ffff:192.0.2.1`, RFC 4291 2.2): the run ends with the first octet of an
+    // IPv4 address, which the IPv4 pass judges. The head stands in for six groups.
+    const mixed = after === '.' && /\d/.test(text.charAt(end + 1)) && /:\d{1,3}$/.test(match[0]);
+    if ((!mixed && /[\p{L}\p{N}_]/u.test(after)) || before === '.') continue;
+    const head = mixed ? match[0].slice(0, match[0].lastIndexOf(':') + 1) : match[0];
+    const ip = ipv6In(mixed ? `${head}0:0` : head, /[\p{L}\p{N}_]/u.test(before));
     if (ip === null) continue;
-    const groups = ipv6Groups(ip.value);
-    if (groups?.[0] === 0x2001 && groups[1] === 0xdb8) continue;
-    found.push({ value: ip.value, kind: 'ip', index: at(match.index + ip.offset) });
+    const groups = ipv6Groups(ip.value) ?? [];
+    if (groups[0] === 0x2001 && groups[1] === 0xdb8) continue;
+    if (embedsIpv4(groups) && (mixed || isDocumentationIpv4(groups))) continue;
+    const value = mixed ? ip.value.slice(0, -'0:0'.length) : ip.value;
+    found.push({ value, kind: 'ip', index: at(match.index + ip.offset) });
   }
   for (const match of text.matchAll(DOMAIN)) {
     const name = match[0];

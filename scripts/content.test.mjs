@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { checkContent, formatError } from '../src/core/lesson/check';
+import { unknownId } from '../src/core/lesson/ids';
 import { ROOT, readContent } from './content-files.mjs';
 
 describe('content', () => {
@@ -48,6 +49,48 @@ describe('content', () => {
       ...readdirSync(join(ROOT, 'public', 'fonts')).map((name) => `public/fonts/${name}`),
     ];
     expect(assets.filter((path) => !attribution.includes(`\`${path}\``))).toEqual([]);
+  });
+});
+
+// M2.8: every CWE, ATT&CK technique and CVE the catalog plans is in the vetted lists, so a
+// lesson author is never stopped by a missing entry and a new catalog id is vetted first (L5).
+describe('the catalog ids are vetted', () => {
+  const catalog = readFileSync(join(ROOT, 'plan', 'content-catalog.md'), 'utf8');
+  const ids = (re) => [...new Set([...catalog.matchAll(re)].map((m) => m[1]))];
+
+  it('lists every CWE of plan/content-catalog.md', () => {
+    const cwe = ids(/CWE-(\d+)/g);
+    expect(cwe.length).toBeGreaterThan(20);
+    expect(cwe.filter((n) => unknownId('cwe', n) !== null)).toEqual([]);
+  });
+
+  it('lists every ATT&CK technique of plan/content-catalog.md', () => {
+    const attack = ids(/ATT&CK (T\d{4}(?:\.\d{3})?)/g);
+    expect(attack.length).toBeGreaterThan(8);
+    expect(attack.filter((t) => unknownId('attack', t) !== null)).toEqual([]);
+  });
+
+  // A tactic (TA0011) is not a technique: the passport word `attack` cannot hold it. Not a
+  // failure, so a plan edit does not stop the gate; the warning names the row to fix.
+  it('warns about ATT&CK tactics in plan/content-catalog.md', () => {
+    const rows = catalog
+      .split('\n')
+      .filter((line) => /ATT&CK TA\d{4}/.test(line))
+      .map((line) => line.split('|')[1]?.trim() ?? line);
+    if (rows.length > 0) {
+      // Straight to stderr: vitest hides console output of passing tests.
+      process.stderr.write(
+        `\nwarning: plan/content-catalog.md names ATT&CK tactics, not techniques, in rows: ${rows.join(', ')}; ` +
+          'a passport `attack` holds only techniques (T1071), see src/core/lesson/README.md\n',
+      );
+    }
+    expect(rows.every((row) => /^[A-L]\d{1,2}$/.test(row))).toBe(true);
+  });
+
+  it('lists every CVE of plan/content-catalog.md', () => {
+    const cves = ids(/(CVE-\d{4}-\d{4,7})/g);
+    expect(cves.length).toBe(6);
+    expect(cves.filter((c) => unknownId('cves', c) !== null)).toEqual([]);
   });
 });
 

@@ -1,7 +1,9 @@
 // M1.4: what the explanation panel shows, without a browser (S3 runs it in one).
 import { describe, expect, it } from 'vitest';
+import { CWE_ENTRIES } from '../core/lesson/ids';
 import type { SiteCode, SitePassport, SiteStep } from '../core/lesson/site';
 import {
+  CWE_NAMES,
   codeAtDeep,
   DEPTH_TABS,
   levelText,
@@ -206,6 +208,12 @@ describe('passport', () => {
       'cwe',
     ]);
     expect(passportRows(empty)).toEqual([]);
+  });
+
+  it('names only CWE entries of the vetted list (K86)', () => {
+    const numbers = Object.keys(CWE_NAMES).map(Number);
+    expect(numbers).toEqual([22, 78, 79, 89, 352, 918]);
+    expect(numbers.filter((n) => !CWE_ENTRIES.has(n))).toEqual([]);
   });
 
   it('shows ATT&CK, CVE and CVSS when present', () => {

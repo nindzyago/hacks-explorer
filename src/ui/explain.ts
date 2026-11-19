@@ -97,9 +97,11 @@ export function severityWord(severity: Severity): string {
 
 /**
  * Russian names of the CWE entries the lessons use, for a passport without `class` (K71). Only
- * names checked against cwe.mitre.org; an unknown number gives no class line.
+ * names checked against cwe.mitre.org; an unknown number gives no class line. The numbers and
+ * official English names live in the checker's vetted list (src/core/lesson/ids.ts, K86); a test
+ * keeps every number here in that list. Translations stay here: they are words of the interface.
  */
-const CWE_NAMES: Readonly<Record<number, string>> = {
+export const CWE_NAMES: Readonly<Record<number, string>> = {
   22: 'Обход пути к файлу',
   78: 'Внедрение команд ОС',
   79: 'Межсайтовый скриптинг (XSS)',
