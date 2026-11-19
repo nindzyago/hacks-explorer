@@ -60,7 +60,7 @@ database.
 
 #### Deeper
 
-Storing the password itself is out: any database leak hands over every password at once.
+Storing the password itself is not an option: any database leak hands over every password at once.
 Encrypting is bad too: the key lives somewhere nearby, and with it the passwords decrypt. OWASP
 advises encryption only in rare cases where the original password is really needed. Logging in
 does not need it: comparing a **hash** is enough. A hash function is one-way: a password turns
@@ -72,9 +72,9 @@ into a hash at once, but a hash turns back into a password only by guessing.
 Message: SHA-256(password) · Result: unsalted hash stored
 
 ```text
-alice  965ccdd7…5775ac7
-bob    965ccdd7…5775ac7
-carol  e0efc1e7…e23d27ea
+alice  965ccdd7…e5775ac7
+bob    965ccdd7…e5775ac7
+carol  e0efc1e7…e23d27ea  (another password, made-up hash)
 ```
 
 #### Simple
@@ -152,7 +152,7 @@ record in the database was made.
 Message: hashes of common passwords · Result: passwords found
 
 ```text
-sha256("sunny2024") = ⟦965ccdd7…5775ac7⟧  → alice, bob
+sha256("sunny2024") = ⟦965ccdd7…e5775ac7⟧  → alice, bob
 ```
 
 #### Simple
@@ -163,7 +163,7 @@ found, and **for Alice and Bob at once**.
 
 #### Step by step
 
-Equal hashes show even without guessing: the attacker sees right away that these people share a
+Equal hashes are visible even before any guessing: the attacker sees right away that these people share a
 password. Finding it once reveals it for every row with the same hash.
 
 #### Deeper
@@ -194,7 +194,7 @@ Worse, many people reuse one password on different sites. The attacker can try t
 password on email or a bank (this is credential stuffing). So a leak from a small forum hurts
 other services too.
 
-### `crack-slow` Guessing hits the price
+### `crack-slow` Guessing becomes too costly
 
 `attacker → copy` · `attack` · `with-defence` · `stopped`
 Message: hashes of common passwords · Result: every guess is costly, guessing stalls
@@ -234,8 +234,11 @@ let people choose such passwords.
 - **A secret key kept apart from the database (a “pepper”).** NIST advises passing the hash
   through a key that is stored outside the database, preferably in a hardware security module.
   Then a copy of the database alone is not enough.
-- **bcrypt's limits.** Most implementations use only the first 72 bytes of the password.
+- **bcrypt's limits.** Most implementations use only the first 72 bytes of the password, so
+  passwords are limited to 72 bytes.
 - **A list of banned passwords.** When a password is set, the site checks it against a list of
   common and already leaked passwords and refuses them.
 - **Rehashing old hashes.** If the database holds fast hashes, the password is hashed again with
-  the new function the next time the user logs in.
+  the new function the next time the user logs in. Don't wait for every login: wrap the old hashes
+  in the new function right away (Argon2id of the old hash), and reset the passwords of accounts
+  that have not logged in for a long time.

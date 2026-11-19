@@ -4,8 +4,9 @@
 // and the close button close it and focus returns; a ready lesson opens from it and the address
 // follows; the glossary tab lists the terms and opens a definition; the page stays one screen;
 // the phone gets a full-width sheet. Screenshots go to DRAWER_SHOTS when it names a folder.
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, openApp, sceneReady, test } from './support';
 
@@ -32,15 +33,15 @@ const topics = (page: Page) =>
     .getByTestId('catalog-topic')
     .evaluateAll((items) => items.map((item) => item.getAttribute('data-topic') ?? ''));
 
-/** Ready lessons in a language, from the built catalog: the count grows with every lesson. */
-async function readyCount(page: Page, language: string): Promise<number> {
-  return page.evaluate(async (lang) => {
-    const response = await fetch('/data/catalog.json');
-    const catalog = (await response.json()) as {
-      lessons: { translations: { language: string }[] }[];
-    };
-    return catalog.lessons.filter((l) => l.translations.some((t) => t.language === lang)).length;
-  }, language);
+/**
+ * Ready lessons in a language, counted from the source folders, not from the built data under
+ * test: every folder in content/lessons that holds `<language>.md` is one ready lesson.
+ */
+function readyCount(language: string): number {
+  const folder = fileURLToPath(new URL('../content/lessons', import.meta.url));
+  return readdirSync(folder, { withFileTypes: true }).filter(
+    (entry) => entry.isDirectory() && existsSync(join(folder, entry.name, `${language}.md`)),
+  ).length;
 }
 
 async function openLessons(page: Page): Promise<void> {
@@ -73,7 +74,7 @@ test.describe('S7: the lessons panel', () => {
     await expect(page.getByTestId('catalog-group')).toHaveCount(12);
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
-      `Готово уроков: ${String(await readyCount(page, 'ru'))} из 75`,
+      `Готово уроков: ${String(readyCount('ru'))} из 75`,
     );
     const b = page.locator('[data-testid="catalog-group"][data-section="B"]');
     await expect(b.getByTestId('catalog-count')).toHaveText('готово 1 из 8');
@@ -133,7 +134,7 @@ test.describe('S7: the lessons panel', () => {
     await page.getByTestId('catalog-search').fill(' -- ');
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
-      `Готово уроков: ${String(await readyCount(page, 'ru'))} из 75`,
+      `Готово уроков: ${String(readyCount('ru'))} из 75`,
     );
   });
 
@@ -478,7 +479,7 @@ test.describe('in English (M2.3, K105)', () => {
     await openLessons(page);
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
-      `Lessons ready: ${String(await readyCount(page, 'en'))} of 75`,
+      `Lessons ready: ${String(readyCount('en'))} of 75`,
     );
     await expect(
       page.locator('[data-testid="catalog-group"][data-section="B"] [data-testid="catalog-count"]'),

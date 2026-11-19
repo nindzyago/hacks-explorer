@@ -132,7 +132,7 @@ read the site's cookies and send requests in the victim's name.
 #### Deeper
 
 The browser separates sites by origin (scheme, host name and port) and does not let a script from
-one site read another site's data. XSS gets around this separation: foreign code runs inside the
+one site read another site's data. XSS gets around this separation: the attacker's code runs inside the
 origin of shop.example. So the script can do whatever the shop itself can do in this tab: change
 the page, show a fake login form, place an order.
 
@@ -183,7 +183,7 @@ it can no longer start a tag. This is where the attack stops.
 #### Step by step
 
 The server runs the `q` parameter through an encoding function for HTML text. Five characters
-that could open a tag or an attribute are replaced with character references.
+that could open a tag, an attribute or a character reference are replaced with character references.
 
 #### Deeper
 
@@ -228,7 +228,7 @@ Content-Security-Policy: ⟦script-src 'self'⟧
 
 #### Simple
 
-Suppose some corner of the site still forgot to encode. The second layer of defence is a
+This is a separate scenario: suppose encoding was still forgotten somewhere on the site. The second layer of defence is a
 **security policy**: the site tells the browser in advance where scripts may come from. A script
 written right into the page is not on that list, and the browser does not run it.
 
@@ -252,9 +252,9 @@ extra layer, not a replacement for encoding.
   turns the protection off.
 - **If you need HTML from users** (for example, a formatted comment), pass it through a proven
   sanitizer, not a home-made filter.
-- **Content Security Policy.** A `Content-Security-Policy` header without `'unsafe-inline'`
-  forbids inline scripts: if encoding was forgotten somewhere, the browser still will not run the
-  foreign code.
+- **Content Security Policy.** A `Content-Security-Policy` header with a `script-src` rule that
+  has no `'unsafe-inline'` forbids inline scripts: if encoding was forgotten somewhere, the browser
+  still will not run the attacker's code.
 - **HttpOnly for the session cookie.** A script cannot read the cookie and send it to the
   attacker. This reduces the damage but does not stop XSS.
 - **For users:** a link to a real site can be dangerous too. If an unexpected link has a long,

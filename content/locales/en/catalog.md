@@ -40,7 +40,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 
 ## `D` Web: access and sessions
 
-- `D1` Someone else's data by number (IDOR)
+- `D1` Other people's data by changing a number (IDOR)
 - `D2` Privilege escalation
 - `D3` Session hijacking and fixation
 - `D4` Attacks on JWT

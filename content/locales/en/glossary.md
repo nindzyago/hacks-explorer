@@ -190,7 +190,7 @@ Forms: CSRF, cross-site request forgery
 Cross-Site Request Forgery: someone else's page makes the victim's browser send a request to a
 site where the victim is already logged in. The browser attaches the victim's cookie on its own,
 and the site carries out the action in the victim's name: a transfer, a password change. In the
-MITRE catalogue it is CWE-352.
+MITRE catalogue it is weakness CWE-352 and attack pattern CAPEC-62.
 
 ## `csrf-token` CSRF token
 
@@ -209,7 +209,8 @@ so a forged request arrives without the token and is rejected.
 Forms: SameSite
 
 A cookie attribute that tells the browser whether to attach the cookie to requests coming from
-other sites. `Strict` means never, `Lax` only on an ordinary link navigation, `None` always. It
+other sites. `Strict` means never, `Lax` only on a top-level navigation with a safe method, such as following a
+link, `None` always. It
 protects against CSRF as an extra layer but does not replace a CSRF token.
 
 ## `idor` IDOR
@@ -220,7 +221,7 @@ Forms: IDOR
 
 Insecure Direct Object Reference. The server hands out a record by a number from the request (for
 example, order `/orders/1002`) and does not check that it belongs to whoever is asking. Changing
-the number shows or changes someone else's data. The weakness class is CWE-639; in the OWASP Top
+the number shows or changes someone else's data. The closest MITRE class is CWE-639; in the OWASP Top
 10:2021 it falls under A01 Broken Access Control. In APIs the same bug is called BOLA.
 
 ## `authorization` Authorization
@@ -316,7 +317,7 @@ open session. Login methods bound to the domain, such as passkeys, resist it.
 
 ## `salt` Salt
 
-`category` people · `see` hash, password-hashing · `lessons` F1
+`category` web · `see` hash, password-hashing · `lessons` F1
 
 Forms: salt, salts, salted
 
@@ -326,7 +327,7 @@ hashes, and tables of hashes computed in advance are useless.
 
 ## `password-hashing` Password hashing function
 
-`category` people · `see` hash, salt · `lessons` F1
+`category` web · `see` hash, salt · `lessons` F1
 
 Forms: password hashing function, password hashing functions, slow hash function, slow hash, slow hashes
 
@@ -509,7 +510,7 @@ ransomware cannot reach saves you from it: one disconnected from the network or 
 
 ## `network-segmentation` Network segmentation
 
-`category` malware · `see` ransomware, trust-boundary · `lessons` H2
+`category` network · `see` ransomware, trust-boundary · `lessons` H2
 
 Forms: network segmentation, segmentation
 

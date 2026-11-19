@@ -14,3 +14,4 @@ request: одна строка — домен в обратных кавычка
 - `w3.org` W3C
 - `whatwg.org` WHATWG
 - `developer.mozilla.org` MDN
+- `logging.apache.org` Apache Logging Services: бюллетени безопасности Log4j
