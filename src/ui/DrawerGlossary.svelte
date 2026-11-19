@@ -106,10 +106,20 @@
     run('glossary.open', { id });
   }
 
-  /** The search field, for the panel to focus when it opens. */
+  /** Focus asked for before the field is drawn (the data still loading). */
+  let focusWanted = $state(false);
+
+  /** The search field, for the panel to focus when it opens (or once it is drawn). */
   export function focusSearch(): void {
-    search?.focus();
+    if (search === null) focusWanted = true;
+    else search.focus();
   }
+
+  $effect(() => {
+    if (!focusWanted || search === null) return;
+    focusWanted = false;
+    search.focus();
+  });
 </script>
 
 <div class="glossary" data-testid="glossary-list" data-state={data.state}>

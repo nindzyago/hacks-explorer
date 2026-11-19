@@ -74,14 +74,13 @@ test.describe('S7: the lessons panel', () => {
     await expect(b8.locator('a, button, [tabindex]')).toHaveCount(0);
     // Focus starts in the search field; the player keys are quiet while the panel is open.
     await expect(page.getByTestId('catalog-search')).toBeFocused();
+    await keep(page, testInfo, 'drawer-lessons-1280x720');
     const before = await page.evaluate(() => window.__app?.state.get().player);
     await page.keyboard.press('Tab');
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('d');
     await page.keyboard.press('Space');
     expect(await page.evaluate(() => window.__app?.state.get().player)).toEqual(before);
-    await page.getByTestId('catalog-search').focus();
-    await keep(page, testInfo, 'drawer-lessons-1280x720');
   });
 
   test('«sql» finds B1 and B8; «Сеть» gives section G; nothing found shows a hint and a reset', async ({
@@ -130,7 +129,7 @@ test.describe('S7: the lessons panel', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('drawer')).toBeHidden();
     await expect(page.getByTestId('open-lessons')).toBeFocused();
-    expect(await page.evaluate(() => window.__app?.state.get().drawer)).toBeNull();
+    await expect.poll(() => page.evaluate(() => window.__app?.state.get().drawer)).toBeNull();
 
     await openLessons(page);
     // The backdrop on the right of the panel.
@@ -143,8 +142,21 @@ test.describe('S7: the lessons panel', () => {
     await page.getByTestId('drawer-close').click();
     await expect(page.getByTestId('drawer')).toBeHidden();
     await expect(page.getByTestId('open-glossary')).toBeFocused();
+    // Right after a close the panel opens again by a command and stays open.
+    expect(await run(page, 'drawer.open', { tab: 'glossary' })).toEqual({ ok: true });
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    await expect(page.getByTestId('drawer')).toBeVisible();
+    expect(await run(page, 'drawer.close')).toEqual({ ok: true });
+    expect(await run(page, 'drawer.open', { tab: 'glossary' })).toEqual({ ok: true });
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
+    await expect(page.getByTestId('drawer')).toBeVisible();
+    expect(await run(page, 'drawer.close')).toEqual({ ok: true });
 
-    // Opened by a command, closed by one: the panel follows the state.
+    // Opened by a command, closed by one: the panel follows the state. Nothing had focus, so
+    // it goes to «Уроки».
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    });
     expect(await run(page, 'drawer.open', { tab: 'lessons' })).toEqual({ ok: true });
     await expect(page.getByTestId('drawer')).toBeVisible();
     expect(await run(page, 'drawer.close')).toEqual({ ok: true });
@@ -335,4 +347,33 @@ test.describe('layout', () => {
       }
     });
   }
+});
+
+test.describe('in English (M2.3, K105)', () => {
+  test('the panel speaks English: tabs, counts, search, «soon», the glossary', async ({ page }) => {
+    await openApp(page, '/en/lesson/B1');
+    await expect(page.getByTestId('open-lessons')).toHaveText('Lessons');
+    await expect(page.getByTestId('open-glossary')).toHaveText('Glossary');
+    await openLessons(page);
+    expect(await topics(page)).toHaveLength(75);
+    await expect(page.getByTestId('catalog-status')).toHaveText('Lessons ready: 2 of 75');
+    await expect(
+      page.locator('[data-testid="catalog-group"][data-section="B"] [data-testid="catalog-count"]'),
+    ).toHaveText('1 of 8 ready');
+    await page.getByTestId('catalog-search').fill('sql');
+    expect(await topics(page)).toEqual(['B1', 'B8']);
+    await expect(page.locator('[data-topic="B8"]')).toContainText('soon');
+    await expect(page.locator('[data-topic="B1"] a')).toHaveAttribute('href', '/en/lesson/B1');
+    await page.getByTestId('catalog-search').fill('');
+    await page.getByTestId('catalog-section').selectOption({ label: 'G. Network' });
+    expect(await topics(page)).toEqual(['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']);
+    const cyrillic = /[Ѐ-ӿ]/;
+    expect(await page.getByTestId('drawer').innerText()).not.toMatch(cyrillic);
+    await page.getByTestId('drawer-tab-glossary').click();
+    await expect(page.getByTestId('glossary-list')).toHaveAttribute('data-state', 'ready');
+    await page.getByTestId('glossary-search').fill('phishing');
+    await page.locator('[data-testid="glossary-term"][data-term="phishing"]').click();
+    await expect(page.getByTestId('glossary-entry-title')).toHaveText(/phishing/i);
+    expect(await page.getByTestId('drawer').innerText()).not.toMatch(cyrillic);
+  });
 });

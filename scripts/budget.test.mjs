@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import {
   FIRST_LOAD_JS_GZIP,
   GLOSSARY_FILE,
+  TOPICS_FILE,
   LESSON_FILE,
   firstLoadScripts,
   measure,
@@ -74,6 +75,16 @@ describe('measure', () => {
     writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), 'x'.repeat(GLOSSARY_FILE + 1));
     expect(measure(dir).problems).toEqual([
       'data/glossary/ru.json: 30721 bytes; a glossary file is at most 30720',
+    ]);
+  });
+  it('measures the topics files and fails one over 30 KB (M2.1b)', () => {
+    const dir = site('topics');
+    mkdirSync(join(dir, 'data', 'topics'), { recursive: true });
+    writeFileSync(join(dir, 'data', 'topics', 'ru.json'), '{}');
+    expect(measure(dir).topics).toEqual([{ path: 'data/topics/ru.json', bytes: 2 }]);
+    writeFileSync(join(dir, 'data', 'topics', 'ru.json'), 'x'.repeat(TOPICS_FILE + 1));
+    expect(measure(dir).problems).toEqual([
+      'data/topics/ru.json: 30721 bytes; a topics file is at most 30720',
     ]);
   });
 

@@ -8,6 +8,7 @@
   import type { AppContext } from '../commands/app';
   import type { GlossaryLoader } from '../services/glossary/glossary';
   import type { Translate } from '../services/i18n/i18n';
+  import { formatAddress } from '../services/router/address';
   import type { TopicsLoader } from '../services/topics/topics';
   import DrawerGlossary from './DrawerGlossary.svelte';
   import DrawerLessons from './DrawerLessons.svelte';
@@ -19,6 +20,7 @@
     glossary,
     home,
     t,
+    notFound,
     fallbackFocus,
   }: {
     app: AppContext;
@@ -26,6 +28,8 @@
     glossary: GlossaryLoader;
     home: string;
     t: Translate;
+    /** The address is no page of the site (M2.2): a lesson opens by loading its address. */
+    notFound: boolean;
     /** Where focus goes on close when nothing on the page had it before (the «Уроки» button). */
     fallbackFocus: () => HTMLElement | null;
   } = $props();
@@ -69,15 +73,11 @@
     }
   });
 
-  // A switch of tab moves focus into the new tab.
-  let shownTab: string | null = null;
-  $effect(() => {
-    if (tab !== null && shownTab !== null && tab !== shownTab) focusInside();
-    shownTab = tab;
-  });
-
   // The dialog closed by itself (Esc): the state follows. Focus returns either way.
   function onclose(): void {
+    // The close event comes a moment later: the panel may have opened again since (a command
+    // right after a close). That close is over.
+    if (dialog?.open === true) return;
     if ($store.drawer !== null) run('drawer.close');
     const back = returnTo?.isConnected === true ? returnTo : fallbackFocus();
     returnTo = null;
@@ -108,6 +108,15 @@
 
   function openLesson(id: string): void {
     run('drawer.close');
+    if (notFound) {
+      // The router holds the state while the address is no page; the lesson's address is loaded
+      // as a page, which the router reads as any address.
+      const base = home.endsWith('/') ? home.slice(0, -1) : home;
+      window.location.assign(
+        `${base}${formatAddress({ lang: $store.locale, lesson: id, step: 1, defence: false })}`,
+      );
+      return;
+    }
     run('lesson.open', { id });
   }
 

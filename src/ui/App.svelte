@@ -288,7 +288,15 @@
       <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
     {/if}
   {/if}
-  <Drawer {app} {topics} {glossary} {home} {t} fallbackFocus={() => lessonsButton} />
+  <Drawer
+    {app}
+    {topics}
+    {glossary}
+    {home}
+    {t}
+    notFound={$notFound}
+    fallbackFocus={() => lessonsButton}
+  />
 </main>
 
 <style>

@@ -137,7 +137,7 @@ in. Keep the same keys and the same `{names}`.
 - `drawer.tabs` What the panel shows
 - `drawer.close` Close the panel
 - `catalog.search` Find a lesson
-- `catalog.searchHint` Title, section or number, e.g. B1
+- `catalog.searchHint` For example, SQL or B1
 - `catalog.section` Section
 - `catalog.allSections` All sections
 - `catalog.total` Lessons ready: {ready} of {count}

@@ -137,7 +137,7 @@
 - `drawer.tabs` Что показать в панели
 - `drawer.close` Закрыть панель
 - `catalog.search` Найти урок
-- `catalog.searchHint` Название, раздел или номер, например B1
+- `catalog.searchHint` Например, SQL или B1
 - `catalog.section` Раздел
 - `catalog.allSections` Все разделы
 - `catalog.total` Готово уроков: {ready} из {count}
