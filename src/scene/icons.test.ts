@@ -4,16 +4,23 @@ import { describe, expect, it } from 'vitest';
 import { iconNames, iconUrl } from './icons';
 
 describe('icons', () => {
-  it('has the eight icons of the prototype', () => {
+  // M3.0 (K121): six more from sheets D and E, fourteen in all (ATTRIBUTION.md).
+  it('has the fourteen icons of the sheets A–E', () => {
     expect(iconNames()).toEqual([
+      'assistant',
       'attacker',
+      'backup',
       'bank',
       'browser',
       'db',
+      'document',
+      'log',
       'mail',
+      'phone',
       'router',
       'server',
       'user',
+      'workstation',
     ]);
   });
 
