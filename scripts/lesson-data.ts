@@ -152,8 +152,7 @@ export interface LessonDataOptions {
   readonly contentRoot?: string;
   /**
    * The folder whose `content/locales/<lang>/ui.md` give the interface strings; `contentRoot` by
-   * default. The e2e build with a second language (M2.3, K106) takes its lessons from a fixture
-   * folder and the strings from the repository, so the strings it tests are the real ones.
+   * default (a build can take its lessons from one folder and the strings from another).
    */
   readonly uiRoot?: string;
 }
