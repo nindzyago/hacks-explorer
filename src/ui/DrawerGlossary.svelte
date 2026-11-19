@@ -10,13 +10,14 @@
   import type { Translate } from '../services/i18n/i18n';
   import RichBlocks from './RichBlocks.svelte';
 
-  const {
+  let {
     loader,
     language,
     open,
     t,
     run,
     onopen,
+    query = $bindable(''),
   }: {
     loader: GlossaryLoader;
     language: string;
@@ -26,6 +27,8 @@
     run: (id: string, params?: Readonly<Record<string, unknown>>) => void;
     /** The reader picked a related lesson. */
     onopen: (id: string) => void;
+    /** The search belongs to the panel: a switch of tab keeps it. */
+    query?: string;
   } = $props();
   const uid = $props.id();
 
@@ -35,7 +38,6 @@
     | { readonly state: 'error' };
   let data = $state.raw<Data>({ state: 'loading' });
   let attempt = $state(0);
-  let query = $state('');
   let search = $state<HTMLInputElement | null>(null);
   let heading = $state<HTMLElement | null>(null);
   /** The term the reader came from: focus returns to it from «Все слова». */
@@ -208,7 +210,7 @@
         bind:this={search}
       />
     </div>
-    {#if query.trim() !== ''}
+    {#if queryWords(query).length > 0}
       <p class="note" role="status">{t('glossaryList.found', { count: foundCount })}</p>
     {/if}
     {#if groups.length === 0}

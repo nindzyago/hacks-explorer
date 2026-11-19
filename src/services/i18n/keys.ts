@@ -108,6 +108,7 @@ export const UI_KEYS = [
   'catalog.ready',
   'catalog.soon',
   'catalog.soonTitle',
+  'catalog.open',
   'catalog.current',
   'catalog.found',
   'catalog.empty',

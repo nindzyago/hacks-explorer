@@ -4,18 +4,20 @@
   // Search by title, section and id; a section filter; an empty result says so and offers a
   // reset. The topics of the page's language load the first time the tab shows.
   import type { SiteTopics } from '../core/topics/site';
-  import { filterTopics, MAX_QUERY_LENGTH, readyCount } from '../core/topics/search';
+  import { filterTopics, MAX_QUERY_LENGTH, queryWords, readyCount } from '../core/topics/search';
   import type { Translate } from '../services/i18n/i18n';
   import { formatAddress } from '../services/router/address';
   import type { TopicsLoader } from '../services/topics/topics';
 
-  const {
+  let {
     loader,
     language,
     current,
     home,
     t,
     onopen,
+    query = $bindable(''),
+    section = $bindable(''),
   }: {
     loader: TopicsLoader;
     language: string;
@@ -26,6 +28,9 @@
     t: Translate;
     /** The reader picked a ready lesson. */
     onopen: (id: string) => void;
+    /** The search and the section filter belong to the panel: a switch of tab keeps them. */
+    query?: string;
+    section?: string;
   } = $props();
   const uid = $props.id();
 
@@ -35,8 +40,6 @@
     | { readonly state: 'error' };
   let data = $state.raw<Data>({ state: 'loading' });
   let attempt = $state(0);
-  let query = $state('');
-  let section = $state('');
   let search = $state<HTMLInputElement | null>(null);
 
   $effect(() => {
@@ -61,7 +64,8 @@
   const found = $derived(
     filterTopics(sections, { query, section: section === '' ? null : section }),
   );
-  const filtered = $derived(query.trim() !== '' || section !== '');
+  // A query of only spaces or punctuation searches nothing: the status shows the total.
+  const filtered = $derived(queryWords(query).length > 0 || section !== '');
   const total = $derived(
     sections.reduce(
       (sum, s) => {
@@ -114,7 +118,15 @@
     </div>
     <div class="field">
       <label for="{uid}-s">{t('catalog.section')}</label>
-      <select id="{uid}-s" data-testid="catalog-section" bind:value={section}>
+      <!-- S7 (K114): choosing a section shows the whole section; the query is cleared. -->
+      <select
+        id="{uid}-s"
+        data-testid="catalog-section"
+        bind:value={section}
+        onchange={() => {
+          query = '';
+        }}
+      >
         <option value="">{t('catalog.allSections')}</option>
         {#each sections as s (s.id)}
           <option value={s.id}>{s.id}. {s.title}</option>
@@ -192,7 +204,7 @@
                         {#if topic.note !== null}<span class="sub">{topic.note}</span>{/if}
                       </span>
                       {#if topic.id === current}<span class="badge now">{t('catalog.current')}</span
-                        >{/if}
+                        >{:else}<span class="badge open">{t('catalog.open')}</span>{/if}
                     </a>
                   {:else}
                     <div class="topic soon" title={t('catalog.soonTitle')}>
@@ -411,5 +423,13 @@
   .badge.now {
     border-color: var(--legit);
     color: var(--legit);
+  }
+
+  /* A ready lesson stands out among the «скоро» rows: a filled chip (white on --legit, 4.5:1). */
+  .badge.open {
+    border-color: var(--legit);
+    background: var(--legit);
+    color: var(--panel);
+    font-weight: 700;
   }
 </style>

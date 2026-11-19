@@ -52,4 +52,19 @@ describe('drawer.open / drawer.close', () => {
     }
     expect(a.store.get().drawer).toBeNull();
   });
+
+  it('any change of lesson closes the panel and its term; the same lesson too', () => {
+    const a = createApp();
+    a.registry.run('drawer.open', { tab: 'glossary' });
+    a.registry.run('glossary.open', { id: 'sql' });
+    a.registry.run('lesson.open', { id: 'B1' });
+    expect(a.store.get()).toMatchObject({ drawer: null, glossary: null, lesson: 'B1' });
+    a.registry.run('drawer.open');
+    a.registry.run('lesson.open', { id: 'B1' });
+    expect(a.store.get().drawer).toBeNull();
+    // A definition open in place outside the panel stays: lesson.open did not touch it before.
+    a.registry.run('glossary.open', { id: 'sql' });
+    a.registry.run('lesson.open', { id: 'I1' });
+    expect(a.store.get().glossary).toBe('sql');
+  });
 });

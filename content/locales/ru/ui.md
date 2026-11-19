@@ -144,6 +144,7 @@
 - `catalog.ready` готово {ready} из {count}
 - `catalog.soon` скоро
 - `catalog.soonTitle` Этот урок ещё пишется
+- `catalog.open` открыть
 - `catalog.current` открыт сейчас
 - `catalog.found` Найдено тем: {count}
 - `catalog.empty` Ничего не нашлось. Проверьте написание или выберите другой раздел.

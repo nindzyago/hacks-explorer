@@ -144,6 +144,7 @@ in. Keep the same keys and the same `{names}`.
 - `catalog.ready` {ready} of {count} ready
 - `catalog.soon` soon
 - `catalog.soonTitle` This lesson is still being written
+- `catalog.open` open
 - `catalog.current` open now
 - `catalog.found` Topics found: {count}
 - `catalog.empty` Nothing found. Check the spelling or choose another section.

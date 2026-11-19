@@ -76,7 +76,16 @@ function compare(base: CatalogFile, other: CatalogFile): LessonError[] {
     }
   }
   if (reporter.total() === 0 && baseIds.join(' ') !== ids.join(' ')) {
-    reporter.add(START, '', 'section-order', `the topics go in the order of ${base.path}`);
+    // The same topics in another order: the first one out of place carries the error.
+    const topics = other.sections.flatMap((s) => s.topics);
+    const at = topics.findIndex((t, i) => t.id !== baseIds[i]);
+    const wrong = topics[at];
+    reporter.add(
+      wrong === undefined ? START : { line: wrong.line, column: 1 },
+      wrong?.id ?? '',
+      'section-order',
+      `${wrong?.id ?? 'a topic'} stands where ${base.path} has ${baseIds[at] ?? 'another topic'}: the topics go in the order of the Russian catalog`,
+    );
   }
   return capReported(reporter);
 }

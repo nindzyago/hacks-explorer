@@ -13,7 +13,7 @@
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
   import DefenceToggle from './DefenceToggle.svelte';
-  import Drawer from './Drawer.svelte';
+  import type DrawerPanel from './Drawer.svelte';
   import GlossaryPopover from './GlossaryPopover.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
   import { loadErrorKey, type ShownErrorCode } from './load-error';
@@ -163,6 +163,21 @@
   /** A button is pressed by Space on key up: on the player's own buttons Space was play/pause. */
   let lessonsButton = $state<HTMLButtonElement | null>(null);
 
+  // M2.1b: the side panel is its own chunk, loaded the first time it opens (not in the first
+  // load). If the chunk cannot load the panel's state is closed again, so the buttons still work.
+  let Drawer = $state.raw<typeof DrawerPanel | null>(null);
+  $effect(() => {
+    if ($store.drawer === null || Drawer !== null) return;
+    void import('./Drawer.svelte').then(
+      (module) => {
+        Drawer = module.default;
+      },
+      () => {
+        run('drawer.close');
+      },
+    );
+  });
+
   function onkeyup(event: KeyboardEvent): void {
     if (event.key !== ' ' && event.code !== 'Space') return;
     if (keyTarget(event.target).player === true) event.preventDefault();
@@ -288,15 +303,17 @@
       <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
     {/if}
   {/if}
-  <Drawer
-    {app}
-    {topics}
-    {glossary}
-    {home}
-    {t}
-    notFound={$notFound}
-    fallbackFocus={() => lessonsButton}
-  />
+  {#if Drawer !== null}
+    <Drawer
+      {app}
+      {topics}
+      {glossary}
+      {home}
+      {t}
+      notFound={$notFound}
+      fallbackFocus={() => lessonsButton}
+    />
+  {/if}
 </main>
 
 <style>

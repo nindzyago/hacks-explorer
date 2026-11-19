@@ -43,6 +43,20 @@
   let dialog = $state<HTMLDialogElement | null>(null);
   let lessons = $state<{ focusSearch(): void } | null>(null);
   let words = $state<{ focusSearch(): void } | null>(null);
+  /**
+   * The searches and the section filter live as long as the panel is open: a switch of tab keeps
+   * them, closing the panel clears them (K114).
+   */
+  let lessonQuery = $state('');
+  let lessonSection = $state('');
+  let glossaryQuery = $state('');
+  $effect(() => {
+    if (tab !== null) return;
+    lessonQuery = '';
+    lessonSection = '';
+    glossaryQuery = '';
+  });
+
   /** The element that had focus before the panel opened; focus returns to it. */
   let returnTo: HTMLElement | null = null;
   const phone = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 760px)');
@@ -194,6 +208,8 @@
           loader={topics}
           language={$store.locale}
           current={$store.lesson}
+          bind:query={lessonQuery}
+          bind:section={lessonSection}
           {home}
           {t}
           onopen={openLesson}
@@ -204,6 +220,7 @@
           loader={glossary}
           language={$store.locale}
           open={$store.glossary}
+          bind:query={glossaryQuery}
           {t}
           {run}
           onopen={openLesson}

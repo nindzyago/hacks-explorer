@@ -83,7 +83,11 @@ export function parseCatalogFile(path: string, text: unknown): CatalogFileResult
     reporter.add(START, '', 'parse-failed', 'the file is not text');
     return failed();
   }
-  if (text.length > MAX_CATALOG_FILE_BYTES) {
+  // In UTF-8 bytes; a string longer in characters is larger in bytes too, so it is not encoded.
+  if (
+    text.length > MAX_CATALOG_FILE_BYTES ||
+    new TextEncoder().encode(text).length > MAX_CATALOG_FILE_BYTES
+  ) {
     reporter.add(START, '', 'too-large', `larger than ${String(MAX_CATALOG_FILE_BYTES)} bytes`);
     return failed();
   }

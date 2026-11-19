@@ -157,7 +157,10 @@ export function registerPlayerCommands(
         startedMs: clock.now(),
         counts,
       };
-      store.set(Object.freeze({ ...state, lesson: id, player: Object.freeze(fresh) }));
+      // M2.1b (K113): any change of lesson (the panel, Back and Forward, the control channel)
+      // closes the side panel and a term open in it.
+      const panel = state.drawer === null ? {} : { drawer: null, glossary: null };
+      store.set(Object.freeze({ ...state, ...panel, lesson: id, player: Object.freeze(fresh) }));
       check();
     },
   });

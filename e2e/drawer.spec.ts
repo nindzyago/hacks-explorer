@@ -64,7 +64,8 @@ test.describe('S7: the lessons panel', () => {
     await expect(page.getByTestId('catalog-status')).toHaveText('Готово уроков: 2 из 75');
     const b = page.locator('[data-testid="catalog-group"][data-section="B"]');
     await expect(b.getByTestId('catalog-count')).toHaveText('готово 1 из 8');
-    // B1 is a link to its address; B8 is not focusable and says «скоро».
+    // B1 is a link to its address; B8 is not focusable and says «скоро»; I1 carries «открыть».
+    await expect(page.locator('[data-topic="I1"] a')).toContainText('открыть');
     const b1 = page.locator('[data-topic="B1"] a');
     await expect(b1).toHaveAttribute('href', '/ru/lesson/B1');
     await expect(b1).toHaveAttribute('aria-current', 'page');
@@ -72,36 +73,33 @@ test.describe('S7: the lessons panel', () => {
     await expect(b8).toHaveAttribute('data-ready', 'false');
     await expect(b8).toContainText('скоро');
     await expect(b8.locator('a, button, [tabindex]')).toHaveCount(0);
-    // Focus starts in the search field; the player keys are quiet while the panel is open.
+    // Focus starts in the search field.
     await expect(page.getByTestId('catalog-search')).toBeFocused();
     await keep(page, testInfo, 'drawer-lessons-1280x720');
-    const before = await page.evaluate(() => window.__app?.state.get().player);
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('d');
-    await page.keyboard.press('Space');
-    expect(await page.evaluate(() => window.__app?.state.get().player)).toEqual(before);
   });
 
-  test('«sql» finds B1 and B8; «Сеть» gives section G; nothing found shows a hint and a reset', async ({
+  test('S7: «sql» → B1, B8 first; then the section «Сеть» → its seven topics; nothing found → a hint and a reset', async ({
     page,
   }, testInfo) => {
     await openApp(page);
     await openLessons(page);
     await page.getByTestId('catalog-search').fill('sql');
-    expect(await topics(page)).toEqual(['B1', 'B8']);
+    expect((await topics(page)).slice(0, 2)).toEqual(['B1', 'B8']);
     await expect(page.getByTestId('catalog-status')).toHaveText('Найдено тем: 2');
     await keep(page, testInfo, 'drawer-search-sql-1280x720');
 
-    // Case, ё and ids.
-    await page.getByTestId('catalog-search').fill('SQL');
-    expect(await topics(page)).toEqual(['B1', 'B8']);
-    await page.getByTestId('catalog-search').fill('g6');
-    expect(await topics(page)).toEqual(['G6']);
-
-    // «sql» within «Сеть»: nothing, a hint and a reset button, not an empty panel.
-    await page.getByTestId('catalog-search').fill('sql');
+    // Choosing a section shows the whole section: the query is cleared (K114).
     await page.getByTestId('catalog-section').selectOption({ label: 'G. Сеть' });
+    expect(await topics(page)).toEqual(['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']);
+    await expect(page.getByTestId('catalog-search')).toHaveValue('');
+    await expect(page.getByTestId('catalog-status')).toHaveText('Найдено тем: 7');
+    // A query typed after the section searches inside it.
+    await page.getByTestId('catalog-search').fill('dns');
+    expect(await topics(page)).toEqual(['G2']);
+
+    // A query that matches nothing: a hint and a reset button, not an empty panel.
+    await page.getByTestId('catalog-section').selectOption('');
+    await page.getByTestId('catalog-search').fill('кракозябра');
     await expect(page.getByTestId('catalog-empty')).toBeVisible();
     await expect(page.getByTestId('catalog-empty')).toContainText('Ничего не нашлось');
     await expect(page.getByTestId('catalog-topic')).toHaveCount(0);
@@ -111,14 +109,90 @@ test.describe('S7: the lessons panel', () => {
     await expect(page.getByTestId('catalog-search')).toBeFocused();
     expect(await topics(page)).toHaveLength(75);
 
-    await page.getByTestId('catalog-section').selectOption({ label: 'G. Сеть' });
-    expect(await topics(page)).toEqual(['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']);
-    // Typing a section name finds its topics too.
-    await page.getByTestId('catalog-section').selectOption('');
+    // Case, ё, ids and the name of a section.
+    await page.getByTestId('catalog-search').fill('SQL');
+    expect(await topics(page)).toEqual(['B1', 'B8']);
+    await page.getByTestId('catalog-search').fill('g6');
+    expect(await topics(page)).toEqual(['G6']);
     await page.getByTestId('catalog-search').fill('сеть');
     expect(await topics(page)).toEqual(['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']);
-    await page.getByTestId('catalog-search').fill('кракозябра');
-    await expect(page.getByTestId('catalog-empty')).toBeVisible();
+    // Only punctuation is no query: everything, and the status shows the total.
+    await page.getByTestId('catalog-search').fill(' -- ');
+    expect(await topics(page)).toHaveLength(75);
+    await expect(page.getByTestId('catalog-status')).toHaveText('Готово уроков: 2 из 75');
+  });
+
+  test('the player takes no keys while the panel is open, on a lesson link and on a tab', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await openLessons(page);
+    const player = () => page.evaluate(() => window.__app?.state.get().player);
+    const before = await player();
+    await page.locator('[data-topic="I1"] a').focus();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('d');
+    await page.keyboard.press('ArrowLeft');
+    expect(await player()).toEqual(before);
+    await page.getByTestId('drawer-tab-lessons').focus();
+    await page.keyboard.press('d');
+    await page.keyboard.press('D');
+    expect(await player()).toEqual(before);
+    await expect(page.getByTestId('drawer')).toHaveAttribute('data-tab', 'lessons');
+    // Closed again, the same keys move the player.
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('drawer')).toBeHidden();
+    await expect.poll(() => page.evaluate(() => window.__app?.state.get().drawer)).toBeNull();
+    await page.keyboard.press('d');
+    await expect.poll(async () => (await player())?.defence).toBe(true);
+  });
+
+  test('a switch of tab keeps the search and the section; closing the panel clears them', async ({
+    page,
+  }) => {
+    await openApp(page);
+    await openLessons(page);
+    await page.getByTestId('catalog-search').fill('sql');
+    await page.getByTestId('drawer-tab-glossary').click();
+    await expect(page.getByTestId('glossary-list')).toHaveAttribute('data-state', 'ready');
+    await page.getByTestId('glossary-search').fill('фишинг');
+    await page.getByTestId('drawer-tab-lessons').click();
+    await expect(page.getByTestId('catalog-search')).toHaveValue('sql');
+    expect(await topics(page)).toEqual(['B1', 'B8']);
+    await page.getByTestId('drawer-tab-glossary').click();
+    await expect(page.getByTestId('glossary-search')).toHaveValue('фишинг');
+    await page.keyboard.press('Escape');
+    await openLessons(page);
+    await expect(page.getByTestId('catalog-search')).toHaveValue('');
+    expect(await topics(page)).toHaveLength(75);
+  });
+
+  test('any change of lesson closes the panel: Back and the control channel', async ({ page }) => {
+    await openApp(page, '/ru/lesson/B1');
+    await run(page, 'lesson.open', { id: 'I1' });
+    await expect(page).toHaveURL(/\/ru\/lesson\/I1$/);
+    await openLessons(page);
+    await page.goBack();
+    await expect(page).toHaveURL(/\/ru\/lesson\/B1$/);
+    await expect(page.getByTestId('drawer')).toBeHidden();
+    await openLessons(page);
+    expect(await run(page, 'lesson.open', { id: 'I1' })).toEqual({ ok: true });
+    await expect(page.getByTestId('drawer')).toBeHidden();
+    await expect(page.getByTestId('lesson-title')).toHaveText('Фишинг');
+  });
+
+  test('the panel is not in the first load: its code comes when it first opens', async ({
+    page,
+  }) => {
+    const scripts: string[] = [];
+    page.on('request', (request) => {
+      if (request.resourceType() === 'script') scripts.push(request.url());
+    });
+    await openApp(page);
+    const first = [...scripts];
+    await expect(page.getByTestId('drawer')).toHaveCount(0);
+    await openLessons(page);
+    expect(scripts.length).toBeGreaterThan(first.length);
   });
 
   test('Esc, a click outside and the close button close it; focus returns to the button', async ({
@@ -151,6 +225,7 @@ test.describe('S7: the lessons panel', () => {
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
     await expect(page.getByTestId('drawer')).toBeVisible();
     expect(await run(page, 'drawer.close')).toEqual({ ok: true });
+    await expect(page.getByTestId('open-glossary')).toBeFocused();
 
     // Opened by a command, closed by one: the panel follows the state. Nothing had focus, so
     // it goes to «Уроки».

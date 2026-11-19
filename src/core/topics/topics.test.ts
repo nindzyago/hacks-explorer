@@ -97,6 +97,10 @@ describe('parseCatalogFile', () => {
     expect(errorsOf(RU, 'x'.repeat(MAX_CATALOG_FILE_BYTES + 1)).map((e) => e.code)).toEqual([
       'too-large',
     ]);
+    // The limit is in UTF-8 bytes: 40 000 Cyrillic letters are 80 000 bytes.
+    const cyrillic = errorsOf(RU, file('ru', `${'я'.repeat(40_000)}\n`));
+    expect(cyrillic.map((e) => e.code)).toEqual(['too-large']);
+    expect(cyrillic[0]?.message).toContain('bytes');
     const many = Array.from({ length: 99 }, (_, i) => `- \`B${String(i + 1)}\` T`).join('\n');
     const sections = ['B', 'C', 'D', 'E']
       .map((s) => `## \`${s}\` S\n\n${many.replaceAll('`B', `\`${s}`)}`)
@@ -158,7 +162,9 @@ describe('checkCatalogs', () => {
       ],
       context,
     );
-    expect(order.errors.map((e) => e.code)).toEqual(['section-order']);
+    // The error stands on the first topic out of place: B8, line 9 of the translation.
+    expect(order.errors.map((e) => [e.code, e.line, e.path])).toEqual([['section-order', 9, 'B8']]);
+    expect(order.errors[0]?.message).toContain('B1');
   });
 
   it('requires a catalog for every site language (K94) and the Russian one', () => {
