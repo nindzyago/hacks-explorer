@@ -124,6 +124,27 @@ A fixed-length value that a hash function computes from data. For cryptographic 
 only way back is guessing. Well-built sites store not passwords but their hashes, computed with
 slow functions and a “salt”, for example Argon2 or bcrypt.
 
+## `idor` IDOR
+
+`category` web · `see` authorization, owasp, cwe · `lessons` D1
+
+Forms: IDOR
+
+Insecure Direct Object Reference. The server hands out a record by a number from the request (for
+example, order `/orders/1002`) and does not check that it belongs to whoever is asking. Changing
+the number shows or changes someone else's data. The weakness class is CWE-639; in the OWASP Top
+10:2021 it falls under A01 Broken Access Control. In APIs the same bug is called BOLA.
+
+## `authorization` Authorization
+
+`category` web · `see` idor, web-server · `lessons` D1
+
+Forms: authorization, authorisation, permission check, permission checks
+
+Checking what a user is allowed to do: open this record, change it, delete it. Not to be confused
+with logging in (authentication), which answers “who are you”. The server does it itself on every
+request and refuses by default.
+
 ## `phishing` Phishing
 
 `category` people · `see` fake-page, proxy-phishing, social-engineering, mitre-attack · `lessons` I1
