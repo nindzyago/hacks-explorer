@@ -256,6 +256,24 @@ describe('layoutMessage', () => {
     expect(wordTop - labelBottom).toBeGreaterThanOrEqual(14);
     expect(m?.wordY ?? Infinity).toBeLessThan(scene.lane.y - TOKEN_RADIUS);
   });
+
+  it('stands the word 6 px over the body, so its line box meets no token or plaque (CI1)', () => {
+    // The browser's line box of 11 px JetBrains Mono reaches up to 6 px under the baseline
+    // (Chromium on Linux, unhinted; 5 on macOS): with the baseline 6 px over the body that box
+    // at most touches the token or the plaque, it is never on it.
+    const token = step({ id: 'token', icon: 'mail' });
+    const tallest = step({ id: 'plaque', message: 'one two three four five six seven eight' });
+    for (const s of [glue, token, tallest]) {
+      for (const ms of [0, TRAVEL_MS]) {
+        const m = layoutMessage(scene, s, ms, false, say);
+        if (m === null) throw new Error('no message');
+        // The top of what is drawn: the token's circle (its body box also holds the badge
+        // room), or the plaque.
+        const top = m.token === null ? m.body.y : m.y - TOKEN_RADIUS;
+        expect(top - m.wordY, `${s.id} at ${String(ms)}`).toBeGreaterThanOrEqual(6);
+      }
+    }
+  });
 });
 
 const I1: SceneInput = {

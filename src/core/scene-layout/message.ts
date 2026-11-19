@@ -44,6 +44,8 @@ const HEIGHTS: Readonly<Record<1 | 2 | 3, number>> = {
 const PLAQUE_SHADOW = 3;
 /** The word over the message: letter spacing of 0.5 px (Scene.svelte). */
 export const WORD_SPACING = 0.5;
+/** The word's baseline stands this far over the token's circle and the tallest plaque (CI1). */
+const WORD_OVER_BODY = 6;
 const EDGE = 4;
 
 export type { MessageKind, StepMode };
@@ -356,7 +358,9 @@ export function layoutMessage(
   const right = Math.max(body.right, wordWidth / 2);
   const startX = restX(scene, from, left, right);
   const x = startX + (restX(scene, to, left, right) - startX) * progress;
-  const wordY = y - TOKEN_RADIUS - 5;
+  // CI1: the baseline 6 px over the token (was 5). The browser's line box of the word reaches
+  // up to 6 px under its baseline (Chromium on Linux, unhinted), so it at most touches the body.
+  const wordY = y - TOKEN_RADIUS - WORD_OVER_BODY;
 
   return {
     kind: step.kind,
