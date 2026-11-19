@@ -1,6 +1,7 @@
 # Generated or not ours
 dist/
 dist-e2e/
+dist-e2e-i18n/
 test-results/
 node_modules/
 package-lock.json

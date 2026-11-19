@@ -7,17 +7,20 @@ import { type CvssSeverity, formatScore, scoreCvss31 } from '../core/cvss/cvss';
 import type { SiteBlock, SiteCode, SitePassport, SiteStep } from '../core/lesson/site';
 import type { Severity } from '../core/lesson/types';
 import type { Depth } from '../core/state';
+import type { UiKey } from '../services/i18n/keys';
+import type { Translate } from '../services/i18n/i18n';
 
 export interface DepthTab {
   readonly depth: Depth;
-  readonly label: string;
+  /** The interface string of the tab's name (M2.3). */
+  readonly label: UiKey;
 }
 
 /** The tabs in their order; the first is the default (K71). */
 export const DEPTH_TABS: readonly DepthTab[] = [
-  { depth: 'simple', label: 'Просто' },
-  { depth: 'steps', label: 'По шагам' },
-  { depth: 'deep', label: 'Глубже' },
+  { depth: 'simple', label: 'explain.depth.simple' },
+  { depth: 'steps', label: 'explain.depth.steps' },
+  { depth: 'deep', label: 'explain.depth.deep' },
 ];
 
 /** The text of `step` at `depth`; «По шагам» is the lesson's `detailed` level. */
@@ -62,7 +65,11 @@ export interface CodeShown {
  * query before and after the defence, one under the other. The step's own code comes first, so
  * it is in view without scrolling (K72, K73).
  */
-export function codeAtDeep(steps: readonly SiteStep[], step: SiteStep): readonly CodeShown[] {
+export function codeAtDeep(
+  steps: readonly SiteStep[],
+  step: SiteStep,
+  t: Translate,
+): readonly CodeShown[] {
   if (step.mode === 'both')
     return step.code === null ? [] : [{ label: '', code: step.code, current: true }];
   const otherMode = step.mode === 'with-defence' ? 'without-defence' : 'with-defence';
@@ -70,44 +77,45 @@ export function codeAtDeep(steps: readonly SiteStep[], step: SiteStep): readonly
     (s) => s.mode === otherMode && s.from === step.from && s.to === step.to && s.code !== null,
   );
   const mine: CodeShown | null =
-    step.code === null ? null : { label: modeLabel(step.mode), code: step.code, current: true };
+    step.code === null ? null : { label: modeLabel(step.mode, t), code: step.code, current: true };
   if (mine === null) return [];
   if (other?.code == null) return [mine];
-  const theirs: CodeShown = { label: modeLabel(other.mode), code: other.code, current: false };
+  const theirs: CodeShown = { label: modeLabel(other.mode, t), code: other.code, current: false };
   return [mine, theirs];
 }
 
-function modeLabel(mode: SiteStep['mode']): string {
-  return mode === 'with-defence' ? 'С защитой' : 'Без защиты';
+function modeLabel(mode: SiteStep['mode'], t: Translate): string {
+  return t(mode === 'with-defence' ? 'defence.on' : 'defence.off');
 }
 
 // ---------------------------------------------------------------------------------------------
 // Passport
 
-const SEVERITY_WORDS: Readonly<Record<Severity, string>> = {
-  low: 'низкая',
-  medium: 'средняя',
-  high: 'высокая',
-  critical: 'критическая',
+const SEVERITY_KEYS: Readonly<Record<CvssSeverity, UiKey>> = {
+  none: 'severity.none',
+  low: 'severity.low',
+  medium: 'severity.medium',
+  high: 'severity.high',
+  critical: 'severity.critical',
 };
 
-export function severityWord(severity: Severity): string {
-  return SEVERITY_WORDS[severity];
+export function severityWord(severity: Severity, t: Translate): string {
+  return t(SEVERITY_KEYS[severity]);
 }
 
 /**
- * Russian names of the CWE entries the lessons use, for a passport without `class` (K71). Only
- * names checked against cwe.mitre.org; an unknown number gives no class line. The numbers and
- * official English names live in the checker's vetted list (src/core/lesson/ids.ts, K86); a test
- * keeps every number here in that list. Translations stay here: they are words of the interface.
+ * Names of the CWE entries the lessons use, for a passport without `class` (K71): interface
+ * strings `cwe.<n>` in each language (M2.3). Only names checked against cwe.mitre.org; an unknown
+ * number gives no class line. The numbers and official English names live in the checker's
+ * vetted list (src/core/lesson/ids.ts, K86); a test keeps every number here in that list.
  */
-export const CWE_NAMES: Readonly<Record<number, string>> = {
-  22: 'Обход пути к файлу',
-  78: 'Внедрение команд ОС',
-  79: 'Межсайтовый скриптинг (XSS)',
-  89: 'SQL-инъекция',
-  352: 'Подделка межсайтового запроса (CSRF)',
-  918: 'Подделка запроса со стороны сервера (SSRF)',
+export const CWE_NAMES: Readonly<Record<number, UiKey>> = {
+  22: 'cwe.22',
+  78: 'cwe.78',
+  79: 'cwe.79',
+  89: 'cwe.89',
+  352: 'cwe.352',
+  918: 'cwe.918',
 };
 
 export interface PassportRow {
@@ -118,62 +126,59 @@ export interface PassportRow {
   readonly detail?: string;
 }
 
-const CVSS_SEVERITY_WORDS: Readonly<Record<CvssSeverity, string>> = {
-  none: 'нет',
-  ...SEVERITY_WORDS,
-};
-
 /**
  * The CVSS row (M2.5, K82): «9.8 · критическая» computed from the vector, the vector itself as
  * the detail line. A vector the calculator does not read (the checker rejects it, but site data is
  * hostile) is shown as it is, without a score.
  */
-function cvssRow(vector: string): PassportRow {
+function cvssRow(vector: string, t: Translate): PassportRow {
   const r = scoreCvss31(vector);
   if (!r.ok) return { key: 'cvss', label: 'CVSS', value: vector };
   const { score, severity } = r.value;
   return {
     key: 'cvss',
     label: 'CVSS',
-    value: `${formatScore(score)} · ${CVSS_SEVERITY_WORDS[severity]}`,
+    value: `${formatScore(score)} · ${t(SEVERITY_KEYS[severity])}`,
     detail: vector,
   };
 }
 
 /** The passport lines that have a value, in reading order. */
-export function passportRows(passport: SitePassport): readonly PassportRow[] {
+export function passportRows(passport: SitePassport, t: Translate): readonly PassportRow[] {
   const rows: PassportRow[] = [];
   const add = (key: string, label: string, value: string | null) => {
     if (value !== null && value.trim() !== '') rows.push({ key, label, value });
   };
   // An empty class is no class (the checker never gives one, but data is hostile).
   const own = passport.class !== null && passport.class.trim() !== '' ? passport.class : null;
-  add('class', 'Класс', own ?? cweClass(passport.cwe));
-  add('cwe', 'CWE', passport.cwe.map(cweLabel).join(', '));
+  add('class', t('passport.class'), own ?? cweClass(passport.cwe, t));
+  add('cwe', 'CWE', passport.cwe.map((n) => cweLabel(n, t)).join(', '));
   add('owasp', 'OWASP Top 10', passport.owasp.join(', '));
   add('attack', 'MITRE ATT&CK', passport.attack.join(', '));
   add('cves', 'CVE', passport.cves.join(', '));
-  if (passport.cvss !== null && passport.cvss.trim() !== '') rows.push(cvssRow(passport.cvss));
-  add('severity', 'Тяжесть', passport.severity === null ? null : severityWord(passport.severity));
-  add('impact', 'Что получает атакующий', passport.impact);
-  add('defence', 'Защита', passport.defence);
+  if (passport.cvss !== null && passport.cvss.trim() !== '') rows.push(cvssRow(passport.cvss, t));
+  const severity = passport.severity === null ? null : severityWord(passport.severity, t);
+  add('severity', t('passport.severity'), severity);
+  add('impact', t('passport.impact'), passport.impact);
+  add('defence', t('passport.defence'), passport.defence);
   return rows;
 }
 
-function cweName(n: number): string | undefined {
-  return Object.hasOwn(CWE_NAMES, n) ? CWE_NAMES[n] : undefined;
+function cweName(n: number, t: Translate): string | undefined {
+  const key = Object.hasOwn(CWE_NAMES, n) ? CWE_NAMES[n] : undefined;
+  return key === undefined ? undefined : t(key);
 }
 
 /** «CWE-89 · SQL-инъекция», or «CWE-564» when the name is not known. */
-function cweLabel(n: number): string {
-  const name = cweName(n);
+function cweLabel(n: number, t: Translate): string {
+  const name = cweName(n, t);
   const label = `CWE-${String(n)}`;
   return name === undefined ? label : `${label} · ${name}`;
 }
 
-function cweClass(cwe: readonly number[]): string | null {
+function cweClass(cwe: readonly number[], t: Translate): string | null {
   for (const n of cwe) {
-    const name = cweName(n);
+    const name = cweName(n, t);
     if (name !== undefined) return name;
   }
   return null;

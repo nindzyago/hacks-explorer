@@ -8,12 +8,13 @@
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
   import type { GlossaryLoader } from '../services/glossary/glossary';
+  import { translator, type Locales } from '../services/i18n/i18n';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
   import DefenceToggle from './DefenceToggle.svelte';
   import GlossaryPopover from './GlossaryPopover.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
-  import { loadErrorText, type ShownErrorCode } from './load-error';
+  import { loadErrorKey, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
   import StepsTable from './StepsTable.svelte';
 
@@ -21,18 +22,28 @@
     app,
     loader,
     glossary,
+    locales,
     home = '/',
     notFound = createStore(false),
   }: {
     app: AppContext;
     loader: LessonLoader;
     glossary: GlossaryLoader;
+    /** M2.3: the site languages and their interface strings (src/services/i18n). */
+    locales: Locales;
     home?: string;
     /** M2.2: the address is no page of the site (src/services/router). */
     notFound?: Pick<Store<boolean>, 'subscribe'>;
   } = $props();
   const store = $derived(app.store);
   const player = $derived($store.player);
+  // M2.3: the interface speaks the language of the page; `locale.set` changes it.
+  const locale = $derived($store.locale);
+  const t = $derived(
+    translator(
+      locales.strings[locale] ?? locales.strings[locales.languages[0]?.code ?? ''] ?? new Map(),
+    ),
+  );
 
   /** Buttons and keys run commands by id (K13), the same way the control channel does. */
   const run = (id: string, params?: Readonly<Record<string, unknown>>) => {
@@ -44,8 +55,12 @@
   $effect(() => {
     document.documentElement.dataset['theme'] = $store.theme;
   });
+  $effect(() => {
+    document.documentElement.lang = locale;
+  });
 
-  // The lesson in the state (I1 «Фишинг» until `lesson.open` or an address, K7), in Russian.
+  // The lesson in the state (I1 «Фишинг» until `lesson.open` or an address, K7), in the
+  // language of the page (M2.3): a change of language loads the same lesson in the other one.
   type Shown =
     | { readonly state: 'loading'; readonly attempt: number }
     | { readonly state: 'ready'; readonly lesson: SiteLesson }
@@ -57,12 +72,13 @@
 
   $effect(() => {
     const id = lessonId;
+    const language = locale;
     // M2.2: an address that is no page of the site loads no lesson behind its message.
     if ($notFound) return;
     let current = true;
     shown = { state: 'loading', attempt };
     const lesson = loader
-      .lesson(id, 'ru')
+      .lesson(id, language)
       .then((result): Shown =>
         result.ok
           ? { state: 'ready', lesson: result.value }
@@ -98,7 +114,7 @@
   // M2.2: the page title says when the address is no page; the heading takes the focus.
   let notFoundHeading = $state<HTMLElement | null>(null);
   $effect(() => {
-    document.title = $notFound ? `Такой страницы нет — ${PROJECT.name}` : PROJECT.name;
+    document.title = $notFound ? `${t('page.notFound.title')} — ${PROJECT.name}` : PROJECT.name;
   });
   $effect(() => {
     notFoundHeading?.focus();
@@ -147,7 +163,24 @@
         {shown.lesson.title}
       </h2>
     {:else}
-      <p class="tagline">{PROJECT.tagline.ru}</p>
+      <p class="tagline">{t('app.tagline')}</p>
+    {/if}
+    <!-- M2.3: the language switch, only when the site has more than one language. -->
+    {#if locales.languages.length > 1}
+      <div class="languages" role="group" aria-label={t('app.language')} data-testid="languages">
+        {#each locales.languages as language (language.code)}
+          <button
+            type="button"
+            lang={language.code}
+            title={language.name}
+            data-testid="language-{language.code}"
+            aria-pressed={language.code === locale}
+            onclick={() => {
+              run('locale.set', { lang: language.code });
+            }}>{language.code.toUpperCase()}</button
+          >
+        {/each}
+      </div>
     {/if}
   </header>
 
@@ -159,60 +192,60 @@
         data-testid="not-found-title"
         bind:this={notFoundHeading}
       >
-        Такой страницы нет
+        {t('page.notFound.title')}
       </h2>
-      <p>Проверьте адрес или откройте урок с главной.</p>
+      <p>{t('page.notFound.text')}</p>
       <div class="actions">
-        <a href={home} data-testid="not-found-home">На главную</a>
+        <a href={home} data-testid="not-found-home">{t('page.home')}</a>
       </div>
     </div>
   {:else if shown.state === 'loading'}
-    <p class="status" data-testid="lesson-loading" role="status">Загружаем урок…</p>
+    <p class="status" data-testid="lesson-loading" role="status">{t('lesson.loading')}</p>
   {:else if shown.state === 'error'}
     <div class="status error" data-testid="lesson-error" data-code={shown.code} role="alert">
-      <p>Не удалось открыть урок.</p>
-      <p data-testid="lesson-error-text">{loadErrorText(shown.code)}</p>
+      <p>{t('lesson.error.title')}</p>
+      <p data-testid="lesson-error-text">{t(loadErrorKey(shown.code))}</p>
       <div class="actions">
         <button
           type="button"
           data-testid="lesson-error-retry"
           onclick={() => {
             attempt += 1;
-          }}>Попробовать снова</button
+          }}>{t('lesson.retry')}</button
         >
-        <a href={home} data-testid="lesson-error-home">На главную</a>
+        <a href={home} data-testid="lesson-error-home">{t('page.home')}</a>
       </div>
     </div>
   {:else}
     <div class="work" data-testid="lesson" aria-labelledby="lesson-title" role="region">
       <div class="scene-area">
         {#key shown.lesson}
-          <Scene lesson={shown.lesson} scene={player} clock={app.clock} />
+          <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
         {/key}
       </div>
 
       <!-- The controls bar (K76): the player, then the «Без защиты / С защитой» toggle. -->
       <div class="controls-area">
-        <div class="player-area"><PlayerControls {player} {run} /></div>
-        <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} />
+        <div class="player-area"><PlayerControls {player} {run} {t} /></div>
+        <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} {t} />
       </div>
 
       <!-- M1.4: the step at three depths, the passport, «Как защититься», the sources. -->
       <div class="explain-area">
-        <ExplainPanel lesson={shown.lesson} current={step} depth={$store.depth} {run} />
+        <ExplainPanel lesson={shown.lesson} current={step} depth={$store.depth} {run} {t} />
       </div>
 
       <!-- «Ход атаки» with the event feed inside (M2.1a, D2, K91): one area that scrolls by
            itself on a laptop, the page does not. -->
       <section class="panel log" data-testid="log" aria-labelledby="log-title">
-        <h2 id="log-title">Ход атаки</h2>
+        <h2 id="log-title">{t('log.title')}</h2>
         {#if stepCount(player) > 0}
-          <StepsTable lesson={shown.lesson} {player} clock={app.clock} {run} />
+          <StepsTable lesson={shown.lesson} {player} clock={app.clock} {run} {t} />
         {/if}
       </section>
     </div>
     <!-- M2.4: the definition of a glossary term, opened from the text or the scene. -->
-    <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} />
+    <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
   {/if}
 </main>
 
@@ -260,6 +293,33 @@
     margin: 0;
     color: var(--muted);
     font-size: var(--text-sm);
+  }
+
+  /* M2.3: «RU / EN» at the end of the top bar, 44 px targets (K102). */
+  .languages {
+    margin-left: auto;
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .languages button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 var(--space-2);
+    border: var(--line-width) solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .languages button[aria-pressed='true'] {
+    border-color: var(--legit);
+    background: var(--legit);
+    color: var(--panel);
   }
 
   /*

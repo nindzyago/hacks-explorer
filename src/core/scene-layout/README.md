@@ -17,14 +17,19 @@ layout.zones[0]; // { id, danger, members, rect, label: TextBlock }
 layout.lane; // { x1, x2, y } — линия, по которой едет сообщение
 
 const current = currentStep(lesson.steps, defence, 3); // { number, count, step } | null
-const message = layoutMessage(layout, current.step, clockMs - startedMs, reducedMotion);
+const message = layoutMessage(layout, current.step, clockMs - startedMs, reducedMotion, t);
 // { kind, stopped, paint, trailPaint, sign, word, wordY, wordFit, x, y, progress, arrived,
 //   trail, ring, plaque,
 //   token, body, wordBox } | null
 
-describeScene({ participants, zones }); // участники и зоны для экранных читалок
-describeStep(participants, current); // «Шаг 3 из 5. Заголовок: кто → кому, вредное сообщение «…».»
+describeScene({ participants, zones }, t); // участники и зоны для экранных читалок
+describeStep(participants, current, t); // «Шаг 3 из 5. Заголовок: кто → кому, вредное сообщение «…».»
 ```
+
+`t` — переводчик строк интерфейса (M2.3, `src/services/i18n`): ядро не хранит слов, оно
+называет ключи (`MarkKey`, `DescribeKey`) и собирает из готовых строк. Слово над сообщением
+(«вредное», «harmful») берётся на языке страницы, поэтому его ширина и сжатие тоже зависят от
+языка.
 
 Единицы — CSS-пиксели: сцена рисует SVG с `viewBox` ровно `width × height`, поэтому 11 в
 раскладке — 11 px на экране.

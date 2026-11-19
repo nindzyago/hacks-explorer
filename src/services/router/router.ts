@@ -24,14 +24,19 @@ export interface RouterOptions {
   readonly store: Store<AppState>;
   /** Runs a command by id, as the registry does; its result is not needed. */
   readonly run: (id: string, params: Readonly<Record<string, unknown>>) => unknown;
-  /** Languages the site has; the first one is the fallback. Only Russian until M2.3. */
+  /** Languages the site has (content/locales/languages.md). Russian alone when not given. */
   readonly languages?: readonly string[];
+  /**
+   * The language for an address without one (`/`) or with one the site does not have: the
+   * reader's choice or the browser's (M2.3, K96). The first site language when not given.
+   */
+  readonly preferred?: string;
 }
 
 export interface Router {
   /** True while the address is no page of the site: the interface shows a message (L0.1). */
   readonly notFound: Pick<Store<boolean>, 'get' | 'subscribe'>;
-  /** The language of the address (the state has no language until M2.3). */
+  /** The language of the page, as the address shows it (`state.locale`). */
   lang(): string;
   stop(): void;
 }
@@ -43,18 +48,20 @@ export function startRouter(options: RouterOptions): Router {
   const languages = options.languages ?? SITE_LANGUAGES;
   const address: AddressOptions = {
     languages,
-    fallback: languages[0] ?? 'ru',
+    fallback:
+      options.preferred !== undefined && languages.includes(options.preferred)
+        ? options.preferred
+        : (languages[0] ?? 'ru'),
     // The default lesson is the one the application starts with (owner decides in M2.1).
     home: initialState().lesson,
   };
   const notFound = createStore(false);
-  let lang = address.fallback;
   /** While the address is being applied, the state changes in steps: nothing is written. */
   let applying = false;
 
   const current = () => `${win.location.pathname}${win.location.hash}`;
   const placeOf = (state: AppState): Place => ({
-    lang,
+    lang: state.locale,
     lesson: state.lesson,
     step: state.player.step,
     defence: state.player.defence,
@@ -76,9 +83,9 @@ export function startRouter(options: RouterOptions): Router {
     }
     notFound.set(false);
     const { place } = route;
-    lang = place.lang;
     applying = true;
     try {
+      if (store.get().locale !== place.lang) run('locale.set', { lang: place.lang });
       if (store.get().lesson !== place.lesson) run('lesson.open', { id: place.lesson });
       if (store.get().player.defence !== place.defence) run('defence.set', { on: place.defence });
       if (store.get().player.step !== place.step) run('player.goto', { step: place.step });
@@ -105,7 +112,7 @@ export function startRouter(options: RouterOptions): Router {
       get: () => notFound.get(),
       subscribe: (listener: (value: boolean) => void) => notFound.subscribe(listener),
     },
-    lang: () => lang,
+    lang: () => store.get().locale,
     stop() {
       unsubscribe();
       win.removeEventListener('popstate', apply);

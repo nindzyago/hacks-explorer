@@ -13,11 +13,16 @@
   import type { AppContext } from '../commands/app';
   import type { SiteGlossary } from '../core/glossary/site';
   import type { GlossaryLoader } from '../services/glossary/glossary';
+  import type { Translate } from '../services/i18n/i18n';
   import RichBlocks from './RichBlocks.svelte';
   import { openTerm, setTermOpener } from './terms';
 
-  const { app, loader, language }: { app: AppContext; loader: GlossaryLoader; language: string } =
-    $props();
+  const {
+    app,
+    loader,
+    language,
+    t,
+  }: { app: AppContext; loader: GlossaryLoader; language: string; t: Translate } = $props();
   const uid = $props.id();
   const store = $derived(app.store);
   const open = $derived($store.glossary);
@@ -191,12 +196,12 @@
     <div class="head">
       <div class="names">
         {#if category !== undefined}<span class="tag">{category}</span>{/if}
-        <h2 id="{uid}-title" data-testid="glossary-title">{term?.title ?? 'Словарь'}</h2>
+        <h2 id="{uid}-title" data-testid="glossary-title">{term?.title ?? t('glossary.title')}</h2>
       </div>
       <button
         type="button"
         class="close"
-        aria-label="Закрыть"
+        aria-label={t('glossary.close')}
         data-testid="glossary-close"
         onclick={() => {
           close(true);
@@ -205,25 +210,25 @@
     </div>
 
     {#if data.state === 'loading'}
-      <p class="note" role="status">Загружаем словарь…</p>
+      <p class="note" role="status">{t('glossary.loading')}</p>
     {:else if data.state === 'error'}
-      <p class="note" role="alert">Не удалось загрузить словарь.</p>
+      <p class="note" role="alert">{t('glossary.error')}</p>
       <button
         type="button"
         class="chip"
         data-testid="glossary-retry"
         onclick={() => {
           attempt += 1;
-        }}>Попробовать снова</button
+        }}>{t('lesson.retry')}</button
       >
     {:else if term === undefined}
-      <p class="note">Такого слова в словаре нет.</p>
+      <p class="note">{t('glossary.unknown')}</p>
     {:else}
       <div class="definition" data-testid="glossary-definition">
-        <RichBlocks blocks={term.definition} />
+        <RichBlocks blocks={term.definition} {t} />
       </div>
       {#if term.see.length > 0}
-        <p class="label" id="{uid}-see">См. также</p>
+        <p class="label" id="{uid}-see">{t('glossary.see')}</p>
         <ul class="chips" aria-labelledby="{uid}-see">
           {#each term.see as id (id)}
             <li>
@@ -241,7 +246,7 @@
         </ul>
       {/if}
       {#if term.lessons.length > 0}
-        <p class="label" id="{uid}-lessons">Уроки</p>
+        <p class="label" id="{uid}-lessons">{t('glossary.lessons')}</p>
         <ul class="chips" aria-labelledby="{uid}-lessons">
           {#each term.lessons as lesson (lesson.id)}
             <li>

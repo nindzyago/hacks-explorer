@@ -135,6 +135,8 @@ describe('readContent', () => {
       lessons: [],
       sources: { path: 'content/sources.md', text: '' },
       glossaries: [],
+      ui: [],
+      languages: null,
     });
     rmSync(empty, { recursive: true, force: true });
   });

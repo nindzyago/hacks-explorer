@@ -3,6 +3,7 @@
  * mode, and where its message stands at a moment of the player clock. Pure: the same step,
  * scene and elapsed time always give the same answer, so a screenshot repeats byte for byte.
  */
+import type { Say } from '../i18n/say';
 import type { MessageKind, StepMode } from '../lesson/types';
 import { MIN_SQUEEZE, type Rect, type SceneLayout } from './layout';
 
@@ -127,15 +128,18 @@ export interface PlaqueLayout {
   readonly textX: number;
 }
 
-const WORDS: Readonly<Record<MessageKind, string>> = {
-  legit: 'обычное',
-  attack: 'вредное',
-  safe: 'безопасное',
+/** The interface strings (content/locales/<lang>/ui.md) of the marks of a message (M2.3). */
+export type MarkKey = 'mark.legit' | 'mark.attack' | 'mark.safe' | 'mark.stopped' | 'mark.moving';
+
+const MARK_KEYS: Readonly<Record<MessageKind, MarkKey>> = {
+  legit: 'mark.legit',
+  attack: 'mark.attack',
+  safe: 'mark.safe',
 };
 
-/** The words of each kind and of a stopped message, for descriptions. */
-export function messageWord(kind: MessageKind, stopped: boolean): string {
-  return stopped ? 'остановлено' : WORDS[kind];
+/** The word of each kind and of a stopped message, in the reader's language. */
+export function messageWord(kind: MessageKind, stopped: boolean, say: Say<MarkKey>): string {
+  return say(stopped ? 'mark.stopped' : MARK_KEYS[kind]);
 }
 
 /** Steps of one mode in lesson order: shared steps and the steps of that mode (K20). */
@@ -302,6 +306,7 @@ export function layoutMessage(
   step: StepInput,
   elapsedMs: number,
   reducedMotion: boolean,
+  say: Say<MarkKey>,
 ): MessageLayout | null {
   const from = scene.participants.find((p) => p.id === step.from);
   const to = scene.participants.find((p) => p.id === step.to);
@@ -328,7 +333,7 @@ export function layoutMessage(
 
   // The word: as wide as its letters, drawn narrower to the room (not below 85%). The body
   // reaches 3 px further right (its shadow), so the word leaves that much at each side.
-  const word = messageWord(step.kind, stoppedHere);
+  const word = messageWord(step.kind, stoppedHere, say);
   const natural = Array.from(word).length * (CHAR_WIDTH + WORD_SPACING);
   const wordWidth = Math.max(natural * MIN_SQUEEZE, Math.min(natural, room - 2 * PLAQUE_SHADOW));
   const wordFit = wordWidth < natural ? wordWidth : null;

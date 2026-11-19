@@ -87,6 +87,8 @@ function fakeApp() {
       update({ player: goto(player, params['step'], 0) });
     } else if (id === 'defence.toggle') {
       update({ player: setDefence(player, !player.defence, 0) });
+    } else if (id === 'locale.set' && typeof params['lang'] === 'string') {
+      update({ locale: params['lang'] });
     }
   };
   const loaded = (without: number, withDefence: number) => {
@@ -211,7 +213,59 @@ describe('startRouter', () => {
       languages: ['ru', 'en'],
     });
     expect(router.lang()).toBe('en');
+    expect(app.calls[0]).toBe('locale.set {"lang":"en"}');
     app.run('defence.toggle');
     expect(browser.address()).toBe('/en/lesson/I1#step-2-defence');
+  });
+
+  // M2.3 (S5, K96): the language is in the state; the address wins, then the reader's choice.
+  it('locale.set rewrites the address in place, keeping the step and mode', () => {
+    const browser = fakeWindow('/ru/lesson/B1#step-3');
+    const app = fakeApp();
+    startRouter({ window: browser.win, store: app.store, run: app.run, languages: ['ru', 'en'] });
+    app.run('locale.set', { lang: 'en' });
+    expect(browser.address()).toBe('/en/lesson/B1#step-3');
+    expect(browser.entries).toEqual(['/en/lesson/B1#step-3']);
+    browser.editHash('#step-2');
+    expect(app.store.get().locale).toBe('en');
+    expect(browser.address()).toBe('/en/lesson/B1#step-2');
+  });
+
+  it('an address without a language, or with one the site lacks, takes the preferred one', () => {
+    for (const [start, want] of [
+      ['/', '/en/lesson/I1'],
+      ['/de/lesson/B1', '/en/lesson/B1'],
+      ['/ru/lesson/B1', '/ru/lesson/B1'],
+    ] as const) {
+      const browser = fakeWindow(start);
+      const app = fakeApp();
+      startRouter({
+        window: browser.win,
+        store: app.store,
+        run: app.run,
+        languages: ['ru', 'en'],
+        preferred: 'en',
+      });
+      expect(browser.address()).toBe(want);
+    }
+  });
+
+  it('a preferred language the site does not have is ignored', () => {
+    const browser = fakeWindow('/');
+    const app = fakeApp();
+    startRouter({ window: browser.win, store: app.store, run: app.run, preferred: 'en' });
+    expect(browser.address()).toBe('/ru/lesson/I1');
+    expect(app.calls).toEqual([]);
+  });
+
+  it('back and forward bring back the language of that entry', () => {
+    const browser = fakeWindow('/en/lesson/I1');
+    const app = fakeApp();
+    startRouter({ window: browser.win, store: app.store, run: app.run, languages: ['ru', 'en'] });
+    app.run('locale.set', { lang: 'ru' });
+    app.run('lesson.open', { id: 'B1' });
+    expect(browser.entries).toEqual(['/ru/lesson/I1', '/ru/lesson/B1']);
+    browser.go(-1);
+    expect(app.store.get().lesson).toBe('I1');
   });
 });

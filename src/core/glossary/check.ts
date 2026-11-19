@@ -572,6 +572,8 @@ export interface GlossaryContext {
   readonly lessons: readonly Lesson[];
   /** Paths of all lesson files, checked or not: lesson ids and languages come from them. */
   readonly lessonPaths: readonly string[];
+  /** The languages of the site (content/locales/languages.md, K94): each needs a glossary. */
+  readonly siteLanguages?: readonly string[];
 }
 
 export interface GlossaryResult {
@@ -637,7 +639,11 @@ export function checkGlossaries(
       errors.push(...reporter.errors);
     } else byLanguage.set(c.language, c);
   }
-  const languages = new Set([...lessonLanguages, ...byLanguage.keys()]);
+  const languages = new Set([
+    ...lessonLanguages,
+    ...byLanguage.keys(),
+    ...(context.siteLanguages ?? []),
+  ]);
   if (languages.size > 0) languages.add(BASE_LANGUAGE);
   for (const language of [...languages].sort()) {
     if (byLanguage.has(language)) continue;

@@ -5,6 +5,7 @@
   import { tick } from 'svelte';
   import type { SiteLesson, SiteStep } from '../core/lesson/site';
   import type { Depth } from '../core/state';
+  import type { Translate } from '../services/i18n/i18n';
   import CodeBox from './CodeBox.svelte';
   import { codeAtDeep, DEPTH_TABS, levelText, passportRows, tabAfterKey } from './explain';
   import RichBlocks from './RichBlocks.svelte';
@@ -14,17 +15,19 @@
     current,
     depth,
     run,
+    t,
   }: {
     lesson: SiteLesson;
     current: { readonly number: number; readonly count: number; readonly step: SiteStep } | null;
     depth: Depth;
     run: (id: string, params?: Readonly<Record<string, unknown>>) => void;
+    t: Translate;
   } = $props();
 
   const tabs: Partial<Record<Depth, HTMLButtonElement>> = $state({});
-  const rows = $derived(passportRows(lesson.passport));
+  const rows = $derived(passportRows(lesson.passport, t));
   const codes = $derived(
-    current !== null && depth === 'deep' ? codeAtDeep(lesson.steps, current.step) : [],
+    current !== null && depth === 'deep' ? codeAtDeep(lesson.steps, current.step, t) : [],
   );
 
   /*
@@ -80,9 +83,9 @@
   onscroll={measure}
 >
   <div class="content" bind:this={content}>
-    <h2 id="explain-title" class="visually-hidden">Объяснение</h2>
+    <h2 id="explain-title" class="visually-hidden">{t('explain.title')}</h2>
 
-    <div class="tabs" role="tablist" aria-label="Глубина объяснения" data-testid="depth-tabs">
+    <div class="tabs" role="tablist" aria-label={t('explain.depths')} data-testid="depth-tabs">
       {#each DEPTH_TABS as tab (tab.depth)}
         <button
           type="button"
@@ -96,7 +99,7 @@
           onclick={() => {
             run('depth.set', { depth: tab.depth });
           }}
-          onkeydown={(event) => void onkeydown(event, tab.depth)}>{tab.label}</button
+          onkeydown={(event) => void onkeydown(event, tab.depth)}>{t(tab.label)}</button
         >
       {/each}
     </div>
@@ -111,21 +114,25 @@
     >
       {#if current !== null}
         <p class="step" data-testid="explain-step">
-          Шаг {current.number} из {current.count}. {current.step.title}
+          {t('explain.step', {
+            number: current.number,
+            count: current.count,
+            title: current.step.title,
+          })}
         </p>
         <!-- At «Глубже» the code comes first: the query is in view without scrolling (K73). -->
         {#each codes as shown, i (i)}
-          <CodeBox code={shown.code} label={shown.label} current={shown.current} />
+          <CodeBox code={shown.code} label={shown.label} current={shown.current} {t} />
         {/each}
-        <RichBlocks blocks={levelText(current.step, depth)} />
+        <RichBlocks blocks={levelText(current.step, depth)} {t} />
       {:else}
-        <p class="muted">В этом режиме у урока нет шагов.</p>
+        <p class="muted">{t('lesson.noSteps')}</p>
       {/if}
     </div>
 
     {#if rows.length > 0}
       <section class="part" aria-labelledby="passport-title">
-        <h3 id="passport-title">Паспорт</h3>
+        <h3 id="passport-title">{t('explain.passport')}</h3>
         <dl class="passport" data-testid="passport">
           {#each rows as row (row.key)}
             <div class="row" data-key={row.key}>
@@ -144,14 +151,14 @@
 
     {#if lesson.defence !== null}
       <section class="part" aria-labelledby="defence-title" data-testid="explain-defence">
-        <h3 id="defence-title">Как защититься</h3>
-        <RichBlocks blocks={lesson.defence} />
+        <h3 id="defence-title">{t('explain.defence')}</h3>
+        <RichBlocks blocks={lesson.defence} {t} />
       </section>
     {/if}
 
     {#if lesson.sources.length > 0}
       <section class="part" aria-labelledby="sources-title" data-testid="sources">
-        <h3 id="sources-title">Источники</h3>
+        <h3 id="sources-title">{t('explain.sources')}</h3>
         <ul class="sources">
           {#each lesson.sources as source, i (i)}
             <li>
@@ -168,7 +175,7 @@
     {/if}
   </div>
   {#if more}
-    <p class="more" data-testid="explain-more" aria-hidden="true">Ниже ещё ↓</p>
+    <p class="more" data-testid="explain-more" aria-hidden="true">{t('explain.more')}</p>
   {/if}
 </section>
 

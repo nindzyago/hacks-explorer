@@ -5,15 +5,18 @@
   // lesson's defence from its passport is named next to it, in a slot of its own that is always
   // there (fixed width, two lines, verifier M1.5): turning the defence on moves no button.
   import type { PlayerState } from '../core/player/player';
+  import type { Translate } from '../services/i18n/i18n';
 
   const {
     player,
     defenceName,
     run,
+    t,
   }: {
     player: PlayerState;
     defenceName: string | null;
     run: (id: string, params?: Readonly<Record<string, unknown>>) => void;
+    t: Translate;
   } = $props();
 
   const set = (on: boolean) => {
@@ -22,7 +25,7 @@
 </script>
 
 <div class="defence" data-testid="defence-toggle" data-defence={player.defence}>
-  <div class="seg" role="group" aria-label="Режим урока">
+  <div class="seg" role="group" aria-label={t('defence.mode')}>
     <button
       type="button"
       data-testid="defence-off"
@@ -30,7 +33,7 @@
       aria-pressed={!player.defence}
       onclick={() => {
         set(false);
-      }}>Без защиты</button
+      }}>{t('defence.off')}</button
     >
     <button
       type="button"
@@ -39,16 +42,16 @@
       aria-pressed={player.defence}
       onclick={() => {
         set(true);
-      }}>С защитой</button
+      }}>{t('defence.on')}</button
     >
   </div>
   <div class="caption" data-testid="defence-caption">
     {#if player.defence && defenceName !== null && defenceName !== ''}
-      <p class="name" data-testid="defence-name" title="Защита: {defenceName}">
-        Защита: {defenceName}
+      <p class="name" data-testid="defence-name" title={t('defence.name', { name: defenceName })}>
+        {t('defence.name', { name: defenceName })}
       </p>
     {:else if !player.defence}
-      <p class="off">Защита выключена</p>
+      <p class="off">{t('defence.isOff')}</p>
     {/if}
   </div>
 </div>

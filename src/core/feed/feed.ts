@@ -4,8 +4,15 @@
  * append-only log — so the same step, mode and arrival always give the same lines, and
  * `player.back` gives back exactly the feed of the step before (S1).
  */
+import type { Say } from '../i18n/say';
 import type { MessageKind, StepMode } from '../lesson/types';
-import { currentStep, messageWord, stepsInMode, travelProgress } from '../scene-layout/message';
+import {
+  currentStep,
+  messageWord,
+  stepsInMode,
+  travelProgress,
+  type MarkKey,
+} from '../scene-layout/message';
 
 /** The part of a lesson step the feed needs (`SiteStep` fits). */
 export interface FeedStep {
@@ -38,12 +45,10 @@ export interface FeedLine {
   readonly kind: MessageKind;
   readonly stopped: boolean;
   readonly mark: FeedMark;
-  /** The word that doubles the colour of the mark. */
+  /** The word that doubles the colour of the mark, in the reader's language (M2.3). */
   readonly word: string;
   readonly current: boolean;
 }
-
-const MOVING_WORD = 'в пути';
 
 /**
  * Has the message of the current step arrived after `elapsedMs` of player time? At once with
@@ -67,6 +72,7 @@ export function feedLines(
   lesson: FeedLesson,
   position: { readonly step: number; readonly defence: boolean },
   arrived: boolean,
+  say: Say<MarkKey>,
 ): FeedLine[] {
   const current = currentStep(lesson.steps, position.defence, position.step);
   if (current === null) return [];
@@ -88,7 +94,7 @@ export function feedLines(
         kind: step.kind,
         stopped: step.stopped,
         mark: moving ? 'moving' : step.stopped ? 'stopped' : step.kind,
-        word: moving ? MOVING_WORD : messageWord(step.kind, step.stopped),
+        word: moving ? say('mark.moving') : messageWord(step.kind, step.stopped, say),
         current: isCurrent,
       };
     });

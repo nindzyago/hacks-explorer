@@ -1,12 +1,16 @@
 // Vite plugin: the lesson data of the site (design M1.1 E11, decision K37). Build time only.
 //
-// Reads content/ (scripts/content-files.mjs), checks it (src/core/lesson, `checkContent`) and
+// Reads content/ (scripts/content-files.mjs), checks it (src/core/lesson, `checkContent`, the
+// glossaries, and M2.3: the site languages are complete, K94) and
 //   - `vite build`: fails on any error, printing `file:line:column: message` per line; emits
-//     `data/catalog.json` and `data/lessons/<id>.<lang>.<hash>.json` per lesson per language;
+//     `data/catalog.json` and `data/lessons/<id>.<lang>.<hash>.json` per lesson per site language;
 //   - `vite` (dev): serves the same files from memory, built afresh on each request; a broken
 //     lesson answers 500 with the messages, the dev server keeps running.
 // The site fetches these files (src/services/catalog) and never parses Markdown (K31).
+// The interface strings of the site languages are a module, `virtual:site-locales` (K105): a few
+// KB, needed before the first paint, so they are bundled rather than fetched.
 import { createHash } from 'node:crypto';
+import { join } from 'node:path';
 import type { Plugin } from 'vite';
 import type { ContentFile } from '../src/core/lesson/check';
 import { checkContent, formatError } from '../src/core/lesson/check';
@@ -22,7 +26,9 @@ import { glossaryMatcher, linkLessonTerms, toSiteGlossary } from '../src/core/gl
 import { checkGlossaries } from '../src/core/glossary/check';
 import type { Matcher } from '../src/core/glossary/match';
 import { MAX_GLOSSARY_FILE_BYTES, glossaryFile } from '../src/core/glossary/site';
-import { readContent } from './content-files.mjs';
+import { checkLocales } from '../src/core/i18n/locales';
+import type { SiteLanguage } from '../src/core/i18n/languages-file';
+import { ROOT, readContent } from './content-files.mjs';
 
 export interface DataFile {
   /** Path in the built site, `data/…`. */
@@ -30,9 +36,18 @@ export interface DataFile {
   readonly text: string;
 }
 
+/** What `virtual:site-locales` exports: the site languages and their interface strings. */
+export interface SiteLocalesData {
+  readonly languages: readonly SiteLanguage[];
+  readonly strings: Readonly<Record<string, Readonly<Record<string, string>>>>;
+}
+
 export type LessonDataResult =
-  | { readonly ok: true; readonly files: readonly DataFile[] }
+  | { readonly ok: true; readonly files: readonly DataFile[]; readonly locales: SiteLocalesData }
   | { readonly ok: false; readonly errors: readonly string[] };
+
+export const LOCALES_MODULE = 'virtual:site-locales';
+const RESOLVED_LOCALES_MODULE = `\0${LOCALES_MODULE}`;
 
 const BASE_LANGUAGE = 'ru';
 
@@ -43,19 +58,27 @@ function byteLength(text: string): number {
 /**
  * The data files of all content, or the errors as `file:line:column: message`. The glossaries
  * (M2.4) are checked against the lessons; their terms are linked in lesson text and each
- * language's glossary is written to `data/glossary/<lang>.json`.
+ * language's glossary is written to `data/glossary/<lang>.json`. M2.3 (K94): every site language
+ * (content/locales/languages.md) has every lesson, every interface string and the glossary; only
+ * site languages are written, a language in preparation is checked but not shipped.
  */
 export function buildLessonData(content: {
   readonly lessons: readonly ContentFile[];
   readonly sources: ContentFile;
   readonly glossaries: readonly ContentFile[];
+  readonly ui: readonly ContentFile[];
+  readonly languages: ContentFile | null;
 }): LessonDataResult {
   const checked = checkContent(content.lessons, content.sources);
+  const lessonPaths = content.lessons.map((f) => f.path);
+  const locales = checkLocales({ languages: content.languages, ui: content.ui, lessonPaths });
+  const onSite = new Set(locales.languages.map((l) => l.code));
   const glossaries = checkGlossaries(content.glossaries, {
     lessons: checked.lessons,
-    lessonPaths: content.lessons.map((f) => f.path),
+    lessonPaths,
+    siteLanguages: [...onSite],
   });
-  const problems = [...checked.errors, ...glossaries.errors];
+  const problems = [...checked.errors, ...glossaries.errors, ...locales.errors];
   if (problems.length > 0) return { ok: false, errors: problems.map(formatError) };
 
   const errors: string[] = [];
@@ -65,6 +88,7 @@ export function buildLessonData(content: {
   );
   const entries = new Map<string, { first: SiteLesson; lessons: SiteLesson[]; hashes: string[] }>();
   for (const lesson of checked.lessons) {
+    if (!onSite.has(lesson.language)) continue;
     const plain = toSiteLesson(lesson);
     const matcher = matchers.get(plain.language);
     const site = matcher === undefined ? plain : linkLessonTerms(plain, matcher);
@@ -105,6 +129,7 @@ export function buildLessonData(content: {
   files.unshift({ path: CATALOG_FILE, text: JSON.stringify(catalog) });
 
   for (const glossary of glossaries.glossaries) {
+    if (!onSite.has(glossary.language)) continue;
     const titles = new Map(
       checked.lessons.filter((l) => l.language === glossary.language).map((l) => [l.id, l.title]),
     );
@@ -119,17 +144,30 @@ export function buildLessonData(content: {
     files.push({ path: glossaryFile(glossary.language), text });
   }
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, files };
+  return { ok: true, files, locales: { languages: locales.languages, strings: locales.strings } };
 }
 
 export interface LessonDataOptions {
   /** The folder that holds `content/`; the repository root by default. */
   readonly contentRoot?: string;
+  /**
+   * The folder whose `content/locales/<lang>/ui.md` give the interface strings; `contentRoot` by
+   * default. The e2e build with a second language (M2.3, K106) takes its lessons from a fixture
+   * folder and the strings from the repository, so the strings it tests are the real ones.
+   */
+  readonly uiRoot?: string;
 }
 
 export function lessonData(options: LessonDataOptions = {}): Plugin {
-  const build = (): LessonDataResult => buildLessonData(readContent(options.contentRoot));
+  const read = () => {
+    const content = readContent(options.contentRoot);
+    return options.uiRoot === undefined
+      ? content
+      : { ...content, ui: readContent(options.uiRoot).ui };
+  };
+  const build = (): LessonDataResult => buildLessonData(read());
   let built: readonly DataFile[] = [];
+  let locales: SiteLocalesData | null = null;
   let command: 'build' | 'serve' = 'build';
   return {
     name: 'hacks-explorer:lesson-data',
@@ -146,6 +184,25 @@ export function lessonData(options: LessonDataOptions = {}): Plugin {
         this.error(`lesson content has errors:\n${result.errors.join('\n')}`);
       }
       built = result.files;
+      locales = result.locales;
+    },
+
+    resolveId(id) {
+      return id === LOCALES_MODULE ? RESOLVED_LOCALES_MODULE : null;
+    },
+
+    load(id) {
+      if (id !== RESOLVED_LOCALES_MODULE) return null;
+      // The dev server reads the files again for each load; a change to a ui.md reloads it.
+      let data = locales;
+      if (command !== 'build' || data === null) {
+        const result = build();
+        if (!result.ok) this.error(`lesson content has errors:\n${result.errors.join('\n')}`);
+        data = result.locales;
+      }
+      const uiRoot = options.uiRoot ?? options.contentRoot ?? ROOT;
+      for (const file of read().ui) this.addWatchFile(join(uiRoot, file.path));
+      return `export default ${JSON.stringify(data)};`;
     },
 
     generateBundle() {

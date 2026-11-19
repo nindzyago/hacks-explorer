@@ -40,6 +40,12 @@
 //                     transition }); a SMIL element in createElement(NS) or <svelte:element
 //                     this>. A key `transition` in a plain object is data. Not seen: CSS built
 //                     at run time by joining pieces of a name (`'trans' + 'ition'`).
+//   ui-strings        M2.3 (K105): words a reader sees live in content/locales/<lang>/ui.md, not
+//                     in code. Site code under src/ has no Cyrillic letter outside comments (a
+//                     string, a template, markup text, an attribute). Tests are not site code.
+//                     The language tables of the content checker are exempt (UI_STRINGS_EXEMPT,
+//                     each with its reason). Not seen: words of a Latin-script language, and
+//                     letters written as \u escapes (the keyboard's \u0432 for the D key).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -62,6 +68,20 @@ const IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
 const URL = /https?:\/\/[^\s'"`<>)]+/g;
 const ALLOWED_URL = /^http:\/\/www\.w3\.org\//;
 const TOKENS_FILE = 'src/ui/tokens.css';
+const CYRILLIC = /\p{Script=Cyrillic}/u;
+/** Files of src/ that may hold Cyrillic letters in code, and why. */
+export const UI_STRINGS_EXEMPT = new Map([
+  ['src/core/lesson/headings.ts', 'the section headings of a lesson file in each language (K24)'],
+  ['src/core/glossary/words.ts', 'the headings of a glossary file in each language (K98)'],
+  ['src/core/lesson/addresses.ts', 'Cyrillic top-level domains (.рф) for the address rule'],
+  ['src/core/scene-layout/layout.ts', 'glyph widths of the scene font'],
+  ['src/core/glossary/match.ts', 'ё is matched as е (K99)'],
+  ['src/core/lesson/parse.ts', 'examples in messages to lesson authors (the gate, not readers)'],
+  [
+    'src/core/glossary/check.ts',
+    'examples in messages to glossary authors (the gate, not readers)',
+  ],
+]);
 // Not after `&` (an entity like &#123;) or a word character; 3, 4, 6 or 8 hex digits, then a
 // word boundary, so ids like #feather or #ic-db are not colours.
 const HEX_COLOUR = /(?<![&\w])#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})\b/gi;
@@ -189,6 +209,23 @@ export function checkFiles(files) {
           path,
           line: lineAt(text, index),
           message: `${what}: time comes from the player clock (design M1.2 E4), not from CSS`,
+        });
+      }
+    }
+
+    if (site && !TEST.test(path) && path.startsWith('src/') && !UI_STRINGS_EXEMPT.has(path)) {
+      const { text: code } = parts(path, text);
+      const seen = new Set();
+      for (const [index, line] of code.split('\n').entries()) {
+        const at = CYRILLIC.exec(line);
+        if (at === null || seen.has(index)) continue;
+        seen.add(index);
+        const word = /[\p{L}\p{M}-]+/u.exec(line.slice(at.index))?.[0] ?? at[0];
+        problems.push({
+          rule: 'ui-strings',
+          path,
+          line: index + 1,
+          message: `"${word}" in code: words a reader sees go to content/locales/ru/ui.md and are read with t(key) (M2.3)`,
         });
       }
     }
