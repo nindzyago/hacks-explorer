@@ -1,7 +1,8 @@
 // M2.7 acceptance (oracle D S6 S11, plus axe-core): accessibility of every screen and state.
-//   - axe-core with the WCAG 2.0/2.1 A and AA rules finds nothing on ru and en: lessons B1 and I1
+//   - axe-core with the WCAG 2.0, 2.1 and 2.2 A and AA rules finds nothing on ru and en: lessons B1 and I1
 //     at the first, a middle and the last step, with and without the defence, at every depth;
-//     the side panel on both tabs; a glossary definition open; the «no such page» page;
+//     the side panel on both tabs; a glossary definition open; the «no such page» page; the
+//     explanation panel scrolled to its sources at phone widths;
 //   - the scene's term buttons are in the accessibility tree with names (not hidden inside an
 //     image), and the scene says the current step in a polite live region that changes once per
 //     step, not on every frame of the clock;
@@ -14,7 +15,7 @@ import type { Page } from '@playwright/test';
 import { stableDump } from '../src/core/dump';
 import { expect, openApp, test } from './support';
 
-const WCAG_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+const WCAG_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'];
 
 /** Rule ids and the first nodes of every axe violation on the page as it is now. */
 async function axe(page: Page, label: string): Promise<void> {
@@ -135,6 +136,31 @@ async function sceneTree(page: Page): Promise<{ role: string; name: string }[]> 
   return out;
 }
 
+test.describe('the sources at phone widths', () => {
+  for (const width of [360, 390]) {
+    for (const locale of LOCALES) {
+      for (const id of LESSONS) {
+        test(`${locale} ${id} at ${String(width)} px: axe, links at least 24 px tall`, async ({
+          page,
+        }) => {
+          await page.setViewportSize({ width, height: 800 });
+          await lesson(page, `/${locale}/lesson/${id}`);
+          await run(page, 'depth.set', { depth: 'deep' });
+          const links = page.locator('a[data-testid^="source-link-"]');
+          expect(await links.count()).toBeGreaterThan(0);
+          await links.last().scrollIntoViewIfNeeded();
+          for (const box of await links.evaluateAll((els) =>
+            els.map((el) => el.getBoundingClientRect().height),
+          )) {
+            expect(box).toBeGreaterThanOrEqual(24);
+          }
+          await axe(page, `${locale} ${id} ${String(width)} px`);
+        });
+      }
+    }
+  }
+});
+
 test.describe('the scene for a screen reader', () => {
   test('its term buttons are reachable and named; the scene is a labelled group', async ({
     page,
@@ -166,6 +192,11 @@ test.describe('the scene for a screen reader', () => {
     const live = page.getByTestId('scene-step');
     await expect(live).toHaveAttribute('aria-live', 'polite');
     await expect(live).toContainText('Шаг 1 из 5.');
+    // The caption is in the accessibility tree with the step text: a screen reader can say it.
+    const caption = ((await live.textContent()) ?? '').trim();
+    expect(caption.length).toBeGreaterThan(10);
+    const said = (await sceneTree(page)).filter((n) => n.name.trim() === caption);
+    expect(said, `«${caption}» exposed`).not.toEqual([]);
     await live.evaluate((el) => {
       const w = window as unknown as { __liveChanges: number };
       w.__liveChanges = 0;

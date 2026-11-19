@@ -331,7 +331,11 @@
     font-size: var(--text-sm);
   }
 
+  /* M2.7: a target of at least 24 px (WCAG 2.2, 2.5.8) — a line of text is about 19 px. */
   .sources a {
+    display: inline-block;
+    min-block-size: var(--space-6);
+    padding-block: var(--space-1);
     color: var(--legit);
     overflow-wrap: anywhere;
   }
