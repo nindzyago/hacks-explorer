@@ -5,7 +5,9 @@
 на выходе, без файловой системы и без исключений. Файлы читает `scripts/content-files.mjs`.
 Разбор Markdown — пакет `mdast-util-from-markdown` (дизайн M1.1, E2).
 
-Это зерно руководства автора (M4.1).
+Руководство автора для людей — `CONTRIBUTING.md` («Writing a lesson»), шаблон урока —
+`docs/lesson-template/` (M4.1); новый урок по шаблону проходит gate без правок кода
+(`scripts/lesson-template.test.ts`).
 
 ## Формат 1 на примере
 
@@ -316,7 +318,9 @@ result.errors.map(formatError); // 'content/lessons/B1/ru.md:41:1: step `glue`: 
 Заголовки разделов и уровней и подписи «Сообщение»/«Итог» берутся из таблицы `headings.ts` по
 языку из имени файла. Английский там уже есть (`Passport`, `Sources`, `Participants`, `Zones`,
 `Steps`, `How to defend`; `Simple`, `Step by step`, `Deeper`; `Message`, `Result`), поэтому
-`en.md` добавляется без изменений кода. Третий язык — одна запись в `headings.ts`.
+`en.md` добавляется без изменений кода. Третий язык — одна запись в `headings.ts` и одна в
+`src/core/glossary/words.ts`, остальное — файлы; все шаги: `docs/new-language.md` (M4.2), проверка —
+`scripts/new-language.test.ts`.
 
 ## Данные для сайта (`site.ts`, `site-read.ts`; M1.1b, K37)
 

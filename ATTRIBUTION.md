@@ -133,3 +133,9 @@ MPL-2.0 4, BSD-3-Clause 2, BlueOak-1.0.0 2. В lockfile ещё один паке
 | `tslib` | 0BSD | BSD без условия об уведомлении, мягче BSD-2-Clause; необязательный пакет разработки (запасной WebAssembly-вариант инструментов сборки), на macOS и Linux x64 не ставится |
 
 Новое исключение добавляется только с решением владельца (L3).
+
+## Тексты чужих авторов
+
+| Файл | Что | Источник | Лицензия |
+|---|---|---|---|
+| `CODE_OF_CONDUCT.md` | Contributor Covenant 2.1; изменён только способ связи в разделе «Enforcement» | https://www.contributor-covenant.org/version/2/1/code_of_conduct/ (скачано 2026-11-19) | CC BY 4.0 |
