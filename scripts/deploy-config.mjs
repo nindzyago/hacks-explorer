@@ -17,6 +17,8 @@ const REQUIRED_DIRECTIVES = {
   'form-action': ["'self'", "'none'"],
   'frame-ancestors': ["'none'"],
 };
+/** The site's own domain (K120, M4.7). */
+export const SITE_DOMAIN = 'hacks.antipic.com';
 const DATA_ALLOWED_IN = new Set(['img-src', 'font-src']);
 // wrangler.jsonc is an allow-list: a new key is a decision, so it is added here on purpose.
 const WRANGLER_KEYS = new Set([
@@ -27,13 +29,13 @@ const WRANGLER_KEYS = new Set([
   'workers_dev',
   'preview_urls',
   'previews',
+  'routes',
 ]);
 const ASSETS_KEYS = new Set(['directory', 'not_found_handling', 'html_handling']);
 const WRANGLER_REASONS = {
   main: 'the site has no server code',
   account_id: 'Cloudflare supplies it during the build',
-  routes: 'the first deploy would publish the site; the domain is added by the owner in M4.7',
-  route: 'the first deploy would publish the site; the domain is added by the owner in M4.7',
+  route: 'the site domain is one custom domain in `routes` (M4.7, K120)',
   env: 'there is one Worker; branches get previews, not environments',
 };
 
@@ -201,6 +203,24 @@ export function checkWrangler(text, today = new Date().toISOString().slice(0, 10
   const previews = config.previews;
   if (previews === null || typeof previews !== 'object' || Array.isArray(previews)) {
     problems.push('previews must be an object: `wrangler preview` needs the block');
+  }
+  // M4.7 (K120): the owner allowed the site on hacks.antipic.com; exactly that custom domain.
+  const routes = config.routes;
+  if (
+    routes !== undefined &&
+    !(
+      Array.isArray(routes) &&
+      routes.length === 1 &&
+      routes[0] !== null &&
+      typeof routes[0] === 'object' &&
+      Object.keys(routes[0]).sort().join(',') === 'custom_domain,pattern' &&
+      routes[0].pattern === SITE_DOMAIN &&
+      routes[0].custom_domain === true
+    )
+  ) {
+    problems.push(
+      `routes must be exactly [{ pattern: '${SITE_DOMAIN}', custom_domain: true }] (K120)`,
+    );
   }
   if (config.workers_dev !== true) {
     problems.push('workers_dev must be true: the draft and preview addresses use it');

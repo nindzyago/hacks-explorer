@@ -271,7 +271,18 @@ describe('guard holes', () => {
   });
 
   it.each([
-    [{ routes: [{ pattern: 'hacks.antipic.com', custom_domain: true }] }, 'routes'],
+    [{ routes: [{ pattern: 'evil.example', custom_domain: true }] }, 'routes'],
+    [{ routes: [{ pattern: 'hacks.antipic.com/*', zone_name: 'antipic.com' }] }, 'routes'],
+    [
+      {
+        routes: [
+          { pattern: 'hacks.antipic.com', custom_domain: true },
+          { pattern: 'x.antipic.com', custom_domain: true },
+        ],
+      },
+      'routes',
+    ],
+    [{ routes: 'hacks.antipic.com' }, 'routes'],
     [{ route: 'hacks.antipic.com/*' }, 'route'],
     [{ env: { staging: {} } }, 'env'],
     [{ previews: [] }, 'previews'],
