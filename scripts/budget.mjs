@@ -3,7 +3,8 @@
 // build. Prints the numbers and fails when a budget is broken:
 //   first load   JS that index.html loads (scripts and module preloads), gzip: ≤ 150 KB
 //   lesson file  each data/lessons/*.json, as served (bytes, no compression): ≤ 30 KB
-//   glossary     each data/glossary/*.json (M2.4, loaded on the first opened term): ≤ 30 KB
+//   glossary     each data/glossary/*.json, the index <lang>.json and every chunk of definitions
+//                <lang>.<hash>.json (M2.4, CI3; loaded on the first opened term): ≤ 30 KB
 //   topics       each data/topics/*.json (M2.1b, loaded when the lessons panel opens): ≤ 30 KB
 // Usage: node scripts/budget.mjs [folder]   (default dist)
 import { existsSync, readFileSync, readdirSync } from 'node:fs';

@@ -4,7 +4,7 @@
   // `glossary.open` as everywhere). «См. также» and the words inside a definition open the next
   // term here too; a related lesson opens the lesson and closes the panel.
   import { tick } from 'svelte';
-  import type { SiteGlossary } from '../core/glossary/site';
+  import type { SiteGlossary, SiteGlossaryTerm } from '../core/glossary/site';
   import { matchesAll, MAX_QUERY_LENGTH, queryWords } from '../core/topics/search';
   import type { GlossaryLoader } from '../services/glossary/glossary';
   import type { Translate } from '../services/i18n/i18n';
@@ -63,8 +63,40 @@
   });
 
   const glossary = $derived(data.state === 'ready' ? data.glossary : null);
+
+  // The open term's definition comes with its chunk (CI3): at once when it is already here.
+  type Entry =
+    | { readonly state: 'loading' }
+    | { readonly state: 'ready'; readonly term: SiteGlossaryTerm | null }
+    | { readonly state: 'error' };
+  let entry = $state.raw<Entry>({ state: 'loading' });
+  let entryAttempt = $state(0);
+  $effect(() => {
+    const id = open;
+    const lang = language;
+    if (id === null || glossary === null || entryAttempt < 0) return;
+    const known = loader.known(lang, id);
+    if (known !== undefined) {
+      entry = { state: 'ready', term: known.term };
+      return;
+    }
+    let live = true;
+    entry = { state: 'loading' };
+    void loader.term(lang, id).then(
+      (result) => {
+        if (live)
+          entry = result.ok ? { state: 'ready', term: result.value.term } : { state: 'error' };
+      },
+      () => {
+        if (live) entry = { state: 'error' };
+      },
+    );
+    return () => {
+      live = false;
+    };
+  });
   const term = $derived(
-    open === null || glossary === null ? undefined : glossary.terms.find((x) => x.id === open),
+    open !== null && entry.state === 'ready' && entry.term?.id === open ? entry.term : undefined,
   );
   const titles = $derived(new Map(glossary?.terms.map((x) => [x.id, x.title]) ?? []));
   const labels = $derived(new Map(glossary?.categories.map((c) => [c.id, c.label]) ?? []));
@@ -149,7 +181,21 @@
           run('glossary.close');
         }}>← {t('glossaryList.back')}</button
       >
-      {#if term === undefined}
+      {#if entry.state === 'loading'}
+        <p class="note" role="status">{t('glossary.loading')}</p>
+      {:else if entry.state === 'error'}
+        <div class="note" role="alert">
+          <p>{t('glossary.error')}</p>
+          <button
+            type="button"
+            class="action"
+            data-testid="glossary-entry-retry"
+            onclick={() => {
+              entryAttempt += 1;
+            }}>{t('lesson.retry')}</button
+          >
+        </div>
+      {:else if term === undefined}
         <p class="note">{t('glossary.unknown')}</p>
       {:else}
         <span class="tag">{labels.get(term.category) ?? ''}</span>

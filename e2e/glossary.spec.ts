@@ -7,8 +7,13 @@
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
-import type { SiteGlossary } from '../src/core/glossary/site';
-import { readSiteGlossary } from '../src/core/glossary/site';
+import type { SiteGlossaryTerm } from '../src/core/glossary/site';
+import {
+  glossaryChunkFile,
+  glossaryTerm,
+  readGlossaryChunk,
+  readSiteGlossary,
+} from '../src/core/glossary/site';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
@@ -25,15 +30,28 @@ async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void>
   }
 }
 
-async function glossary(page: Page): Promise<SiteGlossary> {
-  const text = await page.evaluate(async () => (await fetch('/data/glossary/ru.json')).text());
-  const json: unknown = JSON.parse(text);
-  const read = readSiteGlossary(json, 'ru');
-  if (!read.ok) throw new Error(read.error.message);
-  return read.value;
+async function fetchText(page: Page, url: string): Promise<string> {
+  return page.evaluate(async (u) => (await fetch(u)).text(), url);
 }
 
-function termOf(g: SiteGlossary, id: string) {
+/** Every term of the built Russian glossary, whole: the index and all its chunks (CI3). */
+async function glossary(page: Page): Promise<{ terms: readonly SiteGlossaryTerm[] }> {
+  const index = readSiteGlossary(JSON.parse(await fetchText(page, '/data/glossary/ru.json')), 'ru');
+  if (!index.ok) throw new Error(index.error.message);
+  const terms: SiteGlossaryTerm[] = [];
+  for (const [n, hash] of index.value.chunks.entries()) {
+    const json: unknown = JSON.parse(await fetchText(page, `/${glossaryChunkFile('ru', hash)}`));
+    const chunk = readGlossaryChunk(json, index.value, n);
+    if (!chunk.ok) throw new Error(chunk.error.message);
+    for (const t of chunk.value.terms) {
+      const whole = glossaryTerm(index.value, chunk.value, t.id);
+      if (whole !== undefined) terms.push(whole);
+    }
+  }
+  return { terms };
+}
+
+function termOf(g: { terms: readonly SiteGlossaryTerm[] }, id: string) {
   const term = g.terms.find((t) => t.id === id);
   if (term === undefined) throw new Error(`no term ${id}`);
   return term;
@@ -215,10 +233,12 @@ test.describe('the scene', () => {
   });
 });
 
-test('the glossary file loads only when the first term opens, and only once', async ({ page }) => {
+test('the glossary loads only when the first term opens: the index once, a chunk per term at most once', async ({
+  page,
+}) => {
   const requests: string[] = [];
   page.on('request', (r) => {
-    if (r.url().includes('/data/glossary/')) requests.push(r.url());
+    if (r.url().includes('/data/glossary/')) requests.push(new URL(r.url()).pathname);
   });
   await stepWithTerm(page);
   expect(requests).toEqual([]);
@@ -227,7 +247,19 @@ test('the glossary file loads only when the first term opens, and only once', as
   await page.keyboard.press('Escape');
   await page.getByTestId('participant-term-db').click();
   await expect(page.getByTestId(POPOVER)).toHaveAttribute('data-state', 'ready');
-  expect(requests.map((u) => new URL(u).pathname)).toEqual(['/data/glossary/ru.json']);
+  await page.keyboard.press('Escape');
+  await page.getByTestId('explain-text').getByTestId('term').first().click();
+  await expect(page.getByTestId(POPOVER)).toHaveAttribute('data-state', 'ready');
+  // The index first, then only chunks of definitions, none twice and none of them everything.
+  expect(requests[0]).toBe('/data/glossary/ru.json');
+  const chunks = requests.slice(1);
+  expect(chunks.length).toBeGreaterThanOrEqual(1);
+  expect(chunks.every((p) => /^\/data\/glossary\/ru\.[0-9a-f]{8}\.json$/.test(p))).toBe(true);
+  expect(new Set(chunks).size).toBe(chunks.length);
+  const index: unknown = JSON.parse(await fetchText(page, '/data/glossary/ru.json'));
+  const read = readSiteGlossary(index, 'ru');
+  if (!read.ok) throw new Error(read.error.message);
+  expect(chunks.length).toBeLessThanOrEqual(Math.min(2, read.value.chunks.length));
 });
 
 test.describe('on a phone', () => {

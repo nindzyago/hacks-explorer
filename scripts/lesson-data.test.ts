@@ -7,10 +7,20 @@ import { build, createServer } from 'vite';
 import { afterAll, describe, expect, it } from 'vitest';
 import { readCatalog, readSiteLesson } from '../src/core/lesson/site-read';
 import { CATALOG_FILE, MAX_LESSON_FILE_BYTES, lessonFile } from '../src/core/lesson/site';
-import { MAX_GLOSSARY_FILE_BYTES, glossaryFile, readSiteGlossary } from '../src/core/glossary/site';
+import {
+  MAX_GLOSSARY_FILE_BYTES,
+  glossaryChunkFile,
+  glossaryFile,
+  glossaryTerm,
+  readGlossaryChunk,
+  readSiteGlossary,
+} from '../src/core/glossary/site';
+import { checkGlossaries } from '../src/core/glossary/check';
+import type { Glossary } from '../src/core/glossary/types';
+import { checkContent } from '../src/core/lesson/check';
 import { MAX_TOPICS_FILE_BYTES, readSiteTopics, topicsFile } from '../src/core/topics/site';
 import { readContent } from './content-files.mjs';
-import { buildLessonData, lessonData } from './lesson-data';
+import { buildLessonData, glossaryDataFiles, lessonData } from './lesson-data';
 
 const real = readContent();
 
@@ -155,9 +165,12 @@ describe('vite build', () => {
     });
     if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
     const names = out.output.map((o) => o.fileName).filter((n) => n.startsWith('data/'));
-    // The catalog, a file per lesson, the glossary and the topics of each site language.
+    // The catalog, a file per lesson, the glossary (an index and its chunks) and the topics of
+    // each site language.
+    const chunks = names.filter((n) => /^data\/glossary\/[a-z]+\.[0-9a-f]{8}\.json$/.test(n));
+    expect(chunks.length).toBeGreaterThanOrEqual(real.glossaries.length);
     expect(names).toHaveLength(
-      real.lessons.length + 1 + real.glossaries.length + real.catalogs.length,
+      real.lessons.length + 1 + real.glossaries.length + chunks.length + real.catalogs.length,
     );
     expect(names).toContain('data/topics/ru.json');
     expect(names).toContain(CATALOG_FILE);
@@ -223,22 +236,46 @@ describe('npm run dev', () => {
 // M2.4 (K98): the glossary is checked with the lessons, its terms are linked in lesson text, and
 // a broken or hostile glossary stops the build like a broken lesson.
 
+const bytes = (text: string) => new TextEncoder().encode(text).length;
+
+/** The glossary files of `language` among `files`: the index read back, every term whole. */
+function readGlossary(files: readonly { path: string; text: string }[], language: string) {
+  const index = readSiteGlossary(JSON.parse(fileText(files, glossaryFile(language))), language);
+  if (!index.ok) throw new Error(index.error.message);
+  const terms = index.value.chunks.flatMap((hash, n) => {
+    const text = fileText(files, glossaryChunkFile(language, hash));
+    const chunk = readGlossaryChunk(JSON.parse(text), index.value, n);
+    if (!chunk.ok) throw new Error(chunk.error.message);
+    return chunk.value.terms.map((t) => glossaryTerm(index.value, chunk.value, t.id));
+  });
+  return { index: index.value, terms };
+}
+
+/** Every glossary file among `files` with its size in bytes. */
+function glossarySizes(files: readonly { path: string; text: string }[]) {
+  return files
+    .filter((f) => f.path.startsWith('data/glossary/'))
+    .map((f) => ({ path: f.path, bytes: bytes(f.text) }));
+}
+
 describe('the glossary', () => {
   const result = buildLessonData(real);
   if (!result.ok) throw new Error(result.errors.join('\n'));
-  const glossaryText = fileText(result.files, glossaryFile('ru'));
-  const glossary = readSiteGlossary(JSON.parse(glossaryText), 'ru');
+  const { index, terms } = readGlossary(result.files, 'ru');
 
-  it('is written per language within 30 KB and reads back', () => {
-    expect(new TextEncoder().encode(glossaryText).length).toBeLessThanOrEqual(
-      MAX_GLOSSARY_FILE_BYTES,
-    );
-    expect(glossary.ok).toBe(true);
-    if (!glossary.ok) return;
-    expect(glossary.value.terms.length).toBeGreaterThanOrEqual(25);
-    const sqli = glossary.value.terms.find((t) => t.id === 'sql-injection');
+  it('is written per language as an index and chunks, each within 30 KB, and reads back', () => {
+    const sizes = glossarySizes(result.files);
+    expect(sizes.filter((s) => s.bytes > MAX_GLOSSARY_FILE_BYTES)).toEqual([]);
+    expect(index.terms.length).toBeGreaterThanOrEqual(25);
+    expect(terms.map((t) => t?.id)).toEqual(index.terms.map((t) => t.id));
+    const sqli = terms.find((t) => t?.id === 'sql-injection');
     expect(sqli?.lessons).toEqual([{ id: 'B1', title: 'SQL-инъекция' }]);
-    expect(glossaryText).not.toMatch(/<[a-zA-Z/!?]/);
+    expect(sqli?.definition.length).toBeGreaterThan(0);
+    for (const f of result.files.filter((x) => x.path.startsWith('data/glossary/'))) {
+      expect(f.text).not.toMatch(/<[a-zA-Z/!?]/);
+    }
+    // The index carries no definitions: the list and the search need only titles.
+    expect(fileText(result.files, glossaryFile('ru'))).not.toContain('"definition"');
   });
 
   it('links terms in B1 text, and B1 participants name their terms', () => {
@@ -255,7 +292,7 @@ describe('the glossary', () => {
       'database',
     ]);
     // Every linked id is in the glossary.
-    const ids = new Set(glossary.ok ? glossary.value.terms.map((t) => t.id) : []);
+    const ids = new Set(index.terms.map((t) => t.id));
     const linked = [...text.matchAll(/"type":"term","id":"([^"]+)"/g)].map((m) => m[1] ?? '');
     expect(linked.length).toBeGreaterThan(5);
     expect(linked.filter((id) => !ids.has(id))).toEqual([]);
@@ -301,10 +338,10 @@ describe('the glossary', () => {
     );
   });
 
-  it('fails the build when the glossary data is over 30 KB', () => {
+  it('splits a glossary larger than one file instead of failing (CI3)', () => {
     // Many short valid terms: each within the checker's limits, together over the budget.
     const extra = Array.from(
-      { length: 60 },
+      { length: 30 },
       (_, i) =>
         `## \`extra-${String(i)}\` Слово ${String(i)}\n\n\`category\` basics\n\n${'Определение слова для проверки размера файла словаря, достаточно длинное. '.repeat(4)}\n`,
     ).join('\n');
@@ -318,11 +355,80 @@ describe('the glossary', () => {
         text: '# Языки\n\n`languages` · `format` 1\n\n- `ru` Русский\n',
       },
     });
-    expect(out.ok).toBe(false);
-    if (out.ok) return;
-    expect(out.errors.join('\n')).toMatch(
-      /the site data of this glossary is \d+ bytes; at most 30720/,
-    );
+    if (!out.ok) throw new Error(out.errors.join('\n'));
+    const sizes = glossarySizes(out.files);
+    expect(sizes.filter((s) => s.bytes > MAX_GLOSSARY_FILE_BYTES)).toEqual([]);
+    // As one file this glossary would be well over the budget.
+    expect(sizes.reduce((sum, s) => sum + s.bytes, 0)).toBeGreaterThan(MAX_GLOSSARY_FILE_BYTES);
+    const back = readGlossary(out.files, 'ru');
+    expect(back.index.chunks.length).toBeGreaterThan(1);
+    expect(back.terms.filter((t) => t === undefined)).toEqual([]);
+    expect(back.terms.map((t) => t?.id)).toContain('extra-29');
+  });
+
+  it('keeps every file within 30 KB for a glossary 5 times the real one (CI3)', () => {
+    const checked = checkContent(real.lessons, real.sources);
+    const all = checkGlossaries(real.glossaries, {
+      lessons: checked.lessons,
+      lessonPaths: real.lessons.map((f) => f.path),
+      siteLanguages: ['ru', 'en'],
+    });
+    expect(all.errors).toEqual([]);
+    for (const g of all.glossaries) {
+      const times = 5;
+      const copy = (id: string, k: number) => (k === 0 ? id : `${id.slice(0, 28)}-x${String(k)}`);
+      const big: Glossary = {
+        ...g,
+        terms: Array.from({ length: times }, (_, k) =>
+          g.terms.map((t) => ({
+            ...t,
+            id: copy(t.id, k),
+            title: k === 0 ? t.title : `${t.title} ${String(k)}`,
+            // Copies are reached from the list and «see also»; only the originals are searched.
+            forms: k === 0 ? t.forms : [],
+            see: t.see.map((s) => copy(s, k)),
+          })),
+        ).flat(),
+      };
+      const titles = new Map(
+        checked.lessons.filter((l) => l.language === g.language).map((l) => [l.id, l.title]),
+      );
+      const out = glossaryDataFiles(big, titles);
+      expect(out.errors).toEqual([]);
+      const sizes = glossarySizes(out.files);
+      expect(sizes.filter((s) => s.bytes > MAX_GLOSSARY_FILE_BYTES)).toEqual([]);
+      // 5 times today's data: as one file this would be far over the budget.
+      expect(sizes.reduce((sum, s) => sum + s.bytes, 0)).toBeGreaterThan(
+        3 * MAX_GLOSSARY_FILE_BYTES,
+      );
+      const back = readGlossary(out.files, g.language);
+      expect(back.terms).toHaveLength(times * g.terms.length);
+      expect(back.terms.filter((t) => t === undefined)).toEqual([]);
+    }
+  });
+
+  it('fails the build when the index alone is over 30 KB, naming the file', () => {
+    const g: Glossary = {
+      language: 'ru',
+      title: 'G',
+      categories: [{ id: 'web', label: 'W', position: { line: 1, column: 1 } }],
+      terms: Array.from({ length: 300 }, (_, i) => ({
+        id: `t${String(i)}`,
+        title: 'Ж'.repeat(60),
+        category: 'web',
+        forms: [],
+        see: [],
+        lessons: [],
+        definition: [],
+        position: { line: 1, column: 1 },
+      })),
+    };
+    const out = glossaryDataFiles(g, new Map());
+    expect(out.errors).toEqual([
+      expect.stringMatching(
+        /^content\/locales\/ru\/glossary\.md:1:1: the index of this glossary is \d+ bytes; at most 30720/,
+      ),
+    ]);
   });
 });
 
