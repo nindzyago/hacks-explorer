@@ -159,7 +159,7 @@ encoding was forgotten somewhere.
 
 ## `session-cookie` Session cookie
 
-`category` web · `see` xss, web-server · `lessons` C1
+`category` web · `see` xss, web-server, csrf, samesite · `lessons` C1, C4
 
 Forms: session cookie, session cookies
 
@@ -167,6 +167,38 @@ A small record a site leaves in the browser after login. The browser attaches it
 to that site, and by it the site recognizes the user without a password. Whoever steals such a
 cookie can log in as its owner. The `HttpOnly` attribute (RFC 6265) forbids page scripts from
 reading it.
+
+## `csrf` CSRF
+
+`category` web · `see` csrf-token, session-cookie, samesite · `lessons` C4
+
+Forms: CSRF, cross-site request forgery
+
+Cross-Site Request Forgery: someone else's page makes the victim's browser send a request to a
+site where the victim is already logged in. The browser attaches the victim's cookie on its own,
+and the site carries out the action in the victim's name: a transfer, a password change. In the
+MITRE catalogue it is CWE-352.
+
+## `csrf-token` CSRF token
+
+`category` web · `see` csrf, session-cookie · `lessons` C4
+
+Forms: CSRF token, CSRF tokens
+
+A random secret string that a site puts into its own forms and checks on every request that
+changes something. Another site's page does not know it and cannot read it from the site's page,
+so a forged request arrives without the token and is rejected.
+
+## `samesite` SameSite
+
+`category` web · `see` session-cookie, csrf · `lessons` C4
+
+Forms: SameSite
+
+A cookie attribute that tells the browser whether to attach the cookie to requests coming from
+other sites. `Strict` means never, `Lax` only on an ordinary link navigation, `None` always. It
+protects against CSRF as an extra layer but does not replace a CSRF token.
+
 
 ## `phishing` Phishing
 
