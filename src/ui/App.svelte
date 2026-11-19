@@ -11,6 +11,8 @@
   import type { TopicsLoader } from '../services/topics/topics';
   import { translator, type Locales } from '../services/i18n/i18n';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
+  import { formatAboutAddress, formatAddress } from '../services/router/address';
+  import About from './About.svelte';
   import { keyCommand, keyTarget } from './keyboard';
   import DefenceToggle from './DefenceToggle.svelte';
   import type DrawerPanel from './Drawer.svelte';
@@ -28,6 +30,10 @@
     locales,
     home = '/',
     notFound = createStore(false),
+    about = createStore(false),
+    navigate = (path: string) => {
+      window.location.assign(path);
+    },
   }: {
     app: AppContext;
     loader: LessonLoader;
@@ -39,6 +45,10 @@
     home?: string;
     /** M2.2: the address is no page of the site (src/services/router). */
     notFound?: Pick<Store<boolean>, 'subscribe'>;
+    /** M3.9: the address is the page «About» (src/services/router). */
+    about?: Pick<Store<boolean>, 'subscribe'>;
+    /** M3.9: opens a path of the site as a link would, without loading the page again. */
+    navigate?: (path: string) => void;
   } = $props();
   const store = $derived(app.store);
   const player = $derived($store.player);
@@ -68,7 +78,7 @@
   $effect(() => {
     document
       .querySelector('meta[name="description"]')
-      ?.setAttribute('content', t('app.description'));
+      ?.setAttribute('content', t($about ? 'about.description' : 'app.description'));
   });
 
   // The lesson in the state (I1 «Фишинг» until `lesson.open` or an address, K7), in the
@@ -86,7 +96,7 @@
     const id = lessonId;
     const language = locale;
     // M2.2: an address that is no page of the site loads no lesson behind its message.
-    if ($notFound) return;
+    if ($notFound || $about) return;
     let current = true;
     shown = { state: 'loading', attempt };
     const lesson = loader
@@ -126,7 +136,11 @@
   // M2.2: the page title says when the address is no page; the heading takes the focus.
   let notFoundHeading = $state<HTMLElement | null>(null);
   $effect(() => {
-    document.title = $notFound ? `${t('page.notFound.title')} — ${PROJECT.name}` : PROJECT.name;
+    document.title = $notFound
+      ? `${t('page.notFound.title')} — ${PROJECT.name}`
+      : $about
+        ? `${t('about.title')} — ${PROJECT.name}`
+        : PROJECT.name;
   });
   $effect(() => {
     notFoundHeading?.focus();
@@ -139,7 +153,7 @@
   /** S6: Space, ← →, D. Keys are ignored while typing and with Ctrl, ⌘ or Alt. */
   function onkeydown(event: KeyboardEvent): void {
     // M2.1b: while the side panel is open the player takes no keys.
-    if ($notFound || shown.state !== 'ready' || event.defaultPrevented) return;
+    if ($notFound || $about || shown.state !== 'ready' || event.defaultPrevented) return;
     if ($store.drawer !== null) return;
     const id = keyCommand(
       {
@@ -178,6 +192,23 @@
     );
   });
 
+  // M3.9: the way to the page «About» and back to the lesson where the reader was.
+  const base = $derived(home.endsWith('/') ? home.slice(0, -1) : home);
+  const aboutPath = $derived(formatAboutAddress(locale));
+  const lessonPath = $derived(
+    formatAddress({
+      lang: locale,
+      lesson: lessonId,
+      step: player.step,
+      defence: player.defence,
+    }),
+  );
+  function follow(event: MouseEvent, path: string): void {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(path);
+  }
+
   function onkeyup(event: KeyboardEvent): void {
     if (event.key !== ' ' && event.code !== 'Space') return;
     if (keyTarget(event.target).player === true) event.preventDefault();
@@ -186,15 +217,36 @@
 
 <svelte:window {onkeydown} {onkeyup} />
 
-<main data-testid="app">
+<main data-testid="app" class:page={$about}>
   <header class="top" data-testid="topbar">
     <h1 class="brand">{PROJECT.name}</h1>
-    {#if shown.state === 'ready' && !$notFound}
+    {#if shown.state === 'ready' && !$notFound && !$about}
       <h2 class="lesson-title" id="lesson-title" data-testid="lesson-title">
         {shown.lesson.title}
       </h2>
     {:else}
       <p class="tagline">{t('app.tagline')}</p>
+    {/if}
+    <!-- M3.9: «О проекте» / «К урокам» before the panel buttons; on a phone it stays on the first
+         row with the title when there is room. -->
+    {#if $about}
+      <a
+        class="nav"
+        href="{base}{lessonPath}"
+        data-testid="nav-lessons"
+        onclick={(event) => {
+          follow(event, lessonPath);
+        }}>{t('nav.lessons')}</a
+      >
+    {:else}
+      <a
+        class="nav"
+        href="{base}{aboutPath}"
+        data-testid="nav-about"
+        onclick={(event) => {
+          follow(event, aboutPath);
+        }}>{t('nav.about')}</a
+      >
     {/if}
     <!-- M2.1b: the side panel with the lessons and the glossary (K102: 44 px). -->
     <div class="panels" data-testid="panel-buttons">
@@ -252,6 +304,8 @@
         <a href={home} data-testid="not-found-home">{t('page.home')}</a>
       </div>
     </div>
+  {:else if $about}
+    <About loader={topics} language={locale} {home} {t} onopen={navigate} />
   {:else if shown.state === 'loading'}
     <p class="status" data-testid="lesson-loading" role="status">{t('lesson.loading')}</p>
   {:else if shown.state === 'error'}
@@ -310,7 +364,7 @@
       {glossary}
       {home}
       {t}
-      notFound={$notFound}
+      notFound={$notFound || $about}
       fallbackFocus={() => lessonsButton}
     />
   {/if}
@@ -364,7 +418,6 @@
 
   /* M2.1b: «Уроки» and «Словарь» before the language switch, at the end of the top bar. */
   .panels {
-    margin-left: auto;
     display: flex;
     gap: var(--space-1);
   }
@@ -380,6 +433,18 @@
     font-size: var(--text-sm);
     font-weight: 700;
     cursor: pointer;
+  }
+
+  /* M3.9: «О проекте» / «К урокам», a plain link with a 44 px target before the panel buttons. */
+  .nav {
+    margin-left: auto;
+    min-height: 44px;
+    padding: 0 var(--space-2);
+    display: inline-flex;
+    align-items: center;
+    color: var(--legit);
+    font-size: var(--text-sm);
+    font-weight: 700;
   }
 
   .panels button:hover {
@@ -477,7 +542,7 @@
    * rather than squeezing the rows. The phone keeps one column and the page scrolls (S10).
    */
   @media (min-width: 761px) {
-    main {
+    main:not(.page) {
       height: 100dvh;
     }
 

@@ -7,6 +7,7 @@
 import { initialState, type AppState } from '../../core/state';
 import { createStore, type Store } from '../../core/store';
 import {
+  formatAboutAddress,
   formatAddress,
   parseAddress,
   pathLanguage,
@@ -42,6 +43,16 @@ export interface RouterOptions {
 export interface Router {
   /** True while the address is no page of the site: the interface shows a message (L0.1). */
   readonly notFound: Pick<Store<boolean>, 'get' | 'subscribe'>;
+  /**
+   * True while the address is the page «About» (M3.9, `/<lang>/about`). The lesson stays in the
+   * state behind it; a language switch keeps the page, opening another lesson leaves it.
+   */
+  readonly about: Pick<Store<boolean>, 'get' | 'subscribe'>;
+  /**
+   * Opens a path of this site as a new history entry, as a link would without loading the page.
+   * Anything that is not a page of the site (another origin, no page, too long) is ignored (L0.2).
+   */
+  navigate(path: unknown): void;
   /** The language of the page, as the address shows it (`state.locale`). */
   lang(): string;
   /**
@@ -68,6 +79,12 @@ export function startRouter(options: RouterOptions): Router {
     home: initialState().lesson,
   };
   const notFound = createStore(false);
+  const about = createStore(false);
+  /** The lesson behind the page «About» when it opened: another one leaves the page. */
+  let aboutLesson = store.get().lesson;
+  about.subscribe((on) => {
+    if (on) aboutLesson = store.get().lesson;
+  });
   /** While the address is being applied, the state changes in steps: nothing is written. */
   let applying = false;
 
@@ -100,10 +117,24 @@ export function startRouter(options: RouterOptions): Router {
           applying = false;
         }
       }
+      about.set(false);
       notFound.set(true);
       return;
     }
     notFound.set(false);
+    if (route.kind === 'about') {
+      applying = true;
+      try {
+        if (store.get().locale !== route.lang) run('locale.set', { lang: route.lang });
+      } finally {
+        applying = false;
+      }
+      about.set(true);
+      const canonical = formatAboutAddress(route.lang);
+      if (canonical !== current()) win.history.replaceState(null, '', canonical);
+      return;
+    }
+    about.set(false);
     const { place } = route;
     applying = true;
     try {
@@ -125,6 +156,18 @@ export function startRouter(options: RouterOptions): Router {
    */
   const unsubscribe = store.subscribe((state) => {
     if (applying || notFound.get()) return;
+    if (about.get()) {
+      // M3.9: behind the page only a new language (a new entry, K108) or a new lesson (the page
+      // is left for it, K79) changes the address; steps and modes write nothing.
+      const shownAbout = parseAddress(win.location.pathname, win.location.hash, address);
+      if (shownAbout.kind === 'about' && shownAbout.lang !== state.locale) {
+        win.history.pushState(null, '', formatAboutAddress(state.locale));
+      } else if (state.lesson !== aboutLesson) {
+        about.set(false);
+        write(true);
+      }
+      return;
+    }
     const shown = parseAddress(win.location.pathname, win.location.hash, address);
     write(
       shown.kind === 'lesson' &&
@@ -139,6 +182,20 @@ export function startRouter(options: RouterOptions): Router {
     notFound: {
       get: () => notFound.get(),
       subscribe: (listener: (value: boolean) => void) => notFound.subscribe(listener),
+    },
+    about: {
+      get: () => about.get(),
+      subscribe: (listener: (value: boolean) => void) => about.subscribe(listener),
+    },
+    navigate(path: unknown) {
+      if (typeof path !== 'string' || !path.startsWith('/') || path.startsWith('//')) return;
+      const cut = path.indexOf('#');
+      const pathname = cut < 0 ? path : path.slice(0, cut);
+      const hash = cut < 0 ? '' : path.slice(cut);
+      if (parseAddress(pathname, hash, address).kind === 'unknown') return;
+      if (path === current()) return;
+      win.history.pushState(null, '', path);
+      apply();
     },
     lang: () => store.get().locale,
     applyingAddress: () => applying,
