@@ -112,5 +112,9 @@ mount(App, {
     locales,
     home: import.meta.env.BASE_URL,
     notFound: router.notFound,
+    about: router.about,
+    navigate: (path: string) => {
+      router.navigate(path);
+    },
   },
 });

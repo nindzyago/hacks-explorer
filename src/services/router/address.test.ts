@@ -2,7 +2,13 @@
 // hostile input (L0.2): anything that is not exactly the grammar gives defaults or «unknown»,
 // never an exception.
 import { describe, expect, it } from 'vitest';
-import { formatAddress, parseAddress, pathLanguage, type Place } from './address';
+import {
+  formatAboutAddress,
+  formatAddress,
+  parseAddress,
+  pathLanguage,
+  type Place,
+} from './address';
 
 // Verifier M2.3a (K110): «no such page» speaks the language of the address.
 describe('pathLanguage', () => {
@@ -185,5 +191,42 @@ describe('formatAddress', () => {
     expect(formatAddress(place('B1', 1e9))).toBe('/ru/lesson/B1#step-100');
     expect(formatAddress(place('../x', 2))).toBe('/ru');
     expect(formatAddress(place('B1', 2, false, '../'))).toBe('/ru/lesson/B1#step-2');
+  });
+});
+
+// M3.9: the page «About» is `/<lang>/about`; the home page stays the default lesson (K7).
+describe('the about page', () => {
+  const two = { languages: ['ru', 'en'], fallback: 'ru', home: 'I1' } as const;
+
+  it('is read with any case and a trailing slash, in the language of the address', () => {
+    expect(parseAddress('/ru/about', '', two)).toEqual({ kind: 'about', lang: 'ru' });
+    expect(parseAddress('/EN/About/', '#step-3', two)).toEqual({ kind: 'about', lang: 'en' });
+    expect(parseAddress('/de/about', '', two)).toEqual({ kind: 'about', lang: 'ru' });
+  });
+
+  it('is no page with anything around it', () => {
+    for (const path of [
+      '/about',
+      '/ru/about/x',
+      '/ru/lesson/about',
+      '/ru/about//',
+      '/ru/aboutx',
+      '/ru/%61bout',
+      '/ru//about',
+    ]) {
+      expect(parseAddress(path, '', two), path).toEqual({ kind: 'unknown' });
+    }
+  });
+
+  it('the home page still opens the default lesson', () => {
+    expect(parseAddress('/', '', two).kind).toBe('home');
+    expect(parseAddress('/en/', '', two).kind).toBe('home');
+  });
+
+  it('is written in its canonical form; a bad language becomes ru', () => {
+    expect(formatAboutAddress('en')).toBe('/en/about');
+    expect(formatAboutAddress('RU')).toBe('/ru/about');
+    expect(formatAboutAddress('../x')).toBe('/ru/about');
+    expect(formatAboutAddress('')).toBe('/ru/about');
   });
 });

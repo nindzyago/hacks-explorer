@@ -19,6 +19,8 @@ export type Route =
   /** `/`, `/<lang>`, `/<lang>/lesson`: the default lesson; the address is rewritten to it. */
   | { readonly kind: 'home'; readonly place: Place }
   | { readonly kind: 'lesson'; readonly place: Place }
+  /** `/<lang>/about` (M3.9): the page «About»; the lesson in the state stays as it is. */
+  | { readonly kind: 'about'; readonly lang: string }
   /** Any other path: the page says so and offers the way home (L0.1). */
   | { readonly kind: 'unknown' };
 
@@ -38,6 +40,8 @@ export const MAX_HASH_LENGTH = 32;
 const LANG = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})?$/i;
 /** A lesson id, as the `lesson.open` command accepts it (upper case there). */
 const LESSON = /^[A-Za-z][0-9]{1,3}$/;
+/** The path word of the page «About» (M3.9), matched case-insensitively. */
+const ABOUT = 'about';
 const HASH = /^#step-([0-9]{1,4})(-defence)?$/;
 
 function language(raw: string, options: AddressOptions): string {
@@ -73,6 +77,7 @@ export function parseAddress(pathname: unknown, hash: unknown, options: AddressO
   if (parts.length === 1 || (parts.length === 2 && word?.toLowerCase() === 'lesson')) {
     return { kind: 'home', place: { lang: site, lesson: options.home, step: 1, defence: false } };
   }
+  if (parts.length === 2 && word?.toLowerCase() === ABOUT) return { kind: 'about', lang: site };
   if (
     parts.length !== 3 ||
     word?.toLowerCase() !== 'lesson' ||
@@ -109,4 +114,9 @@ export function formatAddress(place: Place): string {
   const path = `/${lang}/lesson/${place.lesson.toUpperCase()}`;
   if (step === 1 && !place.defence) return path;
   return `${path}#step-${String(step)}${place.defence ? '-defence' : ''}`;
+}
+
+/** The address of the page «About» in `lang` (M3.9); a bad language is replaced by `ru`. */
+export function formatAboutAddress(lang: string): string {
+  return `/${LANG.test(lang) ? lang.toLowerCase() : 'ru'}/${ABOUT}`;
 }

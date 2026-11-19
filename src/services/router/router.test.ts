@@ -333,3 +333,98 @@ describe('startRouter', () => {
     expect(app.store.get().locale).toBe('en');
   });
 });
+
+// M3.9: the page «About» (`/<lang>/about`). The lesson stays in the state behind it, so «back to
+// the lessons» returns to the same place; `/` still opens the default lesson (K7).
+describe('the about page', () => {
+  function about(start: string) {
+    const browser = fakeWindow(start);
+    const app = fakeApp();
+    const router = startRouter({
+      window: browser.win,
+      store: app.store,
+      run: app.run,
+      languages: ['ru', 'en'],
+    });
+    return { browser, app, router };
+  }
+
+  it('opens without touching the lesson, in the language of the address', () => {
+    const { app, browser, router } = about('/EN/About/');
+    expect(router.about.get()).toBe(true);
+    expect(router.notFound.get()).toBe(false);
+    expect(app.calls).toEqual(['locale.set {"lang":"en"}']);
+    expect(browser.address()).toBe('/en/about');
+    expect(browser.entries).toHaveLength(1);
+  });
+
+  it('the home page still opens the default lesson, not the about page', () => {
+    const { browser, router } = about('/');
+    expect(router.about.get()).toBe(false);
+    expect(browser.address()).toBe('/ru/lesson/I1');
+  });
+
+  it('a step or mode change behind the page does not write the address', () => {
+    const { app, browser } = about('/ru/about');
+    app.run('player.goto', { step: 2 });
+    app.run('defence.set', { on: true });
+    expect(browser.entries).toEqual(['/ru/about']);
+  });
+
+  it('a language switch stays on the page and is a history entry', () => {
+    const { app, browser, router } = about('/ru/about');
+    app.run('locale.set', { lang: 'en' });
+    expect(browser.entries).toEqual(['/ru/about', '/en/about']);
+    browser.go(-1);
+    expect(app.store.get().locale).toBe('ru');
+    expect(router.about.get()).toBe(true);
+  });
+
+  it('opening another lesson leaves the page', () => {
+    const { app, browser, router } = about('/ru/about');
+    app.run('lesson.open', { id: 'B1' });
+    expect(router.about.get()).toBe(false);
+    expect(browser.entries).toEqual(['/ru/about', '/ru/lesson/B1']);
+  });
+
+  it('navigate: to the page and back to the same place in the lesson', () => {
+    const { app, browser, router } = about('/ru/lesson/B1#step-3');
+    router.navigate('/ru/about');
+    expect(router.about.get()).toBe(true);
+    expect(app.store.get().lesson).toBe('B1');
+    expect(browser.entries).toEqual(['/ru/lesson/B1#step-3', '/ru/about']);
+    router.navigate('/ru/lesson/B1#step-3');
+    expect(router.about.get()).toBe(false);
+    expect(app.store.get().player.step).toBe(3);
+    expect(browser.address()).toBe('/ru/lesson/B1#step-3');
+    browser.go(-1);
+    expect(router.about.get()).toBe(true);
+    browser.go(-1);
+    expect(router.about.get()).toBe(false);
+  });
+
+  it('navigate ignores what is not a path of this site (L0.2)', () => {
+    const { browser, router } = about('/ru/lesson/I1');
+    for (const bad of [
+      'https://example.com/',
+      '//example.com/ru/about',
+      'ru/about',
+      '',
+      42,
+      null,
+    ]) {
+      router.navigate(bad);
+    }
+    router.navigate(`/ru/${'x'.repeat(100)}`);
+    expect(browser.entries).toEqual(['/ru/lesson/I1']);
+    expect(router.notFound.get()).toBe(false);
+  });
+
+  it('leaving «no such page» for the about page clears the message', () => {
+    const { router } = about('/ru/nope');
+    expect(router.notFound.get()).toBe(true);
+    router.navigate('/ru/about');
+    expect(router.notFound.get()).toBe(false);
+    expect(router.about.get()).toBe(true);
+  });
+});

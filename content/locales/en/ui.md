@@ -19,6 +19,36 @@ in. Keep the same keys and the same `{names}`.
 - `page.notFound.text` Check the address or open a lesson from the home page.
 - `page.home` Home page
 
+## About
+
+- `nav.about` About
+- `nav.lessons` Back to lessons
+- `about.title` About
+- `about.description` What Hacks Explorer is, how to read a lesson, the ready lessons, principles, licences and how to help.
+- `about.lead` Hacks Explorer is an open interactive explainer for beginners: how attacks work and how to stop them. Every attack is shown step by step on a diagram of a fictional system.
+- `about.genre` The idea of the genre — a protocol on one diagram, step by step — comes from Protocol Explorer. The texts, diagrams and code here are our own.
+- `about.read.title` How to read a lesson
+- `about.read.scene` The diagram: the participants and the messages between them. Press a participant or a zone to see what it is.
+- `about.read.steps` Attack flow: the table of steps under the diagram. A row of the table opens its step.
+- `about.read.play` “Play” moves the messages across the diagram by itself, “Step” one at a time. Keys: Space, ← and →.
+- `about.read.defence` “No defence” and “With defence” (key D): the same attack, but the defence stops it.
+- `about.read.depth` Three depths of explanation: “Simple”, “Step by step” and “Deeper” for those who want the details.
+- `about.read.glossary` Glossary: highlighted words are explained in place; the whole glossary is the “Glossary” button at the top.
+- `about.lessons.title` Ready lessons
+- `about.lessons.count` {ready} of {count} topics are ready; the rest are being written.
+- `about.principles.title` Principles
+- `about.principles.fictional` The systems in the lessons are fictional. A lesson explains the mechanism, it does not teach breaking in: there are no ready-made exploits and no instructions against real products.
+- `about.principles.addresses` Addresses and domains in the lessons come only from the ranges reserved for documentation (RFC 5737, RFC 3849, RFC 2606).
+- `about.principles.facts` Facts come from open sources: OWASP, MITRE, NVD, RFC. Every lesson lists its sources.
+- `about.principles.tracking` No tracking: no analytics, no cookies, no external fonts and no requests to other servers. The site remembers the language you chose only in your browser.
+- `about.licences.title` Licences
+- `about.licences.code` The code is under the MIT licence.
+- `about.licences.lessons` The texts and diagrams of the lessons are under CC BY-SA 4.0.
+- `about.licences.fonts` The Onest and JetBrains Mono fonts are under the SIL Open Font License 1.1.
+- `about.licences.icons` The participant icons were made for the project; their licence terms are still being checked. Where each file comes from is in ATTRIBUTION.md.
+- `about.help.title` How to help
+- `about.help.text` New lessons, translations and languages are welcome as pull requests. The repository is not public yet — soon.
+
 ## Loading a lesson
 
 - `lesson.loading` Loading the lesson…
