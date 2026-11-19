@@ -1,4 +1,4 @@
-// M2.1b (E3, K111): the catalog of topics — the file, the check across languages, the site
+// M2.1b (E3, K112): the catalog of topics — the file, the check across languages, the site
 // data and the search of the lessons panel (S7).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';

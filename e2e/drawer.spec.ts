@@ -1,4 +1,4 @@
-// M2.1b acceptance (design M2.1 D1 a, E2–E4, E6; K111–K114), oracle D: scenario S7 on the real
+// M2.1b acceptance (design M2.1 D1 a, E2–E4, E6; K112–K114), oracle D: scenario S7 on the real
 // catalog — the lessons panel shows all 12 sections and 75 topics, «sql» finds B1 and B8, the
 // section «Сеть» its seven topics, a query with no result a hint and a reset; Esc, a click outside
 // and the close button close it and focus returns; a ready lesson opens from it and the address

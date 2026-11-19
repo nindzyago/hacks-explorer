@@ -1,5 +1,5 @@
 /**
- * Checks the catalogs of all languages together (M2.1 E3, K111):
+ * Checks the catalogs of all languages together (M2.1 E3, K112):
  *  - each file on its own (file.ts);
  *  - the Russian catalog is the base; every other one has the same sections and the same topics
  *    in the same order (the names are translations);

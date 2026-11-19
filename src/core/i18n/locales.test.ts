@@ -92,13 +92,16 @@ describe('fill', () => {
 });
 
 describe('parseLanguages', () => {
-  it('reads the real list: Russian only until M2.3b', () => {
+  it('reads the real list: Russian, then English (M2.3b)', () => {
     const text = readFileSync(
       new URL('../../../content/locales/languages.md', import.meta.url),
       'utf8',
     );
     const r = parseLanguages(text);
-    expect(r.ok && r.languages).toEqual([{ code: 'ru', name: 'Русский' }]);
+    expect(r.ok && r.languages).toEqual([
+      { code: 'ru', name: 'Русский' },
+      { code: 'en', name: 'English' },
+    ]);
   });
 
   it('reads languages in order, base first', () => {

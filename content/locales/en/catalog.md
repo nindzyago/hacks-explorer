@@ -2,7 +2,7 @@
 
 `catalog` en · `format` 1
 
-Every topic of the site by section (M2.1, K111). A section is `` ## `B` Name ``, a topic is
+Every topic of the site by section (M2.1, K112). A section is `` ## `B` Name ``, a topic is
 `` - `B1` Name ``. A lesson is ready when its file `content/lessons/<id>/<language>.md` exists.
 The Russian catalog is the base: this file keeps the same sections and topics in the same order.
 

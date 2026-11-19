@@ -1,7 +1,8 @@
 // M2.1a acceptance (design M2.1 E1, E5, D2; K91, K93): on a laptop from 1024×768 the lesson is
 // one screen — the page never scrolls, only the explanation panel and the steps area scroll
 // inside; the «Ход атаки» table carries the marks of the old event feed; «Фишинг» (I1) opens on
-// the home page. Screenshots go to ONE_SCREEN_SHOTS when it names a folder.
+// the home page. M2.3b: both languages, every depth. Screenshots go to ONE_SCREEN_SHOTS when it
+// names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
@@ -72,11 +73,17 @@ for (const viewport of [
   test.describe(`one screen at ${size}`, () => {
     test.use({ viewport });
 
-    for (const lesson of ['B1', 'I1'] as const) {
-      test(`${lesson}: every step of both modes fits, the current row is in view`, async ({
+    for (const [lang, lesson] of [
+      ['ru', 'B1'],
+      ['ru', 'I1'],
+      ['en', 'B1'],
+      ['en', 'I1'],
+    ] as const) {
+      // M2.3b: English too, at every depth.
+      test(`${lang} ${lesson}: every step of both modes fits, the current row is in view`, async ({
         page,
       }, testInfo) => {
-        await openApp(page, `/ru/lesson/${lesson}`);
+        await openApp(page, `/${lang}/lesson/${lesson}`);
         await page.evaluate(() => window.__app?.clock.set(0));
         await expect(page.getByTestId('step-row-1')).toBeVisible();
         for (const on of [false, true]) {
@@ -91,21 +98,25 @@ for (const viewport of [
               'aria-current',
               'step',
             );
-            const m = await measure(page);
-            const where = `${lesson} step ${String(n)} defence ${String(on)}`;
-            expect(m.height, `page height, ${where}`).toBeLessThanOrEqual(m.inner);
-            expect(m.sideways, `sideways, ${where}`).toBeLessThanOrEqual(0);
-            expect(m.scrollY, `page scroll, ${where}`).toBe(0);
-            expect(m.area.bottom, `steps area bottom, ${where}`).toBeLessThanOrEqual(m.inner);
-            expect(m.area.height, `steps area height, ${where}`).toBeGreaterThanOrEqual(120);
-            expect(m.areaOverflow, where).toBe('auto');
-            expect(m.rowInside, `current row inside the area, ${where}`).toBe(true);
-            expect(m.explain.bottom, `explain bottom, ${where}`).toBeLessThanOrEqual(m.inner);
-            expect(m.explain.overflow, where).toBe('auto');
-            testInfo.annotations.push({
-              type: 'height',
-              description: `${where}: ${String(m.height)}/${String(m.inner)}`,
-            });
+            for (const depth of ['simple', 'steps', 'deep'] as const) {
+              await run(page, 'depth.set', { depth });
+              const m = await measure(page);
+              const where = `${lang} ${lesson} step ${String(n)} defence ${String(on)} ${depth}`;
+              expect(m.height, `page height, ${where}`).toBeLessThanOrEqual(m.inner);
+              expect(m.sideways, `sideways, ${where}`).toBeLessThanOrEqual(0);
+              expect(m.scrollY, `page scroll, ${where}`).toBe(0);
+              expect(m.area.bottom, `steps area bottom, ${where}`).toBeLessThanOrEqual(m.inner);
+              expect(m.area.height, `steps area height, ${where}`).toBeGreaterThanOrEqual(120);
+              expect(m.areaOverflow, where).toBe('auto');
+              expect(m.rowInside, `current row inside the area, ${where}`).toBe(true);
+              expect(m.explain.bottom, `explain bottom, ${where}`).toBeLessThanOrEqual(m.inner);
+              expect(m.explain.overflow, where).toBe('auto');
+              testInfo.annotations.push({
+                type: 'height',
+                description: `${where}: ${String(m.height)}/${String(m.inner)}`,
+              });
+            }
+            await run(page, 'depth.set', { depth: 'simple' });
           }
           // Back to the first step: the area scrolls back to it, the page stays.
           await run(page, 'player.goto', { step: 1 });
@@ -120,7 +131,8 @@ for (const viewport of [
           await run(page, 'player.goto', { step: 3 });
           await tick(page, TRAVEL_MS);
           const mode = on ? 'defence' : 'attack';
-          await keep(page, testInfo, `m21a-${lesson}-${mode}-step3-${String(viewport.width)}`);
+          const name = lang === 'ru' ? `m21a-${lesson}` : `m23b-en-${lesson}`;
+          await keep(page, testInfo, `${name}-${mode}-step3-${String(viewport.width)}`);
         }
       });
     }
@@ -166,11 +178,16 @@ test('the home page opens «Фишинг» (I1)', async ({ page }) => {
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  for (const lesson of ['B1', 'I1'] as const) {
-    test(`${lesson}: one column, the page scrolls, no inner scroll of the steps`, async ({
+  for (const [lang, lesson] of [
+    ['ru', 'B1'],
+    ['ru', 'I1'],
+    ['en', 'B1'],
+    ['en', 'I1'],
+  ] as const) {
+    test(`${lang} ${lesson}: one column, the page scrolls, no inner scroll of the steps`, async ({
       page,
     }, testInfo) => {
-      await openApp(page, `/ru/lesson/${lesson}`);
+      await openApp(page, `/${lang}/lesson/${lesson}`);
       await page.evaluate(() => window.__app?.clock.set(0));
       for (const on of [false, true]) {
         await run(page, 'defence.set', { on });
@@ -190,7 +207,8 @@ test.describe('on a phone', () => {
         expect(m.sideways).toBeLessThanOrEqual(0);
         expect(m.areaScrolls).toBe(false);
         const mode = on ? 'defence' : 'attack';
-        await keep(page, testInfo, `m21a-${lesson}-${mode}-step3-390`, true);
+        const name = lang === 'ru' ? `m21a-${lesson}` : `m23b-en-${lesson}`;
+        await keep(page, testInfo, `${name}-${mode}-step3-390`, true);
       }
     });
   }

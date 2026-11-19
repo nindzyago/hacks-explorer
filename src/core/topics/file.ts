@@ -1,5 +1,5 @@
 /**
- * The catalog of all topics of the site: `content/locales/<lang>/catalog.md` (M2.1 E3, K111).
+ * The catalog of all topics of the site: `content/locales/<lang>/catalog.md` (M2.1 E3, K112).
  * A Markdown file read line by line, so every line means exactly one thing:
  *
  *   # <any title>

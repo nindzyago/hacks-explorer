@@ -155,8 +155,10 @@ describe('vite build', () => {
     });
     if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
     const names = out.output.map((o) => o.fileName).filter((n) => n.startsWith('data/'));
-    // The catalog, a file per lesson, the glossary and the topics of each site language (ru).
-    expect(names).toHaveLength(real.lessons.length + 1 + real.glossaries.length + 1);
+    // The catalog, a file per lesson, the glossary and the topics of each site language.
+    expect(names).toHaveLength(
+      real.lessons.length + 1 + real.glossaries.length + real.catalogs.length,
+    );
     expect(names).toContain('data/topics/ru.json');
     expect(names).toContain(CATALOG_FILE);
     expect(names).toContain('data/glossary/ru.json');
@@ -261,7 +263,10 @@ describe('the glossary', () => {
 
   const glossaryPath = 'content/locales/ru/glossary.md';
   const realGlossary = fileText(real.glossaries, glossaryPath);
-  const withGlossary = (text: string) => ({ ...real, glossaries: [{ path: glossaryPath, text }] });
+  const withGlossary = (text: string) => ({
+    ...real,
+    glossaries: real.glossaries.map((f) => (f.path === glossaryPath ? { ...f, text } : f)),
+  });
 
   it('fails the build on a hostile glossary: HTML, unknown ids, huge', () => {
     const cases = [
@@ -285,13 +290,14 @@ describe('the glossary', () => {
   it('fails without a glossary, and on a term a lesson names that does not exist', () => {
     const none = buildLessonData({ ...real, glossaries: [] });
     expect(!none.ok && none.errors).toEqual([
+      'content/locales/en/glossary.md:1:1: every site language has a glossary (K94): add content/locales/en/glossary.md',
       'content/locales/ru/glossary.md:1:1: every site language has a glossary (K94): add content/locales/ru/glossary.md',
     ]);
     const unknown = buildLessonData(
       withB1(b1Text.replace('`term:web-server`', '`term:web-servers`')),
     );
     expect(!unknown.ok && unknown.errors.join('\n')).toMatch(
-      /^content\/lessons\/B1\/ru\.md:\d+:\d+: `term:web-servers` is not in content\/locales\/ru\/glossary\.md$/,
+      /^content\/lessons\/B1\/ru\.md:\d+:\d+: `term:web-servers` is not in content\/locales\/ru\/glossary\.md$/m,
     );
   });
 
@@ -302,7 +308,16 @@ describe('the glossary', () => {
       (_, i) =>
         `## \`extra-${String(i)}\` Слово ${String(i)}\n\n\`category\` basics\n\n${'Определение слова для проверки размера файла словаря, достаточно длинное. '.repeat(4)}\n`,
     ).join('\n');
-    const out = buildLessonData(withGlossary(`${realGlossary}\n${extra}`));
+    // Russian only: an English glossary without the extra terms would be a translation mismatch.
+    const out = buildLessonData({
+      ...real,
+      lessons: real.lessons.filter((f) => f.path.endsWith('/ru.md')),
+      glossaries: [{ path: glossaryPath, text: `${realGlossary}\n${extra}` }],
+      languages: {
+        path: 'content/locales/languages.md',
+        text: '# Языки\n\n`languages` · `format` 1\n\n- `ru` Русский\n',
+      },
+    });
     expect(out.ok).toBe(false);
     if (out.ok) return;
     expect(out.errors.join('\n')).toMatch(
@@ -312,24 +327,32 @@ describe('the glossary', () => {
 });
 
 // ---------------------------------------------------------------------------------------------
-// M2.3 (K94, K105, K106): the site languages are complete or the build fails (S9); only site
+// M2.3 (K94, K105): the site languages are complete or the build fails (S9); only site
 // languages are shipped; the interface strings are a bundled module.
 
 describe('site languages (S9)', () => {
+  const russianLessons = real.lessons.filter((f) => f.path.endsWith('/ru.md'));
   const languagesFile = (codes: string) => ({
     path: 'content/locales/languages.md',
     text: `# Языки\n\n\`languages\` · \`format\` 1\n\n${codes}`,
   });
 
-  it('the real content ships Russian only, with its strings; en/ui.md is checked, not shipped', () => {
+  it('the real content ships Russian and English, each with its strings (M2.3b)', () => {
     const result = buildLessonData(real);
     if (!result.ok) throw new Error(result.errors.join('\n'));
-    expect(result.locales.languages).toEqual([{ code: 'ru', name: 'Русский' }]);
-    expect(Object.keys(result.locales.strings)).toEqual(['ru']);
-    expect(real.ui.map((f) => f.path).sort()).toEqual([
-      'content/locales/en/ui.md',
-      'content/locales/ru/ui.md',
+    expect(result.locales.languages).toEqual([
+      { code: 'ru', name: 'Русский' },
+      { code: 'en', name: 'English' },
     ]);
+    expect(Object.keys(result.locales.strings)).toEqual(['ru', 'en']);
+    expect(result.locales.strings['en']?.['defence.isOff']).toBe('Defence is off');
+    const paths = result.files.map((f) => f.path);
+    expect(paths).toContain('data/glossary/en.json');
+    for (const id of ['B1', 'I1']) {
+      expect(
+        paths.some((p) => new RegExp(`^data/lessons/${id}\\.en\\.[0-9a-f]{8}\\.json$`).test(p)),
+      ).toBe(true);
+    }
   });
 
   it('S9: English on the list without its lessons, a key and the glossary fails and names each', () => {
@@ -339,13 +362,15 @@ describe('site languages (S9)', () => {
     );
     const result = buildLessonData({
       ...real,
+      lessons: russianLessons,
+      glossaries: real.glossaries.filter((f) => !f.path.includes('/en/')),
       ui: real.ui.map((f) => (f.path === 'content/locales/en/ui.md' ? { ...f, text: en } : f)),
       languages: languagesFile('- `ru` Русский\n- `en` English\n'),
     });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     const text = result.errors.join('\n');
-    for (const id of real.lessons.map((f) => /lessons\/([A-Z][0-9]+)\//.exec(f.path)?.[1])) {
+    for (const id of russianLessons.map((f) => /lessons\/([A-Z][0-9]+)\//.exec(f.path)?.[1])) {
       expect(text).toContain(
         `content/lessons/${String(id)}/en.md:1:1: lesson ${String(id)} has no en.md`,
       );
@@ -363,79 +388,80 @@ describe('site languages (S9)', () => {
     }
   });
 
-  it('the e2e fixture with two languages builds and ships both (K106)', () => {
-    const fixture = readContent(join(import.meta.dirname, '..', 'e2e', 'fixtures', 'i18n'));
-    const result = buildLessonData({ ...fixture, ui: real.ui });
-    if (!result.ok) throw new Error(result.errors.join('\n'));
-    expect(result.locales.languages.map((l) => l.code)).toEqual(['ru', 'en']);
-    expect(result.locales.strings['en']?.['defence.isOff']).toBe('Defence is off');
-    const paths = result.files.map((f) => f.path);
-    expect(paths).toContain('data/glossary/en.json');
-    expect(paths.some((p) => /^data\/lessons\/B1\.en\.[0-9a-f]{8}\.json$/.test(p))).toBe(true);
-  });
-
   it('a lesson in a language not on the site is checked but not shipped', () => {
-    const fixture = readContent(join(import.meta.dirname, '..', 'e2e', 'fixtures', 'i18n'));
     const result = buildLessonData({
-      ...fixture,
-      ui: real.ui,
+      ...real,
       languages: languagesFile('- `ru` Русский\n'),
     });
     if (!result.ok) throw new Error(result.errors.join('\n'));
     const paths = result.files.map((f) => f.path);
     expect(paths.filter((p) => p.includes('.en.') || p.endsWith('/en.json'))).toEqual([]);
     const broken = buildLessonData({
-      ...fixture,
-      ui: real.ui,
+      ...real,
       languages: languagesFile('- `ru` Русский\n'),
-      lessons: fixture.lessons.map((f) =>
+      lessons: real.lessons.map((f) =>
         f.path.endsWith('/en.md') ? { ...f, text: f.text.replace('`wave` 1', '`wave` 2') } : f,
       ),
     });
     expect(!broken.ok && broken.errors.join('\n')).toContain('content/lessons/B1/en.md:');
   });
 
-  it('`vite build` bundles the strings as virtual:site-locales', async () => {
+  it('`vite build` bundles the strings of site languages only as virtual:site-locales', async () => {
+    const both = await bundledLocales(project('locales-both', entry));
+    expect(both).toContain('Защита выключена');
+    expect(both).toContain('Defence is off');
     const root = project('locales', {
-      'src/entry.js':
-        "import locales from 'virtual:site-locales';\nconsole.log(JSON.stringify(locales));\n",
-      'index.html':
-        '<!doctype html><title>t</title><script type="module" src="/src/entry.js"></script>',
+      ...entry,
+      'content/locales/languages.md': languagesFile('- `ru` Русский\n').text,
     });
-    const out = await build({
-      root,
-      configFile: false,
-      logLevel: 'silent',
-      build: { write: false },
-      plugins: [lessonData({ contentRoot: root })],
-    });
-    if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
-    const code = out.output.map((o) => ('code' in o ? o.code : '')).join('\n');
+    const code = await bundledLocales(root);
     expect(code).toContain('Защита выключена');
     expect(code).not.toContain('Defence is off');
   });
 });
 
+const entry = {
+  'src/entry.js':
+    "import locales from 'virtual:site-locales';\nconsole.log(JSON.stringify(locales));\n",
+  'index.html':
+    '<!doctype html><title>t</title><script type="module" src="/src/entry.js"></script>',
+};
+
+async function bundledLocales(root: string): Promise<string> {
+  const out = await build({
+    root,
+    configFile: false,
+    logLevel: 'silent',
+    build: { write: false },
+    plugins: [lessonData({ contentRoot: root })],
+  });
+  if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
+  return out.output.map((o) => ('code' in o ? o.code : '')).join('\n');
+}
+
 // ---------------------------------------------------------------------------------------------
-// M2.1b (E3, K111): every topic of the site, per language, for the lessons panel.
+// M2.1b (E3, K112): every topic of the site, per language, for the lessons panel.
 
 describe('topics of the lessons panel', () => {
-  it('ships every topic of the site; the lessons that exist are ready', () => {
-    const result = buildLessonData(real);
-    if (!result.ok) throw new Error(result.errors.join('\n'));
-    const topics = readSiteTopics(JSON.parse(fileText(result.files, topicsFile('ru'))), 'ru');
-    if (!topics.ok) throw new Error(topics.error.message);
-    const all = topics.value.sections.flatMap((s) => s.topics);
-    expect(topics.value.sections).toHaveLength(12);
-    expect(all).toHaveLength(75);
-    const ready = all.filter((t) => t.ready).map((t) => t.id);
-    const lessonIds = real.lessons
-      .filter((f) => f.path.endsWith('/ru.md'))
-      .map((f) => /lessons\/([A-Z][0-9]+)\//.exec(f.path)?.[1] ?? '');
-    expect(ready.sort()).toEqual(lessonIds.sort());
-    const bytes = new TextEncoder().encode(fileText(result.files, topicsFile('ru'))).length;
-    expect(bytes).toBeLessThanOrEqual(MAX_TOPICS_FILE_BYTES);
-  });
+  it.each(['ru', 'en'])(
+    'ships every topic of the site in %s; the lessons that exist are ready',
+    (lang) => {
+      const result = buildLessonData(real);
+      if (!result.ok) throw new Error(result.errors.join('\n'));
+      const topics = readSiteTopics(JSON.parse(fileText(result.files, topicsFile(lang))), lang);
+      if (!topics.ok) throw new Error(topics.error.message);
+      const all = topics.value.sections.flatMap((s) => s.topics);
+      expect(topics.value.sections).toHaveLength(12);
+      expect(all).toHaveLength(75);
+      const ready = all.filter((t) => t.ready).map((t) => t.id);
+      const lessonIds = real.lessons
+        .filter((f) => f.path.endsWith(`/${lang}.md`))
+        .map((f) => /lessons\/([A-Z][0-9]+)\//.exec(f.path)?.[1] ?? '');
+      expect(ready.sort()).toEqual(lessonIds.sort());
+      const bytes = new TextEncoder().encode(fileText(result.files, topicsFile(lang))).length;
+      expect(bytes).toBeLessThanOrEqual(MAX_TOPICS_FILE_BYTES);
+    },
+  );
 
   it('a lesson folder that is not in the catalog fails the build and names it', () => {
     const catalogs = real.catalogs.map((f) => ({
@@ -451,11 +477,9 @@ describe('topics of the lessons panel', () => {
   });
 
   it('a site language without its catalog fails the build (K94)', () => {
-    const fixture = readContent(join(import.meta.dirname, '..', 'e2e', 'fixtures', 'i18n'));
     const result = buildLessonData({
-      ...fixture,
-      ui: real.ui,
-      catalogs: fixture.catalogs.filter((f) => !f.path.includes('/en/')),
+      ...real,
+      catalogs: real.catalogs.filter((f) => !f.path.includes('/en/')),
     });
     expect(!result.ok && result.errors.join('\n')).toContain(
       'content/locales/en/catalog.md:1:1: en is a site language',

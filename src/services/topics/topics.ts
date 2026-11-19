@@ -1,5 +1,5 @@
 /**
- * Loads the topics of one language (`data/topics/<lang>.json`, M2.1b, K111) the first time the
+ * Loads the topics of one language (`data/topics/<lang>.json`, M2.1b, K112) the first time the
  * lessons panel opens. The file is hostile input (L0.2): the result is typed data or a typed
  * error, never an exception. A success is kept for the life of the loader; a failure is not, so
  * the next call tries again.

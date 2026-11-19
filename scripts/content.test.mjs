@@ -31,7 +31,7 @@ describe('content', () => {
     expect(checked.glossaries[0]?.terms.length).toBeGreaterThanOrEqual(25);
   });
 
-  // M2.1b (K111): the catalog of every language lists every topic; every lesson is in it.
+  // M2.1b (K112): the catalog of every language lists every topic; every lesson is in it.
   it('has catalogs of topics that pass the catalog checker', () => {
     const { catalogs } = readContent();
     expect(catalogs.map((f) => f.path).sort()).toEqual([

@@ -12,7 +12,6 @@
     "dev": "vite",
     "build": "vite build",
     "build:e2e": "vite build --mode e2e --outDir dist-e2e --emptyOutDir",
-    "build:e2e-i18n": "vite build --mode e2e-i18n --outDir dist-e2e-i18n --emptyOutDir",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -21,7 +20,7 @@
     "test": "vitest run",
     "structure": "node scripts/structure-check.mjs",
     "budget": "node scripts/budget.mjs dist",
-    "e2e": "npm run build && npm run build:e2e && npm run build:e2e-i18n && playwright test",
+    "e2e": "npm run build && npm run build:e2e && playwright test",
     "gate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run structure && npm run e2e && npm run budget",
     "content": "vitest run scripts/content.test.mjs"
   },

@@ -1,5 +1,5 @@
 /**
- * The catalog of topics as the site gets it (M2.1 E3, K111): `data/topics/<lang>.json`, loaded
+ * The catalog of topics as the site gets it (M2.1 E3, K112): `data/topics/<lang>.json`, loaded
  * the first time the reader opens the lessons panel. Every section and topic in the language of
  * the page; `ready` is true when the lesson exists in that language (the build knows it).
  *
@@ -10,7 +10,7 @@ import { fail, field, list, matching, object, read, str } from '../lesson/site-r
 import type { CatalogFile } from './file';
 
 export const TOPICS_FORMAT = 1;
-/** Budget of one topics file, as served (K111). */
+/** Budget of one topics file, as served (K112). */
 export const MAX_TOPICS_FILE_BYTES = 30 * 1024;
 /** More is a hostile file: the checker allows 300 topics. */
 const MAX_SITE_TOPICS = 300;
