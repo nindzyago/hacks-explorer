@@ -414,16 +414,16 @@ tr:last-child td { border-bottom: 0; }
     </section>
     <section class="approve" style="border-color:var(--ok)" aria-labelledby="built-h">
       <h2 id="built-h" style="margin:0" data-t="built_h"></h2>
-      <p style="margin:0"></p>
+      <p style="margin:0">Построено по ревизии r2: D1 твоими словами — каждый урок на каждом языке, иначе gate красный; D2 агент переводит, проверяющий сверяет факты; D3 язык по браузеру. M2.3a и M2.3b слиты в main 2026-11-19.</p>
       <div class="dl">
-        <div><b data-t="b_gate"></b><span></span></div>
-        <div><b data-t="b_how"></b><span></span></div>
-        <div><b data-t="b_rules"></b><span></span></div>
-        <div><b data-t="b_diff"></b><span></span></div>
-        <div><b data-t="b_live"></b><span></span></div>
-        <div><b data-t="b_not"></b><span></span></div>
-        <div><b data-t="b_unmeasured"></b><span></span></div>
-        <div><b data-t="b_touches"></b><span></span></div>
+        <div><b data-t="b_gate"></b><span>После M2.3b — 1583 модульных и 172 браузерных теста, сейчас на main 1639 и 248; полнота языков (K94) — часть gate.</span></div>
+        <div><b data-t="b_how"></b><span>M2.3a (языки в коде), затем M2.3b (английские уроки и словарь), каждую проверял верификатор: PASS с замечаниями; факты английского сверены по рубрике R-FACT (B1 10/10, I1 9/10, словарь 9/10).</span></div>
+        <div><b data-t="b_rules"></b><span>Язык в адресе важнее запомненного; русский — для браузеров на русском, украинском, белорусском, казахском, остальным английский; в коде сайта нет кириллицы; переключатель виден, только когда языков два и больше.</span></div>
+        <div><b data-t="b_diff"></b><span>D1 изменён ответом владельца: неполный язык не прячется, а останавливает gate (S9 переписан, K94); каталог тем и словарь тоже по языкам. Решения K105–K111.</span></div>
+        <div><b data-t="b_live"></b><span>Браузерные тесты S5 и правило одного экрана на обоих языках на настоящей сборке; снимки сняты со сборки main.</span></div>
+        <div><b data-t="b_not"></b><span>Вычитка английского носителем языка (G16).</span></div>
+        <div><b data-t="b_unmeasured"></b><span>Как часто посетители с английским браузером на самом деле хотят русский.</span></div>
+        <div><b data-t="b_touches"></b><span>2: ответ на D1 своими словами, приёмка M1.</span></div>
       </div>
     </section>
   </div>
@@ -566,8 +566,39 @@ tr:last-child td { border-bottom: 0; }
 
 <script type="application/json" id="built-data">
 {
-  "pr": "",
-  "shots": []
+  "pr": "в main 2026-11-19",
+  "shots": [
+    {
+      "key": "en-b1",
+      "label": "English · SQL injection",
+      "caption": "Сайт на английском: адрес /en/lesson/B1, все строки интерфейса и урока на английском, переключатель RU/EN справа сверху.",
+      "src": "/_blob/83ee44d0a435ea4c0c03180676b4790b"
+    },
+    {
+      "key": "en-i1",
+      "label": "English · Phishing, defence",
+      "caption": "Шаг 3 с защитой на английском; термины словаря подчёркнуты и открываются по клику.",
+      "src": "/_blob/058190fd48e8f97d62142b668ff9984d"
+    },
+    {
+      "key": "en-phone",
+      "label": "English · phone 390",
+      "caption": "Английский на телефоне; длинные слова не вылезают за край.",
+      "src": "/_blob/bb1be89348d1d1a1aeb301737445d1ef"
+    },
+    {
+      "key": "en-drawer",
+      "label": "English · Lessons panel",
+      "caption": "Каталог 75 тем на английском — перевод держит те же разделы и порядок, что и русский.",
+      "src": "/_blob/79725d3f40845728c145cd904fc7de09"
+    },
+    {
+      "key": "ru-b1",
+      "label": "Русский · тот же шаг",
+      "caption": "Тот же урок и шаг на русском: после locale.set остаются урок, шаг, режим и глубина (S5).",
+      "src": "/_blob/60df393760e918a21e7f02e882a02c4d"
+    }
+  ]
 }
 </script>
 

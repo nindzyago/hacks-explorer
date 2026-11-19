@@ -3,7 +3,7 @@
 > Updated: 2026-11-19 by Claude (craftspec orchestrate)
 
 **Current milestone:** M2 — Оболочка: панель уроков, языки, глубина, телефон
-**Next task:** As built для дизайнов M2.1 и M2.3, затем приёмка M2 владельцем; M3 ждёт решений владельца (G12, G4/G10)
+**Next task:** приёмка M2 владельцем; M3 ждёт решений владельца (G12, G4/G10)
 **Blockers (need a human):** нет. Черновой адрес: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -24,9 +24,8 @@
 |---|---|---|---|---|
 | M1.1 Формат урока в Markdown | r2 | built 2026-11-18 (M1.1a–c) | https://claude.ai/artifact/Pert7Z6UKR1yd73v9vQukp · `plan/designs/M1.1.md` | 1a0a99f69726… |
 | M1.2 Сцена | r2 | built 2026-11-18 (M1.2a–d) | https://claude.ai/artifact/2TTAMfjL1v9Y3CLMrKXc7Q · `plan/designs/M1.2.md` | 744c2b1b8b61… |
-
-| M2.1 Один экран и панель уроков | r1 | approved 2026-11-19 r1 | https://claude.ai/artifact/EVskVTmiKxSKJuqEGP2xJq | 3d8120473027… |
-| M2.3 Языки | r2 | approved 2026-11-19 r2 (D1 словами владельца) | https://claude.ai/artifact/47Hamqgnwd7Wfwi2WMowd4 | 30c72746110c… |
+| M2.1 Один экран и панель уроков | r1 | built 2026-11-19 (M2.1a–b) | https://claude.ai/artifact/EVskVTmiKxSKJuqEGP2xJq · `plan/designs/M2.1.md` | 3d8120473027… |
+| M2.3 Языки | r2 | built 2026-11-19 (M2.3a–b) | https://claude.ai/artifact/47Hamqgnwd7Wfwi2WMowd4 · `plan/designs/M2.3.md` | 30c72746110c… |
 
 
 

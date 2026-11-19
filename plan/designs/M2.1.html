@@ -426,16 +426,16 @@ tr:last-child td { border-bottom: 0; }
     </section>
     <section class="approve" style="border-color:var(--ok)" aria-labelledby="built-h">
       <h2 id="built-h" style="margin:0" data-t="built_h"></h2>
-      <p style="margin:0"></p>
+      <p style="margin:0">Построено по ревизии r1, все ответы как утверждены (D1 все темы, D2 таблица и лента вместе, D3 без тёмной темы); M2.1a и M2.1b слиты в main 2026-11-19.</p>
       <div class="dl">
-        <div><b data-t="b_gate"></b><span></span></div>
-        <div><b data-t="b_how"></b><span></span></div>
-        <div><b data-t="b_rules"></b><span></span></div>
-        <div><b data-t="b_diff"></b><span></span></div>
-        <div><b data-t="b_live"></b><span></span></div>
-        <div><b data-t="b_not"></b><span></span></div>
-        <div><b data-t="b_unmeasured"></b><span></span></div>
-        <div><b data-t="b_touches"></b><span></span></div>
+        <div><b data-t="b_gate"></b><span>На main после всего M2 — 1639 модульных и 248 браузерных тестов, gate зелёный; первая загрузка JS 49.5 КБ gzip из 150, панель — отдельный чанк 5.3 КБ.</span></div>
+        <div><b data-t="b_how"></b><span>Две задачи по очереди, каждую проверял отдельный верификатор. Возврат: M2.1b — S7 был переписан под код (FAIL), восстановлен дословно; добавлен тест «клавиши плеера молчат в панели».</span></div>
+        <div><b data-t="b_rules"></b><span>Выбор раздела очищает поиск и показывает весь раздел; смена урока любым путём закрывает панель; поиски живут, пока панель открыта; запрос без букв и цифр — пустой.</span></div>
+        <div><b data-t="b_diff"></b><span>Каталог тем лежит по языкам в content/locales/&lt;язык&gt;/catalog.md, а не в content/catalog.md (K112); плашка «открыть» у готовых уроков; на телефоне фокус при открытии на вкладке. Всё в docs/decisions.md K102–K104, K112–K114.</span></div>
+        <div><b data-t="b_live"></b><span>Браузерные тесты на 1024×768, 1280×720 и телефонах 360–390 px (M2.6), ru и en; доступность — axe WCAG 2.2 AA без нарушений (M2.7); снимки сняты со сборки main.</span></div>
+        <div><b data-t="b_not"></b><span>Реальные телефоны и браузеры кроме Chromium; экранные дикторы; панель, если её код не загрузился.</span></div>
+        <div><b data-t="b_unmeasured"></b><span>100dvh в мобильном Safari; удобство поиска на настоящих людях; английские названия тем без вычитки носителем.</span></div>
+        <div><b data-t="b_touches"></b><span>3: ответы на вопросы дизайна, «без тёмной темы», приёмка M1 перед M2.</span></div>
       </div>
     </section>
   </div>
@@ -585,8 +585,51 @@ tr:last-child td { border-bottom: 0; }
 
 <script type="application/json" id="built-data">
 {
-  "pr": "",
-  "shots": []
+  "pr": "в main 2026-11-19",
+  "shots": [
+    {
+      "key": "b1",
+      "label": "SQL-инъекция · шаг 3 · ноутбук",
+      "caption": "Один экран на 1280×720: сверху «Уроки», «Словарь» и RU/EN, схема, объяснение, управление и ход атаки с метками — страница не прокручивается.",
+      "src": "/_blob/d4012238790a2f6e8f372835e535706f"
+    },
+    {
+      "key": "i1",
+      "label": "Фишинг · с защитой · ноутбук",
+      "caption": "Шаг 3 с защитой: менеджер паролей молчит, остановка зелёная; в ходе атаки строка «остановлено».",
+      "src": "/_blob/69dfc7f4de22dc4e9964a9225f18bbc9"
+    },
+    {
+      "key": "phone",
+      "label": "SQL-инъекция · телефон 390",
+      "caption": "На телефоне один столбец: сцена сверху, под ней управление, объяснение и ход атаки.",
+      "src": "/_blob/9f724899258e0cb4a32fe9d422df72a1"
+    },
+    {
+      "key": "drawer",
+      "label": "Панель «Уроки»",
+      "caption": "Все 12 разделов и 75 тем; готовые открываются, остальные серые «скоро»; «готово N из M» по разделу.",
+      "src": "/_blob/273db5c37565755faee82c2269bf23aa"
+    },
+    {
+      "key": "sql",
+      "label": "Поиск «sql»",
+      "caption": "S7: «sql» находит B1 и B8; открытый урок помечен «открыт сейчас».",
+      "src": "/_blob/7eca8e894c54bbd6697239e71487a613"
+    },
+    {
+      "key": "drawer-phone",
+      "label": "Панель · телефон",
+      "caption": "На телефоне панель во всю ширину, без горизонтальной прокрутки.",
+      "src": "/_blob/b8a7c442ee9adb64633bcddc0c9e85af"
+    },
+    {
+      "key": "glossary",
+      "label": "Вкладка «Словарь»",
+      "caption": "Словарь в той же панели: поиск по терминам и определение внутри панели.",
+      "src": "/_blob/089b4b92fa2c633e498babb74b958bd9"
+    }
+  ]
 }
 </script>
 
