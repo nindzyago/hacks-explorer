@@ -3,19 +3,22 @@
   // control channel. A button that can do nothing now is marked aria-disabled, not disabled, so
   // focus never drops to the page when the player reaches the end (S6: focus always visible).
   import { SPEEDS, stepCount, type PlayerState, type Speed } from '../core/player/player';
+  import { formatNumber, type Translate } from '../services/i18n/i18n';
 
   const {
     player,
     run,
+    t,
   }: {
     player: PlayerState;
     run: (id: string, params?: Readonly<Record<string, unknown>>) => void;
+    t: Translate;
   } = $props();
 
   const count = $derived(stepCount(player));
   const atFirst = $derived(player.step <= 1);
   const atLast = $derived(count > 0 && player.step >= count);
-  const speedText = (speed: Speed) => `${String(speed).replace('.', ',')}×`;
+  const speedText = (speed: Speed) => `${formatNumber(t, speed)}×`;
   const nextSpeed = $derived(SPEEDS[(SPEEDS.indexOf(player.speed) + 1) % SPEEDS.length] ?? 1);
 </script>
 
@@ -24,17 +27,21 @@
   data-testid="player"
   data-player-keys
   role="group"
-  aria-label="Управление уроком"
+  aria-label={t('player.label')}
 >
   <p class="status" data-testid="player-status">
-    <span>Шаг {player.step}{count > 0 ? ` из ${String(count)}` : ''}</span>
+    <span
+      >{count > 0
+        ? t('player.status', { step: player.step, count })
+        : t('player.statusUnknown', { step: player.step })}</span
+    >
   </p>
   <div class="buttons">
     <button
       type="button"
       class="icon"
       data-testid="player-back"
-      aria-label="Шаг назад"
+      aria-label={t('player.back')}
       aria-disabled={atFirst}
       onclick={() => {
         run('player.back');
@@ -53,31 +60,31 @@
     >
       {#if player.playing}
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5 V19 M16 5 V19" /></svg>
-        Пауза
+        {t('player.pause')}
       {:else}
         <svg viewBox="0 0 24 24" aria-hidden="true"
           ><path class="fill" d="M8 5 L19 12 L8 19 Z" /></svg
         >
-        Пуск
+        {t('player.play')}
       {/if}
     </button>
     <button
       type="button"
       data-testid="player-next"
-      aria-label="Шаг вперёд"
+      aria-label={t('player.next')}
       aria-disabled={atLast}
       onclick={() => {
         run('player.step');
       }}
     >
-      <span class="label">Шаг</span>
+      <span class="label">{t('player.nextShort')}</span>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5 L16 12 L9 19" /></svg>
     </button>
     <button
       type="button"
       class="icon"
       data-testid="player-restart"
-      aria-label="Сначала"
+      aria-label={t('player.restart')}
       onclick={() => {
         run('player.goto', { step: 1 });
       }}
@@ -91,7 +98,7 @@
       class="speed"
       data-testid="player-speed"
       data-speed={player.speed}
-      aria-label="Скорость {speedText(player.speed)}, нажать — {speedText(nextSpeed)}"
+      aria-label={t('player.speed', { speed: speedText(player.speed), next: speedText(nextSpeed) })}
       onclick={() => {
         run('player.speed', { value: nextSpeed });
       }}>{speedText(player.speed)}</button

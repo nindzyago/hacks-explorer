@@ -119,7 +119,11 @@ describe('checkFiles', () => {
 // M1.2a (design M1.2 E3): colours come from tokens only. The one file with literal colours is
 // src/ui/tokens.css; anywhere else in src/ a hex, rgb()/hsl() or a named colour is a problem.
 describe('no-literal-colours', () => {
-  const rules = (files) => checkFiles(files).map((p) => `${p.rule} ${p.path}:${String(p.line)}`);
+  // These samples quote Russian prose; the words rule (ui-strings) has its own tests below.
+  const rules = (files) =>
+    checkFiles(files)
+      .filter((p) => p.rule !== 'ui-strings')
+      .map((p) => `${p.rule} ${p.path}:${String(p.line)}`);
 
   it('lets tokens.css hold colours and the rest use them', () => {
     expect(
@@ -248,7 +252,10 @@ describe('no-literal-colours', () => {
 // before it; comments do not count. Hex-like id selectors in CSS count too (decided: rename the
 // id). In markup prose «Issue #123» stays allowed.
 describe('no-literal-colours, M1.2c', () => {
-  const rules = (files) => checkFiles(files).map((p) => `${p.rule} ${p.path}:${String(p.line)}`);
+  const rules = (files) =>
+    checkFiles(files)
+      .filter((p) => p.rule !== 'ui-strings')
+      .map((p) => `${p.rule} ${p.path}:${String(p.line)}`);
 
   it.each([
     ['a hex after a border style', 'src/ui/a.css', 'p { border: 1px solid #123; }'],
@@ -601,5 +608,64 @@ describe('no-css-animation by content (M1.2d)', () => {
         file('src/scene/S.svelte', '<svelte:element this={tag} />\n<svelte:element this="g" />'),
       ]),
     ).toEqual([]);
+  });
+});
+
+// M2.3 (K105): words a reader sees live in content/locales/<lang>/ui.md, not in site code.
+describe('ui-strings', () => {
+  const found = (files) =>
+    checkFiles(files)
+      .filter((p) => p.rule === 'ui-strings')
+      .map((p) => `${p.path}:${String(p.line)}`);
+
+  it('flags Cyrillic in markup, attributes, strings and templates of site code', () => {
+    expect(
+      found([
+        file('src/ui/A.svelte', '<script lang="ts">\n  const a = 1;\n</script>\n<p>Пуск</p>'),
+        file('src/ui/B.svelte', '<button aria-label="Шаг назад">x</button>'),
+        file('src/scene/c.ts', "const word = 'вредное';"),
+        file('src/core/d.ts', 'const t = `Шаг ${n}`;'),
+        file('src/commands/e.ts', 'const x = "ё";'),
+        file('src/main.ts', "document.title = 'Привет';"),
+      ]),
+    ).toEqual([
+      'src/ui/A.svelte:4',
+      'src/ui/B.svelte:1',
+      'src/scene/c.ts:1',
+      'src/core/d.ts:1',
+      'src/commands/e.ts:1',
+      'src/main.ts:1',
+    ]);
+  });
+
+  it('leaves comments, tests, escapes, content and the exempt language tables alone', () => {
+    expect(
+      found([
+        file(
+          'src/ui/A.svelte',
+          '<!-- «Ход атаки» -->\n<script>\n  // «Пуск»\n  /* Шаг */\n</script>',
+        ),
+        file('src/ui/a.test.ts', "expect(text).toBe('Пуск');"),
+        file('src/ui/k.ts', "const ve = '\\u0432'; // в on the D key"),
+        file('src/ui/b.css', '/* «Ниже ещё» */ .more { color: var(--ink); }'),
+        file('src/core/lesson/headings.ts', "const RU = { passport: 'Паспорт' };"),
+        file('content/locales/ru/ui.md', '- `a.b` Пуск'),
+        file('scripts/x.mjs', "const s = 'Пуск';"),
+      ]),
+    ).toEqual([]);
+  });
+
+  it('allows Cyrillic in index.html only in the default description (K109)', () => {
+    const meta = '<meta\n      name="description"\n      content="Уроки по шагам."\n    />';
+    expect(found([file('index.html', `<html lang="ru"><head>${meta}</head></html>`)])).toEqual([]);
+    expect(
+      found([file('index.html', `<html><head>${meta}<title>Уроки</title></head></html>`)]),
+    ).toEqual(['index.html:4']);
+  });
+
+  it('reports a line once and names the word', () => {
+    const problems = checkFiles([file('src/ui/A.svelte', '<p>Шаг вперёд и Шаг назад</p>')]);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]?.message).toContain('"Шаг"');
   });
 });

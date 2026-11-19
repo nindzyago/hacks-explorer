@@ -1,5 +1,6 @@
 // M1.4: what the explanation panel shows, without a browser (S3 runs it in one).
 import { describe, expect, it } from 'vitest';
+import { sayFromFile } from '../core/i18n/testing';
 import { CWE_ENTRIES } from '../core/lesson/ids';
 import type { SiteCode, SitePassport, SiteStep } from '../core/lesson/site';
 import {
@@ -11,6 +12,9 @@ import {
   severityWord,
   tabAfterKey,
 } from './explain';
+
+const t = sayFromFile('ru');
+const en = sayFromFile('en');
 
 const code = (text: string): SiteCode => ({
   type: 'code',
@@ -40,8 +44,9 @@ function step(over: Partial<SiteStep> & Pick<SiteStep, 'id'>): SiteStep {
 
 describe('depth tabs', () => {
   it('are «Просто», «По шагам», «Глубже», the first one the default', () => {
-    expect(DEPTH_TABS.map((t) => t.label)).toEqual(['Просто', 'По шагам', 'Глубже']);
-    expect(DEPTH_TABS.map((t) => t.depth)).toEqual(['simple', 'steps', 'deep']);
+    expect(DEPTH_TABS.map((tab) => t(tab.label))).toEqual(['Просто', 'По шагам', 'Глубже']);
+    expect(DEPTH_TABS.map((tab) => en(tab.label))).toEqual(['Simple', 'Step by step', 'Deeper']);
+    expect(DEPTH_TABS.map((tab) => tab.depth)).toEqual(['simple', 'steps', 'deep']);
   });
 
   it('pick the text of the level', () => {
@@ -88,29 +93,29 @@ describe('code at «Глубже» (K72)', () => {
   const steps = [trick, glue, answer, param];
 
   it('shows the query before and after the defence for a one-mode step, its own first', () => {
-    expect(codeAtDeep(steps, glue)).toEqual([
+    expect(codeAtDeep(steps, glue, t)).toEqual([
       { label: 'Без защиты', code: glue.code, current: true },
       { label: 'С защитой', code: param.code, current: false },
     ]);
-    expect(codeAtDeep(steps, param)).toEqual([
+    expect(codeAtDeep(steps, param, t)).toEqual([
       { label: 'С защитой', code: param.code, current: true },
       { label: 'Без защиты', code: glue.code, current: false },
     ]);
   });
 
   it('shows only the own code of a step that plays in both modes', () => {
-    expect(codeAtDeep(steps, trick)).toEqual([{ label: '', code: trick.code, current: true }]);
+    expect(codeAtDeep(steps, trick, t)).toEqual([{ label: '', code: trick.code, current: true }]);
   });
 
   it('shows nothing for a step without code, even when its counterpart has some', () => {
     const empty = step({ id: 'e', from: 'server', to: 'db', mode: 'without-defence' });
-    expect(codeAtDeep([empty, param], empty)).toEqual([]);
-    expect(codeAtDeep(steps, answer)).toEqual([]);
+    expect(codeAtDeep([empty, param], empty, t)).toEqual([]);
+    expect(codeAtDeep(steps, answer, t)).toEqual([]);
   });
 
   it('shows the own code alone when no counterpart has code', () => {
     const lone = step({ id: 'l', from: 'x', to: 'y', mode: 'with-defence', code: code('l') });
-    expect(codeAtDeep([...steps, lone], lone)).toEqual([
+    expect(codeAtDeep([...steps, lone], lone, t)).toEqual([
       { label: 'С защитой', code: lone.code, current: true },
     ]);
   });
@@ -123,7 +128,7 @@ describe('code at «Глубже» (K72)', () => {
       mode: 'with-defence',
       code: code('log'),
     });
-    expect(codeAtDeep([glue, toLog, param], glue)).toEqual([
+    expect(codeAtDeep([glue, toLog, param], glue, t)).toEqual([
       { label: 'Без защиты', code: glue.code, current: true },
       { label: 'С защитой', code: param.code, current: false },
     ]);
@@ -134,7 +139,7 @@ describe('code at «Глубже» (K72)', () => {
       mode: 'with-defence',
       code: code('f'),
     });
-    expect(codeAtDeep([glue, fromElsewhere], glue)).toEqual([
+    expect(codeAtDeep([glue, fromElsewhere], glue, t)).toEqual([
       { label: 'Без защиты', code: glue.code, current: true },
     ]);
   });
@@ -154,7 +159,7 @@ describe('passport', () => {
   };
 
   it('names severity in Russian words', () => {
-    expect(['low', 'medium', 'high', 'critical'].map((s) => severityWord(s as 'low'))).toEqual([
+    expect(['low', 'medium', 'high', 'critical'].map((s) => severityWord(s as 'low', t))).toEqual([
       'низкая',
       'средняя',
       'высокая',
@@ -163,15 +168,18 @@ describe('passport', () => {
   });
 
   it('lists the lines with a value, class first', () => {
-    const rows = passportRows({
-      ...empty,
-      class: 'Инъекция',
-      cwe: [89, 564],
-      owasp: ['A03:2021'],
-      severity: 'critical',
-      impact: 'Вход',
-      defence: 'Параметры',
-    });
+    const rows = passportRows(
+      {
+        ...empty,
+        class: 'Инъекция',
+        cwe: [89, 564],
+        owasp: ['A03:2021'],
+        severity: 'critical',
+        impact: 'Вход',
+        defence: 'Параметры',
+      },
+      t,
+    );
     expect(rows.map((r) => [r.label, r.value])).toEqual([
       ['Класс', 'Инъекция'],
       ['CWE', 'CWE-89 · SQL-инъекция, CWE-564'],
@@ -183,7 +191,7 @@ describe('passport', () => {
   });
 
   it('takes the class from a known CWE when the lesson has no class line', () => {
-    expect(passportRows({ ...empty, cwe: [564, 89] })[0]).toEqual({
+    expect(passportRows({ ...empty, cwe: [564, 89] }, t)[0]).toEqual({
       key: 'class',
       label: 'Класс',
       value: 'SQL-инъекция',
@@ -191,23 +199,23 @@ describe('passport', () => {
   });
 
   it('treats an empty class as absent', () => {
-    expect(passportRows({ ...empty, class: '', cwe: [89] })[0]?.value).toBe('SQL-инъекция');
-    expect(passportRows({ ...empty, class: '  ' }).map((r) => r.key)).toEqual([]);
+    expect(passportRows({ ...empty, class: '', cwe: [89] }, t)[0]?.value).toBe('SQL-инъекция');
+    expect(passportRows({ ...empty, class: '  ' }, t).map((r) => r.key)).toEqual([]);
   });
 
   it('names a known CWE next to its number', () => {
-    const row = passportRows({ ...empty, class: 'Инъекция', cwe: [89] }).find(
+    const row = passportRows({ ...empty, class: 'Инъекция', cwe: [89] }, t).find(
       (r) => r.key === 'cwe',
     );
     expect(row?.value).toBe('CWE-89 · SQL-инъекция');
   });
 
   it('has no class line for an unknown CWE, and nothing at all for an empty passport', () => {
-    expect(passportRows({ ...empty, cwe: [99999] }).map((r) => r.key)).toEqual(['cwe']);
-    expect(passportRows({ ...empty, cwe: [Number('constructor')] }).map((r) => r.key)).toEqual([
+    expect(passportRows({ ...empty, cwe: [99999] }, t).map((r) => r.key)).toEqual(['cwe']);
+    expect(passportRows({ ...empty, cwe: [Number('constructor')] }, t).map((r) => r.key)).toEqual([
       'cwe',
     ]);
-    expect(passportRows(empty)).toEqual([]);
+    expect(passportRows(empty, t)).toEqual([]);
   });
 
   it('names only CWE entries of the vetted list (K86)', () => {
@@ -217,18 +225,21 @@ describe('passport', () => {
   });
 
   it('shows ATT&CK, CVE and CVSS when present', () => {
-    const rows = passportRows({
-      ...empty,
-      attack: ['T1566', 'T1566.002'],
-      cves: ['CVE-2021-44228'],
-      cvss: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
-    });
+    const rows = passportRows(
+      {
+        ...empty,
+        attack: ['T1566', 'T1566.002'],
+        cves: ['CVE-2021-44228'],
+        cvss: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',
+      },
+      t,
+    );
     expect(rows.map((r) => r.key)).toEqual(['attack', 'cves', 'cvss']);
     expect(rows[0]?.value).toBe('T1566, T1566.002');
   });
 
   it('shows the CVSS score and severity computed from the vector, the vector below (M2.5)', () => {
-    const row = (cvss: string) => passportRows({ ...empty, cvss }).find((r) => r.key === 'cvss');
+    const row = (cvss: string) => passportRows({ ...empty, cvss }, t).find((r) => r.key === 'cvss');
     expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H')).toEqual({
       key: 'cvss',
       label: 'CVSS',
@@ -242,8 +253,22 @@ describe('passport', () => {
     expect(row('CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:N')?.value).toBe('0.0 · нет');
   });
 
+  it("speaks the reader's language (M2.3)", () => {
+    const rows = passportRows({ ...empty, cwe: [89], severity: 'high' }, en);
+    expect(rows.map((r) => [r.label, r.value])).toEqual([
+      ['Class', 'SQL injection'],
+      ['CWE', 'CWE-89 · SQL injection'],
+      ['Severity', 'high'],
+    ]);
+    const cvss = passportRows(
+      { ...empty, cvss: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H' },
+      en,
+    );
+    expect(cvss[0]?.value).toBe('9.8 · critical');
+  });
+
   it('shows an invalid CVSS vector as it is, without a score', () => {
-    const rows = passportRows({ ...empty, cvss: 'CVSS:3.1/AV:N/AC:L' });
+    const rows = passportRows({ ...empty, cvss: 'CVSS:3.1/AV:N/AC:L' }, t);
     expect(rows).toEqual([{ key: 'cvss', label: 'CVSS', value: 'CVSS:3.1/AV:N/AC:L' }]);
   });
 });

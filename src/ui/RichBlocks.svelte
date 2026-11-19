@@ -1,11 +1,12 @@
 <script lang="ts">
   // Block text of a lesson (K37): paragraphs, lists, code. Never {@html}.
   import type { SiteBlock } from '../core/lesson/site';
+  import type { Translate } from '../services/i18n/i18n';
   import CodeBox from './CodeBox.svelte';
   import RichBlocks from './RichBlocks.svelte';
   import RichInline from './RichInline.svelte';
 
-  const { blocks }: { blocks: readonly SiteBlock[] } = $props();
+  const { blocks, t }: { blocks: readonly SiteBlock[]; t: Translate } = $props();
 </script>
 
 <div class="blocks">
@@ -15,11 +16,11 @@
     {:else if block.type === 'list'}
       <svelte:element this={block.ordered ? 'ol' : 'ul'}>
         {#each block.items as item, j (j)}
-          <li><RichBlocks blocks={item} /></li>
+          <li><RichBlocks blocks={item} {t} /></li>
         {/each}
       </svelte:element>
     {:else}
-      <CodeBox code={block} />
+      <CodeBox code={block} {t} />
     {/if}
   {/each}
 </div>

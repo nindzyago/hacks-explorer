@@ -2,12 +2,14 @@
 // site, served by scripts/serve-static.mjs the way the production host serves it.
 //   e2e         the e2e build (`dist-e2e/`, has `window.__app`)  e2e/*.spec.ts
 //   production  the production build (`dist/`, must not have it)   e2e/production/*.spec.ts
+//   i18n        the e2e build with two languages (`dist-e2e-i18n/`, M2.3, K106: fixture lessons,
+//               the real interface strings)                         e2e/i18n/*.spec.ts
 import { defineConfig, devices } from '@playwright/test';
 
 // Own ports per worktree: E2E_PORT=42xx npm run e2e
 const port = Number(process.env['E2E_PORT'] ?? 4173);
-if (!Number.isInteger(port) || port < 1024 || port > 65534) {
-  throw new Error('E2E_PORT must be a port number between 1024 and 65534');
+if (!Number.isInteger(port) || port < 1024 || port > 65533) {
+  throw new Error('E2E_PORT must be a port number between 1024 and 65533');
 }
 const origin = (p: number) => `http://127.0.0.1:${String(p)}`;
 const server = (folder: string, p: number) => ({
@@ -38,7 +40,7 @@ export default defineConfig({
   projects: [
     {
       name: 'e2e',
-      testIgnore: 'production/**',
+      testIgnore: ['production/**', 'i18n/**'],
       use: { ...chromium, baseURL: origin(port) },
     },
     {
@@ -46,6 +48,15 @@ export default defineConfig({
       testMatch: 'production/**/*.spec.ts',
       use: { ...chromium, baseURL: origin(port + 1) },
     },
+    {
+      name: 'i18n',
+      testMatch: 'i18n/**/*.spec.ts',
+      use: { ...chromium, baseURL: origin(port + 2) },
+    },
   ],
-  webServer: [server('dist-e2e', port), server('dist', port + 1)],
+  webServer: [
+    server('dist-e2e', port),
+    server('dist', port + 1),
+    server('dist-e2e-i18n', port + 2),
+  ],
 });

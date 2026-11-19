@@ -6,7 +6,13 @@
  */
 import { initialState, type AppState } from '../../core/state';
 import { createStore, type Store } from '../../core/store';
-import { formatAddress, parseAddress, type AddressOptions, type Place } from './address';
+import {
+  formatAddress,
+  parseAddress,
+  pathLanguage,
+  type AddressOptions,
+  type Place,
+} from './address';
 
 /** The parts of `window` the router uses. */
 export interface RouterWindow {
@@ -24,15 +30,26 @@ export interface RouterOptions {
   readonly store: Store<AppState>;
   /** Runs a command by id, as the registry does; its result is not needed. */
   readonly run: (id: string, params: Readonly<Record<string, unknown>>) => unknown;
-  /** Languages the site has; the first one is the fallback. Only Russian until M2.3. */
+  /** Languages the site has (content/locales/languages.md). Russian alone when not given. */
   readonly languages?: readonly string[];
+  /**
+   * The language for an address without one (`/`) or with one the site does not have: the
+   * reader's choice or the browser's (M2.3, K96). The first site language when not given.
+   */
+  readonly preferred?: string;
 }
 
 export interface Router {
   /** True while the address is no page of the site: the interface shows a message (L0.1). */
   readonly notFound: Pick<Store<boolean>, 'get' | 'subscribe'>;
-  /** The language of the address (the state has no language until M2.3). */
+  /** The language of the page, as the address shows it (`state.locale`). */
   lang(): string;
+  /**
+   * True while the state changes because the address was opened or Back / Forward was pressed:
+   * such a change shows the address, it is not the reader's choice (`src/main.ts` remembers
+   * only the reader's choice of language, K108).
+   */
+  applyingAddress(): boolean;
   stop(): void;
 }
 
@@ -43,18 +60,20 @@ export function startRouter(options: RouterOptions): Router {
   const languages = options.languages ?? SITE_LANGUAGES;
   const address: AddressOptions = {
     languages,
-    fallback: languages[0] ?? 'ru',
+    fallback:
+      options.preferred !== undefined && languages.includes(options.preferred)
+        ? options.preferred
+        : (languages[0] ?? 'ru'),
     // The default lesson is the one the application starts with (owner decides in M2.1).
     home: initialState().lesson,
   };
   const notFound = createStore(false);
-  let lang = address.fallback;
   /** While the address is being applied, the state changes in steps: nothing is written. */
   let applying = false;
 
   const current = () => `${win.location.pathname}${win.location.hash}`;
   const placeOf = (state: AppState): Place => ({
-    lang,
+    lang: state.locale,
     lesson: state.lesson,
     step: state.player.step,
     defence: state.player.defence,
@@ -71,14 +90,24 @@ export function startRouter(options: RouterOptions): Router {
   function apply(): void {
     const route = parseAddress(win.location.pathname, win.location.hash, address);
     if (route.kind === 'unknown') {
+      // «No such page» in the language of the address, when it has one of the site (K110).
+      const lang = pathLanguage(win.location.pathname, languages);
+      if (lang !== null && store.get().locale !== lang) {
+        applying = true;
+        try {
+          run('locale.set', { lang });
+        } finally {
+          applying = false;
+        }
+      }
       notFound.set(true);
       return;
     }
     notFound.set(false);
     const { place } = route;
-    lang = place.lang;
     applying = true;
     try {
+      if (store.get().locale !== place.lang) run('locale.set', { lang: place.lang });
       if (store.get().lesson !== place.lesson) run('lesson.open', { id: place.lesson });
       if (store.get().player.defence !== place.defence) run('defence.set', { on: place.defence });
       if (store.get().player.step !== place.step) run('player.goto', { step: place.step });
@@ -90,11 +119,17 @@ export function startRouter(options: RouterOptions): Router {
 
   apply();
 
-  /** The state → the address: a new lesson is a new history entry, anything else replaces. */
+  /**
+   * The state → the address: a new lesson or a new language is a new history entry (K79, K108:
+   * Back undoes a language switch), a step or a mode replaces the current one.
+   */
   const unsubscribe = store.subscribe((state) => {
     if (applying || notFound.get()) return;
     const shown = parseAddress(win.location.pathname, win.location.hash, address);
-    write(shown.kind === 'lesson' && shown.place.lesson !== state.lesson);
+    write(
+      shown.kind === 'lesson' &&
+        (shown.place.lesson !== state.lesson || shown.place.lang !== state.locale),
+    );
   });
 
   win.addEventListener('popstate', apply);
@@ -105,7 +140,8 @@ export function startRouter(options: RouterOptions): Router {
       get: () => notFound.get(),
       subscribe: (listener: (value: boolean) => void) => notFound.subscribe(listener),
     },
-    lang: () => lang,
+    lang: () => store.get().locale,
+    applyingAddress: () => applying,
     stop() {
       unsubscribe();
       win.removeEventListener('popstate', apply);

@@ -13,6 +13,7 @@
   import type { SiteLesson } from '../core/lesson/site';
   import { elapsedMs, type PlayerState } from '../core/player/player';
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
+  import type { Translate } from '../services/i18n/i18n';
   import ShieldMark from './ShieldMark.svelte';
 
   const {
@@ -20,11 +21,13 @@
     player,
     clock,
     run,
+    t,
   }: {
     lesson: SiteLesson;
     player: PlayerState;
     clock: Pick<Clock, 'now' | 'subscribe'>;
     run: (id: string, params?: Readonly<Record<string, unknown>>) => void;
+    t: Translate;
   } = $props();
 
   const steps = $derived(stepsInMode(lesson.steps, player.defence));
@@ -44,7 +47,7 @@
   const arrived = $derived(
     current !== null && stepArrived(current.step, elapsedMs(player, timeMs), reduced.current),
   );
-  const lines = $derived(feedLines(lesson, player, arrived));
+  const lines = $derived(feedLines(lesson, player, arrived, t));
 
   const SIGN: Readonly<Record<Exclude<FeedMark, 'stopped'>, string>> = {
     attack: '!',
@@ -74,13 +77,13 @@
   <table data-testid="steps-table" data-defence={player.defence} data-player-keys>
     <thead>
       <tr>
-        <th scope="col">№</th>
-        <th scope="col">Шаг</th>
-        <th scope="col">Кто</th>
-        <th scope="col">Кому</th>
-        <th scope="col">Что отправлено</th>
-        <th scope="col">Итог</th>
-        <th scope="col">Отметка</th>
+        <th scope="col">{t('steps.number')}</th>
+        <th scope="col">{t('steps.step')}</th>
+        <th scope="col">{t('steps.from')}</th>
+        <th scope="col">{t('steps.to')}</th>
+        <th scope="col">{t('steps.sent')}</th>
+        <th scope="col">{t('steps.result')}</th>
+        <th scope="col">{t('steps.mark')}</th>
       </tr>
     </thead>
     <tbody>
@@ -104,7 +107,7 @@
               type="button"
               class={paint}
               data-testid="step-goto-{n}"
-              aria-label="Шаг {n}: {step.title}"
+              aria-label={t('steps.goto', { number: n, title: step.title })}
               aria-current={n === player.step ? 'step' : undefined}
               onclick={() => {
                 run('player.goto', { step: n });
@@ -112,13 +115,15 @@
             >
           </td>
           <td class="title">{step.title}</td>
-          <td class="who" data-label="Кто">{name(step.from)}</td>
-          <td class="who" data-label="Кому">{step.from === step.to ? '—' : name(step.to)}</td>
+          <td class="who" data-label={t('steps.from')}>{name(step.from)}</td>
+          <td class="who" data-label={t('steps.to')}
+            >{step.from === step.to ? '—' : name(step.to)}</td
+          >
           <td class="what" data-testid="step-payload">{keepTogether(step.message)}</td>
           <td class="result {paint}" data-testid="step-result">{step.result}</td>
           <td class="mark {mark}" data-testid="step-mark"
             >{#if line === undefined}<span class="none" aria-hidden="true">—</span><span class="sr"
-                >ещё не было</span
+                >{t('steps.notYet')}</span
               >{:else if line.mark === 'stopped'}<ShieldMark />{line.word}{:else}<span
                 aria-hidden="true">{SIGN[line.mark]}</span
               >{line.word}{/if}</td

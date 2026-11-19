@@ -11,6 +11,7 @@
   import { describeScene, describeStep, sceneTitle } from '../core/scene-layout/describe';
   import { layoutScene, RING_STROKE, type TextBlock } from '../core/scene-layout/layout';
   import { currentStep, layoutMessage, type MessageSign } from '../core/scene-layout/message';
+  import type { Translate } from '../services/i18n/i18n';
   import { openTerm } from '../ui/terms';
   import { iconUrl } from './icons';
 
@@ -18,11 +19,14 @@
     lesson,
     scene,
     clock,
+    t,
   }: {
     lesson: SiteLesson;
     /** What the player says (M1.3): step, mode, start of the step on the clock, speed. */
     scene: Pick<PlayerState, 'step' | 'defence' | 'startedMs' | 'speed'>;
     clock: Pick<Clock, 'now' | 'subscribe'>;
+    /** The interface strings of the page's language (M2.3). */
+    t: Translate;
   } = $props();
   const uid = $props.id();
 
@@ -44,14 +48,14 @@
   const input = $derived({ participants: lesson.participants, zones: lesson.zones });
   const layout = $derived(layoutScene({ ...input, width }));
   const icons = $derived(new Map(lesson.participants.map((p) => [p.id, iconUrl(p.icon)])));
-  const title = $derived(sceneTitle(lesson.title));
-  const description = $derived(describeScene(input));
+  const title = $derived(sceneTitle(lesson.title, t));
+  const description = $derived(describeScene(input, t));
   const current = $derived(currentStep(lesson.steps, scene.defence, scene.step));
-  const stepText = $derived(describeStep(lesson.participants, current));
+  const stepText = $derived(describeStep(lesson.participants, current, t));
   const message = $derived(
     current === null
       ? null
-      : layoutMessage(layout, current.step, elapsedMs(scene, timeMs), reduced.current),
+      : layoutMessage(layout, current.step, elapsedMs(scene, timeMs), reduced.current, t),
   );
   const tokenIcon = $derived(message?.token?.icon ?? null);
   // A token whose icon is unknown or failed to load shows only its paper and ring.
@@ -128,7 +132,7 @@
       role="button"
       tabindex="0"
       aria-haspopup="dialog"
-      aria-label="{link.name}: что это"
+      aria-label={t('scene.term', { name: link.name })}
       data-testid={testid}
       data-term={link.term}
       x={round(box.x - pad)}

@@ -2,24 +2,26 @@
   // A piece of lesson code (K37): the harmful part, written ⟦…⟧ in the lesson, is a <mark>.
   // Long lines scroll inside the box, never the page (S10). Never {@html}.
   import type { SiteCode } from '../core/lesson/site';
+  import type { Translate } from '../services/i18n/i18n';
 
   const {
     code,
     label = '',
     current = true,
-  }: { code: SiteCode; label?: string; current?: boolean } = $props();
+    t,
+  }: { code: SiteCode; label?: string; current?: boolean; t: Translate } = $props();
 </script>
 
 <figure class="code" data-testid="explain-code" data-current={current}>
   {#if label !== ''}
-    <figcaption>{label}{current ? '' : ' — для сравнения'}</figcaption>
+    <figcaption>{current ? label : t('code.compare', { label })}</figcaption>
   {/if}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <pre
     tabindex="0"
     data-own-keys
     data-testid="explain-code-text"
-    aria-label={label === '' ? 'Код шага' : `Код: ${label}`}><code
+    aria-label={label === '' ? t('code.step') : t('code.label', { label })}><code
       >{#each code.segments as segment, i (i)}{#if segment.marked}<mark>{segment.text}</mark
           >{:else}{segment.text}{/if}{/each}</code
     ></pre>

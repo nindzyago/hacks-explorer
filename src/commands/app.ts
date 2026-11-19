@@ -10,6 +10,7 @@ import { createStore, type Store } from '../core/store';
 import { registerClockCommands } from './clock';
 import { registerDepthCommands } from './depth';
 import { registerGlossaryCommands } from './glossary';
+import { registerLocaleCommands } from './locale';
 import { registerPlayerCommands } from './player';
 import { createRegistry, type CommandRegistry } from './registry';
 import { registerThemeCommands } from './theme';
@@ -43,6 +44,11 @@ export interface AppOptions {
    * (K17: play and pause start and stop it; a message on its way keeps it running).
    */
   readonly onTimeNeeded?: ((needed: boolean) => void) | undefined;
+  /**
+   * The site languages (content/locales/languages.md, M2.3): the values `locale.set` accepts.
+   * Russian alone when not given.
+   */
+  readonly languages?: readonly string[] | undefined;
 }
 
 export function createApp(options: AppOptions = {}): AppContext {
@@ -53,6 +59,7 @@ export function createApp(options: AppOptions = {}): AppContext {
   registerThemeCommands(registry, store);
   registerDepthCommands(registry, store);
   registerGlossaryCommands(registry, store);
+  registerLocaleCommands(registry, store, options.languages ?? ['ru']);
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
   const player = registerPlayerCommands(registry, store, clock, {
     onTimeNeeded: options.onTimeNeeded,

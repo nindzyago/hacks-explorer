@@ -13,7 +13,7 @@ const registry = createRegistry<AppState>(() => appState); // откуда бр�
 
 registry.register({
   id: 'player.goto', // область.действие
-  titleKey: 'command.player.goto', // ключ названия в файлах языка
+  titleKey: 'command.player.goto', // ключ строки в content/locales/<язык>/ui.md (тест: каждый titleKey есть, M2.3)
   params: { step: { kind: 'integer', min: 0, max: 99 } },
   enabled: (state) => state.lessonOpen, // нет поля — команда доступна всегда
   run: ({ step }) => {
@@ -70,6 +70,7 @@ registry.list(); // [{ id, titleKey, params, enabled }]
 | Команда | Параметры | Что делает |
 |---|---|---|
 | `theme.set` | `theme`: `light` или `dark` | меняет `state.theme`; интерфейс ставит `data-theme` на корень страницы. Выбор пока не запоминается между визитами (M2.6) |
+| `locale.set` | `lang`: язык сайта из `content/locales/languages.md` (`createApp({ languages })`, по умолчанию только `ru`) | меняет `state.locale` — язык интерфейса, урока, словаря и адреса (M2.3, S5); урок, шаг, режим, глубина и скорость остаются. Другой язык, регистр, не строка — `invalid-params`. Вызывают переключатель «RU / EN» (только когда языков больше одного), адрес и канал управления; выбор после открытия страницы запоминается в `localStorage` (`src/main.ts`) |
 | `depth.set` | `depth`: `simple`, `steps` или `deep` | меняет `state.depth` — глубину панели объяснения (M1.4, S3). По умолчанию `simple`; смена шага, режима и урока её не меняет |
 | `glossary.open` | `id`: id термина словаря (`[a-z][a-z0-9-]{0,31}`) | меняет `state.glossary`: определение термина открывается на месте (M2.4, K7), одно за раз; другой id заменяет открытое. Есть ли такой термин, решает окно определения (говорит «Такого слова в словаре нет»). Текст, схема, «см. также» и канал управления вызывают эту команду |
 | `glossary.close` | — | `state.glossary` = null |

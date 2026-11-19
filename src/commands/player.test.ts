@@ -30,6 +30,7 @@ describe('player state', () => {
       },
       depth: 'simple',
       glossary: null,
+      locale: 'ru',
     });
   });
 

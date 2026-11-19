@@ -23,12 +23,15 @@ function walk(dir, out) {
 }
 
 /**
- * Every file under content/lessons, content/sources.md and the glossaries
- * (`content/locales/<lang>/glossary.md`, M2.4), as `{ path, text }` with paths relative to the
- * repository root and forward slashes.
+ * Every file under content/lessons, content/sources.md, the glossaries
+ * (`content/locales/<lang>/glossary.md`, M2.4), the interface strings
+ * (`content/locales/<lang>/ui.md`, M2.3) and the list of site languages
+ * (`content/locales/languages.md`, null when missing), as `{ path, text }` with paths relative
+ * to the repository root and forward slashes.
  * @param {string} [root]
  * @returns {{ lessons: { path: string, text: string }[], sources: { path: string, text: string },
- *             glossaries: { path: string, text: string }[] }}
+ *             glossaries: { path: string, text: string }[], ui: { path: string, text: string }[],
+ *             languages: { path: string, text: string } | null }}
  */
 export function readContent(root = ROOT) {
   const toFile = (full) => ({
@@ -44,8 +47,9 @@ export function readContent(root = ROOT) {
     if (error?.code !== 'ENOENT') throw error;
     sources = { path: 'content/sources.md', text: '' };
   }
-  const glossaries = walk(join(root, 'content', 'locales'), [])
-    .map(toFile)
-    .filter((f) => f.path.endsWith('/glossary.md'));
-  return { lessons, sources, glossaries };
+  const locales = walk(join(root, 'content', 'locales'), []).map(toFile);
+  const glossaries = locales.filter((f) => f.path.endsWith('/glossary.md'));
+  const ui = locales.filter((f) => f.path.endsWith('/ui.md'));
+  const languages = locales.find((f) => f.path === 'content/locales/languages.md') ?? null;
+  return { lessons, sources, glossaries, ui, languages };
 }

@@ -5,7 +5,7 @@
 атаки» `src/ui/StepsTable.svelte` (M2.1a, K91: отдельной ленты на странице больше нет).
 
 ```ts
-feedLines(lesson, { step, defence }, arrived); // FeedLine[]
+feedLines(lesson, { step, defence }, arrived, t); // FeedLine[]; t — строки интерфейса (M2.3)
 stepArrived(step, elapsedMs, reducedMotion); // boolean
 ```
 

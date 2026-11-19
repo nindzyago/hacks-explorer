@@ -2,6 +2,7 @@
 // of the current step stands at a moment of the player clock, what it looks like, and which
 // step is current in each mode.
 import { describe, expect, it } from 'vitest';
+import { sayFromFile } from '../i18n/testing';
 import { layoutScene, MIN_SQUEEZE, type Rect, type SceneInput, type SceneLayout } from './layout';
 import {
   currentStep,
@@ -14,6 +15,8 @@ import {
   TRAVEL_MS,
   type StepInput,
 } from './message';
+
+const say = sayFromFile('ru');
 
 const B1: SceneInput = {
   participants: [
@@ -130,7 +133,7 @@ describe('layoutMessage', () => {
   const glue = B1_STEPS[2] ?? step({ id: 'missing' });
 
   it('stands at the middle of the path in the middle of the step (M1.2b acceptance)', () => {
-    const m = layoutMessage(scene, glue, TRAVEL_MS / 2, false);
+    const m = layoutMessage(scene, glue, TRAVEL_MS / 2, false, say);
     expect(m?.x).toBeCloseTo((cx('server') + cx('db')) / 2, 6);
     expect(m?.y).toBe(scene.lane.y);
     expect(m?.arrived).toBe(false);
@@ -138,25 +141,27 @@ describe('layoutMessage', () => {
   });
 
   it('starts at the sender and ends at the receiver, with a ring around the receiver', () => {
-    expect(layoutMessage(scene, glue, 0, false)?.x).toBeCloseTo(cx('server'), 6);
-    const end = layoutMessage(scene, glue, TRAVEL_MS, false);
+    expect(layoutMessage(scene, glue, 0, false, say)?.x).toBeCloseTo(cx('server'), 6);
+    const end = layoutMessage(scene, glue, TRAVEL_MS, false, say);
     expect(end?.x).toBeCloseTo(cx('db'), 6);
     expect(end?.arrived).toBe(true);
     expect(end?.ring).toEqual(scene.participants[2]?.area);
   });
 
   it('is at the receiver at once with reduced motion (S11)', () => {
-    const m = layoutMessage(scene, glue, 0, true);
+    const m = layoutMessage(scene, glue, 0, true, say);
     expect(m?.x).toBeCloseTo(cx('db'), 6);
     expect(m?.arrived).toBe(true);
   });
 
   it('is the same for the same moment: a pure function', () => {
-    expect(layoutMessage(scene, glue, 450, false)).toEqual(layoutMessage(scene, glue, 450, false));
+    expect(layoutMessage(scene, glue, 450, false, say)).toEqual(
+      layoutMessage(scene, glue, 450, false, say),
+    );
   });
 
   it('doubles the colour of each kind by a sign and a word (E8)', () => {
-    const at = (s: StepInput) => layoutMessage(scene, s, TRAVEL_MS, false);
+    const at = (s: StepInput) => layoutMessage(scene, s, TRAVEL_MS, false, say);
     expect(at(glue)).toMatchObject({ kind: 'attack', sign: 'attack', word: 'вредное' });
     expect(at(step({ id: 's', kind: 'safe' }))).toMatchObject({ sign: 'safe', word: 'безопасное' });
     // A legit message shows its direction.
@@ -169,26 +174,26 @@ describe('layoutMessage', () => {
     const param = currentStep(B1_STEPS, true, 3)?.step ?? step({ id: 'missing' });
     expect(param.id).toBe('param');
     // On the way it is a harmful message like any other; the shield comes where it stops.
-    const half = layoutMessage(scene, param, TRAVEL_MS / 2, false);
+    const half = layoutMessage(scene, param, TRAVEL_MS / 2, false, say);
     expect(half).toMatchObject({ kind: 'attack', stopped: false, sign: 'attack', word: 'вредное' });
     expect(half?.x).toBeCloseTo((cx('server') + cx('db')) / 2, 6);
-    const end = layoutMessage(scene, param, TRAVEL_MS, false);
+    const end = layoutMessage(scene, param, TRAVEL_MS, false, say);
     expect(end).toMatchObject({ kind: 'attack', stopped: true, sign: 'stopped' });
     expect(end?.word).toBe('остановлено');
-    const later = layoutMessage(scene, param, TRAVEL_MS * 20, false);
+    const later = layoutMessage(scene, param, TRAVEL_MS * 20, false, say);
     expect(end?.x).toBeCloseTo(cx('db'), 6);
     // It stays there: nothing travels further down the line.
     expect(later).toEqual(end);
   });
 
   it('draws a plaque 24 px high whose text fits, cut with «…» on a narrow scene', () => {
-    const m = layoutMessage(scene, glue, 0, false);
+    const m = layoutMessage(scene, glue, 0, false, say);
     expect(m?.plaque?.height).toBe(MESSAGE_HEIGHT);
     expect(m?.plaque?.text).toBe('GET /login');
     expect(m?.token).toBeNull();
     const narrow = layoutScene({ ...B1, width: 280 });
     const long = step({ id: 'long', message: 'SELECT * FROM users WHERE login = ? AND hash = ?' });
-    const cut = layoutMessage(narrow, long, TRAVEL_MS, false);
+    const cut = layoutMessage(narrow, long, TRAVEL_MS, false, say);
     expect(cut?.plaque?.cut).toBe(true);
     expect(cut?.plaque?.text.endsWith('…')).toBe(true);
     const width = cut?.plaque?.width ?? Infinity;
@@ -200,7 +205,7 @@ describe('layoutMessage', () => {
   it('rests a wide plaque inside the receiver zone on a phone, off the neighbour frame', () => {
     const phone = layoutScene({ ...B1, width: 356 });
     const param = currentStep(B1_STEPS, true, 3)?.step ?? step({ id: 'missing' });
-    const m = layoutMessage(phone, param, TRAVEL_MS, false);
+    const m = layoutMessage(phone, param, TRAVEL_MS, false, say);
     const site = phone.zones.find((z) => z.id === 'site')?.rect;
     const w = m?.plaque?.width ?? Infinity;
     expect(w).toBeGreaterThan(phone.participants[2]?.area.width ?? 0);
@@ -208,20 +213,20 @@ describe('layoutMessage', () => {
     expect((m?.x ?? 0) + w / 2).toBeLessThanOrEqual((site?.x ?? 0) + (site?.width ?? 0));
     // At the first participant a plaque wider than its one-column zone stays in the scene.
     const refuse = currentStep(B1_STEPS, true, 5)?.step ?? step({ id: 'missing' });
-    const r = layoutMessage(phone, refuse, TRAVEL_MS, false);
+    const r = layoutMessage(phone, refuse, TRAVEL_MS, false, say);
     expect((r?.x ?? 0) - (r?.plaque?.width ?? 0) / 2).toBeGreaterThanOrEqual(0);
   });
 
   it('keeps a plaque inside the scene at the first and last participant', () => {
     const long = step({ id: 'edge', from: 'server', to: 'attacker', message: 'x'.repeat(30) });
-    const m = layoutMessage(scene, long, TRAVEL_MS, false);
+    const m = layoutMessage(scene, long, TRAVEL_MS, false, say);
     const width = m?.plaque?.width ?? Infinity;
     expect((m?.x ?? 0) - width / 2).toBeGreaterThanOrEqual(0);
   });
 
   it('draws an icon step as a round token instead of a plaque', () => {
     const mail = step({ id: 'bait', kind: 'attack', icon: 'mail' });
-    const m = layoutMessage(scene, mail, 0, false);
+    const m = layoutMessage(scene, mail, 0, false, say);
     expect(m?.plaque).toBeNull();
     expect(m?.token).toEqual({ icon: 'mail', radius: TOKEN_RADIUS });
     expect(m?.sign).toBe('attack');
@@ -229,8 +234,8 @@ describe('layoutMessage', () => {
 
   it('does not move a step from a participant to itself, and draws no trail', () => {
     const self = step({ id: 'self', from: 'server', to: 'server', kind: 'safe', stopped: true });
-    const first = layoutMessage(scene, self, 0, false);
-    const last = layoutMessage(scene, self, TRAVEL_MS, false);
+    const first = layoutMessage(scene, self, 0, false, say);
+    const last = layoutMessage(scene, self, TRAVEL_MS, false, say);
     expect(first?.x).toBeCloseTo(cx('server'), 6);
     expect(first).toEqual(last);
     expect(first?.trail).toBeNull();
@@ -239,12 +244,12 @@ describe('layoutMessage', () => {
   });
 
   it('gives nothing for a participant the scene does not have', () => {
-    expect(layoutMessage(scene, step({ id: 'g', to: 'ghost' }), 0, false)).toBeNull();
+    expect(layoutMessage(scene, step({ id: 'g', to: 'ghost' }), 0, false, say)).toBeNull();
   });
 
   it('leaves room above the lane for the word, below the zone labels', () => {
     const labelBottom = Math.max(...scene.zones.map((z) => z.label.box.y + z.label.box.height));
-    const m = layoutMessage(scene, glue, 0, false);
+    const m = layoutMessage(scene, glue, 0, false, say);
     const wordTop = (m?.wordY ?? 0) - 11 * 0.8;
     // M1.2d: at least 10 px of paper, so that the word does not read as a second line of the
     // zone label above it («Подделка» / «вредное» on a phone).
@@ -361,7 +366,7 @@ describe('the message at rest fits its zone (M1.2c)', () => {
             [0, s.from],
             [TRAVEL_MS, s.to],
           ] as const) {
-            const m = layoutMessage(layout, s, t, false);
+            const m = layoutMessage(layout, s, t, false, say);
             if (m === null) throw new Error(`no message for ${s.id}`);
             const where = `${s.id} at ${at}, ${String(width)} px`;
             const icons = layout.participants
@@ -405,16 +410,16 @@ describe('the message at rest fits its zone (M1.2c)', () => {
   it('keeps the whole words of the I1 stopped plaques on a phone, in two lines', () => {
     // A real phone: 390 px less the page padding (12 px on a phone, M1.2c) and border.
     const phone = layoutScene({ ...I1, width: 364 });
-    const leak = layoutMessage(phone, I1_STEPS[6] ?? step({ id: 'x' }), TRAVEL_MS, false);
+    const leak = layoutMessage(phone, I1_STEPS[6] ?? step({ id: 'x' }), TRAVEL_MS, false, say);
     expect(leak?.plaque?.lines.map((l) => l.text)).toEqual(['чужой', 'пароль']);
     expect(leak?.plaque?.cut).toBe(false);
-    const autofill = layoutMessage(phone, I1_STEPS[5] ?? step({ id: 'x' }), 0, false);
+    const autofill = layoutMessage(phone, I1_STEPS[5] ?? step({ id: 'x' }), 0, false, say);
     expect(autofill?.plaque?.lines.map((l) => l.text)).toEqual(['пароль не', 'подставлен']);
     expect(autofill?.word).toBe('остановлено');
     // On a wide scene the same plaque is one line, as before.
     const wide = layoutScene({ ...I1, width: 926 });
     expect(
-      layoutMessage(wide, I1_STEPS[6] ?? step({ id: 'x' }), TRAVEL_MS, false)?.plaque?.lines,
+      layoutMessage(wide, I1_STEPS[6] ?? step({ id: 'x' }), TRAVEL_MS, false, say)?.plaque?.lines,
     ).toHaveLength(1);
   });
 
@@ -422,9 +427,12 @@ describe('the message at rest fits its zone (M1.2c)', () => {
     for (const width of [356, 926]) {
       const layout = layoutScene({ ...B1, width });
       const param = B1_STEPS[5] ?? step({ id: 'x' });
-      const start = layoutMessage(layout, param, 1, false);
-      const later = layoutMessage(layout, param, TRAVEL_MS, false);
-      expect(start?.trail?.x1).toBeCloseTo(layoutMessage(layout, param, 0, false)?.x ?? NaN, 1);
+      const start = layoutMessage(layout, param, 1, false, say);
+      const later = layoutMessage(layout, param, TRAVEL_MS, false, say);
+      expect(start?.trail?.x1).toBeCloseTo(
+        layoutMessage(layout, param, 0, false, say)?.x ?? NaN,
+        1,
+      );
       expect(later?.trail?.x1).toBe(start?.trail?.x1);
       expect(later?.trail?.x2).toBe(later?.x);
     }
@@ -441,7 +449,7 @@ describe('the colour of a message (M1.2d)', () => {
 
   it('paints a stopped harmful message red on its way and green where it stops', () => {
     for (const t of [0, TRAVEL_MS / 2, TRAVEL_MS - 1]) {
-      expect(layoutMessage(scene, param, t, false)).toMatchObject({
+      expect(layoutMessage(scene, param, t, false, say)).toMatchObject({
         paint: 'attack',
         trailPaint: 'attack',
         sign: 'attack',
@@ -449,7 +457,7 @@ describe('the colour of a message (M1.2d)', () => {
       });
     }
     for (const t of [TRAVEL_MS, TRAVEL_MS * 20]) {
-      expect(layoutMessage(scene, param, t, false)).toMatchObject({
+      expect(layoutMessage(scene, param, t, false, say)).toMatchObject({
         paint: 'stopped',
         sign: 'stopped',
         word: 'остановлено',
@@ -461,18 +469,20 @@ describe('the colour of a message (M1.2d)', () => {
 
   it('keeps a harmful message that is not stopped red all the way, ring included', () => {
     for (const t of [0, TRAVEL_MS / 2, TRAVEL_MS, TRAVEL_MS * 20]) {
-      expect(layoutMessage(scene, glue, t, false)?.paint).toBe('attack');
+      expect(layoutMessage(scene, glue, t, false, say)?.paint).toBe('attack');
     }
   });
 
   it('paints a stopped step that does not move green at once, other kinds as their kind', () => {
     const autofill = I1_STEPS[5] ?? step({ id: 'x' });
     const i1 = layoutScene({ ...I1, width: 760 });
-    expect(layoutMessage(i1, autofill, 0, false)?.paint).toBe('stopped');
-    expect(layoutMessage(scene, step({ id: 's', kind: 'safe' }), 0, false)?.paint).toBe('safe');
-    expect(layoutMessage(scene, step({ id: 'l' }), TRAVEL_MS, false)?.paint).toBe('legit');
+    expect(layoutMessage(i1, autofill, 0, false, say)?.paint).toBe('stopped');
+    expect(layoutMessage(scene, step({ id: 's', kind: 'safe' }), 0, false, say)?.paint).toBe(
+      'safe',
+    );
+    expect(layoutMessage(scene, step({ id: 'l' }), TRAVEL_MS, false, say)?.paint).toBe('legit');
     // With reduced motion the stopped message is there, and green, at once (S11).
-    expect(layoutMessage(scene, param, 0, true)?.paint).toBe('stopped');
+    expect(layoutMessage(scene, param, 0, true, say)?.paint).toBe('stopped');
   });
 });
 
@@ -488,19 +498,19 @@ describe('compact plaques on narrow phones (M1.2d)', () => {
       const layout = layoutScene({ ...I1, width });
       for (const s of [I1_STEPS[5], I1_STEPS[6]]) {
         if (s === undefined) throw new Error('no step');
-        const m = layoutMessage(layout, s, TRAVEL_MS, false);
+        const m = layoutMessage(layout, s, TRAVEL_MS, false, say);
         expect(m?.plaque?.cut, `${s.id} at ${String(width)}`).toBe(false);
         expect(m?.plaque?.text, `${s.id} at ${String(width)}`).toBe(s.message);
       }
     }
     const narrow = layoutScene({ ...I1, width: 334 });
-    const autofill = layoutMessage(narrow, I1_STEPS[5] ?? step({ id: 'x' }), 0, false);
+    const autofill = layoutMessage(narrow, I1_STEPS[5] ?? step({ id: 'x' }), 0, false, say);
     expect(autofill?.plaque?.lines.map((l) => l.text)).toEqual(['пароль не', 'подставлен']);
   });
 
   it('starts the first line after the sign and the next lines under it', () => {
     const narrow = layoutScene({ ...I1, width: 334 });
-    const plaque = layoutMessage(narrow, I1_STEPS[5] ?? step({ id: 'x' }), 0, false)?.plaque;
+    const plaque = layoutMessage(narrow, I1_STEPS[5] ?? step({ id: 'x' }), 0, false, say)?.plaque;
     if (plaque === null || plaque === undefined) throw new Error('no plaque');
     const [first, second] = plaque.lines;
     expect(first?.x).toBe(plaque.textX);
@@ -518,12 +528,12 @@ describe('compact plaques on narrow phones (M1.2d)', () => {
   it('uses up to three lines, 42 px high, before it cuts', () => {
     const narrow = layoutScene({ ...I1, width: 334 });
     const three = step({ id: 'three', to: 'user', message: 'пароль не подставлен сюда' });
-    const plaque = layoutMessage(narrow, three, TRAVEL_MS, false)?.plaque;
+    const plaque = layoutMessage(narrow, three, TRAVEL_MS, false, say)?.plaque;
     expect(plaque?.lines).toHaveLength(3);
     expect(plaque?.height).toBe(42);
     expect(plaque?.cut).toBe(false);
     const long = step({ id: 'long', to: 'user', message: 'один два три четыре пять шесть семь' });
-    const cut = layoutMessage(narrow, long, TRAVEL_MS, false)?.plaque;
+    const cut = layoutMessage(narrow, long, TRAVEL_MS, false, say)?.plaque;
     expect(cut?.lines).toHaveLength(3);
     expect(cut?.cut).toBe(true);
     expect(cut?.text.endsWith('…')).toBe(true);
@@ -537,7 +547,7 @@ describe('compact plaques on narrow phones (M1.2d)', () => {
       for (const width of PHONES) {
         const layout = layoutScene({ ...input, width });
         for (const s of steps) {
-          const m = layoutMessage(layout, s, TRAVEL_MS, false);
+          const m = layoutMessage(layout, s, TRAVEL_MS, false, say);
           if (m?.plaque === null || m?.plaque === undefined) continue;
           expect(m.plaque.cut, `${s.id} at ${String(width)}`).toBe(false);
         }

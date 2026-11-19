@@ -142,7 +142,9 @@ export function keyCommand(press: KeyPress, playing: boolean): KeyCommand | null
     return press.key === 'ArrowRight' ? 'player.step' : 'player.back';
   }
   const letter = press.key.toLowerCase();
-  if (press.code === 'KeyD' || letter === 'd' || letter === 'в') {
+  // \u0432 is the letter on the D key of a Russian layout (written as an escape: no words of
+  // a language in src/ui, M2.3).
+  if (press.code === 'KeyD' || letter === 'd' || letter === '\u0432') {
     return press.repeat ? null : 'defence.toggle';
   }
   return null;

@@ -222,4 +222,9 @@ export type LessonErrorCode =
   | 'unknown-id'
   // translations
   | 'missing-base'
-  | 'translation-mismatch';
+  | 'translation-mismatch'
+  // site languages (M2.3, K94): every lesson, string and term in every site language
+  | 'missing-translation'
+  | 'missing-ui'
+  | 'missing-key'
+  | 'unknown-key';

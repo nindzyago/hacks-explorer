@@ -57,6 +57,7 @@ test('the same scenario twice gives the same dump and the same screenshot', asyn
       '  "depth": "simple",',
       '  "glossary": null,',
       '  "lesson": "B1",',
+      '  "locale": "ru",',
       '  "player": {',
       '    "counts": {',
       '      "with": 5,',

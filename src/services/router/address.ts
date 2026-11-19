@@ -85,6 +85,18 @@ export function parseAddress(pathname: unknown, hash: unknown, options: AddressO
 }
 
 /**
+ * The site language a path starts with, whatever follows (`/en/nope` → `en`), or null. Lets the
+ * page that says «no such page» speak the language of the address (verifier M2.3a, K110).
+ */
+export function pathLanguage(pathname: unknown, languages: readonly string[]): string | null {
+  if (typeof pathname !== 'string' || pathname.length > MAX_PATH_LENGTH) return null;
+  const first = pathname.startsWith('/') ? pathname.split('/')[1] : undefined;
+  if (first === undefined || !LANG.test(first)) return null;
+  const lower = first.toLowerCase();
+  return languages.includes(lower) ? lower : null;
+}
+
+/**
  * Writes the address of `place`. Step 1 without defence has no hash, so a plain lesson link stays
  * short. A value that would not read back (not a lesson id, not a language) is replaced by a safe
  * one: a bad language by `ru`, a bad lesson by the language's home page.

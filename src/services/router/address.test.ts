@@ -2,7 +2,23 @@
 // hostile input (L0.2): anything that is not exactly the grammar gives defaults or «unknown»,
 // never an exception.
 import { describe, expect, it } from 'vitest';
-import { formatAddress, parseAddress, type Place } from './address';
+import { formatAddress, parseAddress, pathLanguage, type Place } from './address';
+
+// Verifier M2.3a (K110): «no such page» speaks the language of the address.
+describe('pathLanguage', () => {
+  it('reads a site language at the start of any path', () => {
+    expect(pathLanguage('/en/nope', ['ru', 'en'])).toBe('en');
+    expect(pathLanguage('/EN/lesson/B1/x', ['ru', 'en'])).toBe('en');
+    expect(pathLanguage('/en', ['ru', 'en'])).toBe('en');
+  });
+
+  it('is null for anything else', () => {
+    for (const path of ['/de/nope', '/nope', '/', '', 'en/nope', '/__proto__/x', 42, null]) {
+      expect(pathLanguage(path, ['ru', 'en'])).toBeNull();
+    }
+    expect(pathLanguage(`/en/${'x'.repeat(100)}`, ['ru', 'en'])).toBeNull();
+  });
+});
 
 const OPTIONS = { languages: ['ru'], fallback: 'ru', home: 'B1' } as const;
 const parse = (path: unknown, hash: unknown = '') => parseAddress(path, hash, OPTIONS);

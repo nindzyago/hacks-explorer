@@ -99,3 +99,10 @@ else result.error; // { code, path: '$.scene.nodes[3].x', message }
   - объекты из другого окна или iframe: их массивы и объекты считаются `unsupported`, потому что
     у них другие `Array.prototype` и `Object.prototype`. Данные из `page.evaluate` в Playwright
     и из `structuredClone` — обычные, с ними дамп работает.
+
+## Языки (`i18n/`, M2.3)
+
+Разбор `content/locales/<язык>/ui.md` и `content/locales/languages.md`, проверка полноты языков
+сайта (K94, S9) — при сборке; `say.ts` — тип `Say<K>` и `fill`: ядро получает переводчик
+параметром и слов не хранит. `testing.ts` — только для тестов: строки из настоящего `ui.md`.
+Подробно — `src/services/i18n/README.md`.

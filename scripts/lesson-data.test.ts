@@ -79,19 +79,25 @@ afterAll(() => {
 });
 
 /**
- * A project folder with an index.html, the real lessons and glossaries, and the given lesson
+ * A project folder with an index.html, the real lessons, glossaries, interface strings and
+ * languages, and the given lesson
  * files over them.
  */
 function project(name: string, lessons: Record<string, string>): string {
   const root = join(work, name);
   const files: Record<string, string> = {};
-  for (const f of [...real.lessons, ...real.glossaries]) files[f.path] = f.text;
+  const languages = real.languages === null ? [] : [real.languages];
+  for (const f of [...real.lessons, ...real.glossaries, ...real.ui, ...languages]) {
+    files[f.path] = f.text;
+  }
   for (const [path, text] of Object.entries({ ...files, ...lessons })) {
     mkdirSync(join(root, path, '..'), { recursive: true });
     writeFileSync(join(root, path), text);
   }
   writeFileSync(join(root, 'content', 'sources.md'), real.sources.text);
-  writeFileSync(join(root, 'index.html'), '<!doctype html><title>t</title><p>t</p>');
+  if (!('index.html' in lessons)) {
+    writeFileSync(join(root, 'index.html'), '<!doctype html><title>t</title><p>t</p>');
+  }
   return root;
 }
 
@@ -293,5 +299,110 @@ describe('the glossary', () => {
     expect(out.errors.join('\n')).toMatch(
       /the site data of this glossary is \d+ bytes; at most 30720/,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// M2.3 (K94, K105, K106): the site languages are complete or the build fails (S9); only site
+// languages are shipped; the interface strings are a bundled module.
+
+describe('site languages (S9)', () => {
+  const languagesFile = (codes: string) => ({
+    path: 'content/locales/languages.md',
+    text: `# Языки\n\n\`languages\` · \`format\` 1\n\n${codes}`,
+  });
+
+  it('the real content ships Russian only, with its strings; en/ui.md is checked, not shipped', () => {
+    const result = buildLessonData(real);
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+    expect(result.locales.languages).toEqual([{ code: 'ru', name: 'Русский' }]);
+    expect(Object.keys(result.locales.strings)).toEqual(['ru']);
+    expect(real.ui.map((f) => f.path).sort()).toEqual([
+      'content/locales/en/ui.md',
+      'content/locales/ru/ui.md',
+    ]);
+  });
+
+  it('S9: English on the list without its lessons, a key and the glossary fails and names each', () => {
+    const en = fileText(real.ui, 'content/locales/en/ui.md').replace(
+      /^- `player\.pause` .*\n/m,
+      '',
+    );
+    const result = buildLessonData({
+      ...real,
+      ui: real.ui.map((f) => (f.path === 'content/locales/en/ui.md' ? { ...f, text: en } : f)),
+      languages: languagesFile('- `ru` Русский\n- `en` English\n'),
+    });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    const text = result.errors.join('\n');
+    for (const id of real.lessons.map((f) => /lessons\/([A-Z][0-9]+)\//.exec(f.path)?.[1])) {
+      expect(text).toContain(
+        `content/lessons/${String(id)}/en.md:1:1: lesson ${String(id)} has no en.md`,
+      );
+    }
+    expect(text).toContain('content/locales/en/ui.md:1:1: missing key player.pause');
+    expect(text).toContain(
+      'content/locales/en/glossary.md:1:1: every site language has a glossary',
+    );
+  });
+
+  it('fails without languages.md or with a broken one', () => {
+    for (const languages of [null, languagesFile('- `en` English\n')]) {
+      const result = buildLessonData({ ...real, languages });
+      expect(!result.ok && result.errors[0]).toMatch(/^content\/locales\/languages\.md:1:1: /);
+    }
+  });
+
+  it('the e2e fixture with two languages builds and ships both (K106)', () => {
+    const fixture = readContent(join(import.meta.dirname, '..', 'e2e', 'fixtures', 'i18n'));
+    const result = buildLessonData({ ...fixture, ui: real.ui });
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+    expect(result.locales.languages.map((l) => l.code)).toEqual(['ru', 'en']);
+    expect(result.locales.strings['en']?.['defence.isOff']).toBe('Defence is off');
+    const paths = result.files.map((f) => f.path);
+    expect(paths).toContain('data/glossary/en.json');
+    expect(paths.some((p) => /^data\/lessons\/B1\.en\.[0-9a-f]{8}\.json$/.test(p))).toBe(true);
+  });
+
+  it('a lesson in a language not on the site is checked but not shipped', () => {
+    const fixture = readContent(join(import.meta.dirname, '..', 'e2e', 'fixtures', 'i18n'));
+    const result = buildLessonData({
+      ...fixture,
+      ui: real.ui,
+      languages: languagesFile('- `ru` Русский\n'),
+    });
+    if (!result.ok) throw new Error(result.errors.join('\n'));
+    const paths = result.files.map((f) => f.path);
+    expect(paths.filter((p) => p.includes('.en.') || p.endsWith('/en.json'))).toEqual([]);
+    const broken = buildLessonData({
+      ...fixture,
+      ui: real.ui,
+      languages: languagesFile('- `ru` Русский\n'),
+      lessons: fixture.lessons.map((f) =>
+        f.path.endsWith('/en.md') ? { ...f, text: f.text.replace('`wave` 1', '`wave` 2') } : f,
+      ),
+    });
+    expect(!broken.ok && broken.errors.join('\n')).toContain('content/lessons/B1/en.md:');
+  });
+
+  it('`vite build` bundles the strings as virtual:site-locales', async () => {
+    const root = project('locales', {
+      'src/entry.js':
+        "import locales from 'virtual:site-locales';\nconsole.log(JSON.stringify(locales));\n",
+      'index.html':
+        '<!doctype html><title>t</title><script type="module" src="/src/entry.js"></script>',
+    });
+    const out = await build({
+      root,
+      configFile: false,
+      logLevel: 'silent',
+      build: { write: false },
+      plugins: [lessonData({ contentRoot: root })],
+    });
+    if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
+    const code = out.output.map((o) => ('code' in o ? o.code : '')).join('\n');
+    expect(code).toContain('Защита выключена');
+    expect(code).not.toContain('Defence is off');
   });
 });

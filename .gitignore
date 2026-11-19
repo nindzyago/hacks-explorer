@@ -4,6 +4,7 @@ reference/
 node_modules/
 dist/
 dist-e2e/
+dist-e2e-i18n/
 coverage/
 test-results/
 playwright-report/

@@ -31,6 +31,11 @@ export interface AppState {
    * `glossary.open` and `glossary.close` change it.
    */
   readonly glossary: string | null;
+  /**
+   * The language of the page (M2.3): of the interface, the lesson, the glossary and the address.
+   * One of the site languages; `locale.set` changes it and keeps the lesson, step, mode and depth.
+   */
+  readonly locale: string;
 }
 
 export function initialState(): AppState {
@@ -40,5 +45,6 @@ export function initialState(): AppState {
     player: initialPlayer(),
     depth: 'simple',
     glossary: null,
+    locale: 'ru',
   });
 }
