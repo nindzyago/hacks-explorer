@@ -3,6 +3,7 @@
   import type { SiteLesson } from '../core/lesson/site';
   import { stepCount } from '../core/player/player';
   import { PROJECT } from '../core/project';
+  import { createStore, type Store } from '../core/store';
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
@@ -19,7 +20,14 @@
     app,
     loader,
     home = '/',
-  }: { app: AppContext; loader: LessonLoader; home?: string } = $props();
+    notFound = createStore(false),
+  }: {
+    app: AppContext;
+    loader: LessonLoader;
+    home?: string;
+    /** M2.2: the address is no page of the site (src/services/router). */
+    notFound?: Pick<Store<boolean>, 'subscribe'>;
+  } = $props();
   const store = $derived(app.store);
   const player = $derived($store.player);
 
@@ -88,7 +96,7 @@
 
   /** S6: Space, ← →, D. Keys are ignored while typing and with Ctrl, ⌘ or Alt. */
   function onkeydown(event: KeyboardEvent): void {
-    if (shown.state !== 'ready' || event.defaultPrevented) return;
+    if ($notFound || shown.state !== 'ready' || event.defaultPrevented) return;
     const id = keyCommand(
       {
         key: event.key,
@@ -120,7 +128,7 @@
 <main data-testid="app">
   <header class="top" data-testid="topbar">
     <h1 class="brand">{PROJECT.name}</h1>
-    {#if shown.state === 'ready'}
+    {#if shown.state === 'ready' && !$notFound}
       <h2 class="lesson-title" id="lesson-title" data-testid="lesson-title">
         {shown.lesson.title}
       </h2>
@@ -129,7 +137,15 @@
     {/if}
   </header>
 
-  {#if shown.state === 'loading'}
+  {#if $notFound}
+    <div class="status error" data-testid="page-not-found" role="alert">
+      <p>Такой страницы нет.</p>
+      <p>Проверьте адрес или откройте урок с главной.</p>
+      <div class="actions">
+        <a href={home} data-testid="not-found-home">На главную</a>
+      </div>
+    </div>
+  {:else if shown.state === 'loading'}
     <p class="status" data-testid="lesson-loading" role="status">Загружаем урок…</p>
   {:else if shown.state === 'error'}
     <div class="status error" data-testid="lesson-error" data-code={shown.code} role="alert">

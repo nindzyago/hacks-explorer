@@ -2,6 +2,7 @@ import { mount } from 'svelte';
 import { createApp } from './commands/app';
 import { installControl } from './control/control';
 import { createLessonLoader } from './services/catalog/catalog';
+import { startRouter } from './services/router/router';
 import { createRealTimeDriver } from './time/real-time-driver';
 import App from './ui/App.svelte';
 import './ui/tokens.css';
@@ -41,4 +42,15 @@ const loader = createLessonLoader({
   base: import.meta.env.BASE_URL,
 });
 
-mount(App, { target, props: { app, loader, home: import.meta.env.BASE_URL } });
+// The address holds the place in the lesson (M2.2, architecture §5). It is applied through
+// commands before the page is drawn, so the first lesson loaded is the one in the address.
+const router = startRouter({
+  window,
+  store: app.store,
+  run: (id, params) => app.registry.run(id, params),
+});
+
+mount(App, {
+  target,
+  props: { app, loader, home: import.meta.env.BASE_URL, notFound: router.notFound },
+});
