@@ -11,6 +11,7 @@ in. Keep the same keys and the same `{names}`.
 - `app.tagline` How attacks work and how to stop them
 - `app.description` How attacks work and how to stop them: step-by-step lessons.
 - `app.language` Site language
+- `meta.lesson.description` {class}. {impact}. How to stop it: {defence}.
 - `format.decimal` .
 
 ## Page not found

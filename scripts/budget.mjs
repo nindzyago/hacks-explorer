@@ -6,6 +6,7 @@
 //   glossary     each data/glossary/*.json, the index <lang>.json and every chunk of definitions
 //                <lang>.<hash>.json (M2.4, CI3; loaded on the first opened term): ≤ 30 KB
 //   topics       each data/topics/*.json (M2.1b, loaded when the lessons panel opens): ≤ 30 KB
+//   card         each cards/*.png, the social cards link previews fetch (M4.3): ≤ 100 KB
 // Usage: node scripts/budget.mjs [folder]   (default dist)
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -16,6 +17,7 @@ export const FIRST_LOAD_JS_GZIP = 150 * 1024;
 export const LESSON_FILE = 30 * 1024;
 export const GLOSSARY_FILE = 30 * 1024;
 export const TOPICS_FILE = 30 * 1024;
+export const CARD_FILE = 100 * 1024;
 
 const SCRIPT = /<script\b[^>]*\bsrc="([^"]+)"/g;
 const PRELOAD = /<link\b[^>]*\brel="modulepreload"[^>]*\bhref="([^"]+)"/g;
@@ -39,7 +41,8 @@ export function firstLoadScripts(html) {
  * @returns {{ firstLoad: { files: { path: string, gzip: number }[], gzip: number },
  *             lessons: { path: string, bytes: number }[],
  *             glossaries: { path: string, bytes: number }[],
- *             topics: { path: string, bytes: number }[], catalog: number | null,
+ *             topics: { path: string, bytes: number }[],
+ *             cards: { path: string, bytes: number }[], catalog: number | null,
  *             problems: string[] }}
  */
 export function measure(folder) {
@@ -51,6 +54,7 @@ export function measure(folder) {
       lessons: [],
       glossaries: [],
       topics: [],
+      cards: [],
       catalog: null,
       problems: [`${indexPath}: no such file; build the site first`],
     };
@@ -121,12 +125,29 @@ export function measure(folder) {
       );
     }
   }
+  const cardsDir = join(folder, 'cards');
+  const cards = existsSync(cardsDir)
+    ? readdirSync(cardsDir)
+        .filter((name) => name.endsWith('.png'))
+        .sort()
+        .map((name) => ({
+          path: `cards/${name}`,
+          bytes: readFileSync(join(cardsDir, name)).length,
+        }))
+    : [];
+  for (const card of cards) {
+    if (card.bytes > CARD_FILE) {
+      problems.push(
+        `${card.path}: ${String(card.bytes)} bytes; a social card is at most ${String(CARD_FILE)}`,
+      );
+    }
+  }
   const catalogPath = join(folder, 'data', 'catalog.json');
   const catalog = existsSync(catalogPath) ? readFileSync(catalogPath).length : null;
   if (catalog === null)
     problems.push(`${catalogPath}: no catalog; the lesson data plugin did not run`);
   if (lessons.length === 0) problems.push(`${lessonsDir}: no lesson files`);
-  return { firstLoad: { files, gzip }, lessons, glossaries, topics, catalog, problems };
+  return { firstLoad: { files, gzip }, lessons, glossaries, topics, cards, catalog, problems };
 }
 
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
@@ -134,7 +155,7 @@ const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const folder = resolve(root, process.argv[2] ?? 'dist');
-  const { firstLoad, lessons, glossaries, topics, catalog, problems } = measure(folder);
+  const { firstLoad, lessons, glossaries, topics, cards, catalog, problems } = measure(folder);
   console.log(`budget: ${folder}`);
   console.log(
     `  first load JS (gzip): ${kb(firstLoad.gzip)} of ${kb(FIRST_LOAD_JS_GZIP)}  [${firstLoad.files.map((f) => `${f.path} ${kb(f.gzip)}`).join(', ')}]`,
@@ -148,6 +169,12 @@ function main() {
   }
   for (const file of topics) {
     console.log(`  ${file.path}: ${kb(file.bytes)} of ${kb(TOPICS_FILE)}`);
+  }
+  if (cards.length > 0) {
+    const largest = Math.max(...cards.map((c) => c.bytes));
+    console.log(
+      `  cards/*.png: ${String(cards.length)} files, largest ${kb(largest)} of ${kb(CARD_FILE)}`,
+    );
   }
   for (const problem of problems) console.error(`budget: ${problem}`);
   if (problems.length > 0) process.exit(1);

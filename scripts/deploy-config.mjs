@@ -192,6 +192,11 @@ export function checkWrangler(text, today = new Date().toISOString().slice(0, 10
     if (assets.not_found_handling !== 'single-page-application') {
       problems.push('assets.not_found_handling must be single-page-application');
     }
+    if (assets.html_handling !== 'auto-trailing-slash') {
+      problems.push(
+        'assets.html_handling must be auto-trailing-slash: /ru/lesson/K1 is served from ru/lesson/K1.html (M4.3)',
+      );
+    }
   }
   const previews = config.previews;
   if (previews === null || typeof previews !== 'object' || Array.isArray(previews)) {

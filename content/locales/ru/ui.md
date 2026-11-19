@@ -11,6 +11,7 @@
 - `app.tagline` Как устроены атаки и как от них защититься
 - `app.description` Как устроены атаки и как от них защититься: уроки по шагам.
 - `app.language` Язык сайта
+- `meta.lesson.description` {class}. {impact}. Как защититься: {defence}.
 - `format.decimal` ,
 
 ## Страница не найдена

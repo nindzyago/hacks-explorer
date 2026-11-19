@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { afterAll, describe, expect, it } from 'vitest';
 import {
+  CARD_FILE,
   FIRST_LOAD_JS_GZIP,
   GLOSSARY_FILE,
   TOPICS_FILE,
@@ -85,6 +86,17 @@ describe('measure', () => {
     writeFileSync(join(dir, 'data', 'topics', 'ru.json'), 'x'.repeat(TOPICS_FILE + 1));
     expect(measure(dir).problems).toEqual([
       'data/topics/ru.json: 30721 bytes; a topics file is at most 30720',
+    ]);
+  });
+
+  it('measures the social cards and fails one over 100 KB (M4.3)', () => {
+    const dir = site('cards');
+    mkdirSync(join(dir, 'cards'), { recursive: true });
+    writeFileSync(join(dir, 'cards', 'B1.ru.png'), 'png');
+    expect(measure(dir).cards).toEqual([{ path: 'cards/B1.ru.png', bytes: 3 }]);
+    writeFileSync(join(dir, 'cards', 'B1.ru.png'), 'x'.repeat(CARD_FILE + 1));
+    expect(measure(dir).problems).toEqual([
+      'cards/B1.ru.png: 102401 bytes; a social card is at most 102400',
     ]);
   });
 

@@ -57,8 +57,27 @@ export interface SiteLocalesData {
   readonly strings: Readonly<Record<string, Readonly<Record<string, string>>>>;
 }
 
+/** What the static pages and the social cards need of one lesson in one site language (M4.3). */
+export interface PageLesson {
+  readonly id: string;
+  readonly language: string;
+  readonly title: string;
+  readonly passport: {
+    readonly class: string | null;
+    readonly impact: string | null;
+    readonly defence: string | null;
+  };
+  /** The icon names of the participants, in their order, each once. */
+  readonly icons: readonly string[];
+}
+
 export type LessonDataResult =
-  | { readonly ok: true; readonly files: readonly DataFile[]; readonly locales: SiteLocalesData }
+  | {
+      readonly ok: true;
+      readonly files: readonly DataFile[];
+      readonly locales: SiteLocalesData;
+      readonly pages: readonly PageLesson[];
+    }
   | { readonly ok: false; readonly errors: readonly string[] };
 
 export const LOCALES_MODULE = 'virtual:site-locales';
@@ -150,6 +169,7 @@ export function buildLessonData(content: {
 
   const errors: string[] = [];
   const files: DataFile[] = [];
+  const pages: PageLesson[] = [];
   const matchers = new Map<string, Matcher>(
     glossaries.glossaries.map((g) => [g.language, glossaryMatcher(g)]),
   );
@@ -169,6 +189,17 @@ export function buildLessonData(content: {
     }
     const hash = createHash('sha256').update(text).digest('hex').slice(0, 8);
     files.push({ path: lessonFile(site.id, site.language, hash), text });
+    pages.push({
+      id: site.id,
+      language: site.language,
+      title: site.title,
+      passport: {
+        class: site.passport.class,
+        impact: site.passport.impact,
+        defence: site.passport.defence,
+      },
+      icons: [...new Set(site.participants.map((p) => p.icon))],
+    });
     const entry = entries.get(site.id) ?? { first: site, lessons: [], hashes: [] };
     entry.lessons.push(site);
     entry.hashes.push(hash);
@@ -221,7 +252,12 @@ export function buildLessonData(content: {
     files.push({ path: topicsFile(code), text });
   }
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, files, locales: { languages: locales.languages, strings: locales.strings } };
+  return {
+    ok: true,
+    files,
+    locales: { languages: locales.languages, strings: locales.strings },
+    pages,
+  };
 }
 
 export interface LessonDataOptions {

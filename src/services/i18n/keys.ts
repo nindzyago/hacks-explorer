@@ -8,6 +8,7 @@ export const UI_KEYS = [
   'app.tagline',
   'app.description',
   'app.language',
+  'meta.lesson.description',
   'format.decimal',
   'page.notFound.title',
   'page.notFound.text',
