@@ -52,6 +52,9 @@
   --code-ink: var(--ink);
   --code-mark: var(--scene-attack-text);
 
+  /* Behind the side panel (M2.1b): the ink, translucent, so the page reads as set aside. */
+  --scrim: #15212c66;
+
   /* Type */
   --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;

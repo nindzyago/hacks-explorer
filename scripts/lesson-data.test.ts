@@ -8,6 +8,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { readCatalog, readSiteLesson } from '../src/core/lesson/site-read';
 import { CATALOG_FILE, MAX_LESSON_FILE_BYTES, lessonFile } from '../src/core/lesson/site';
 import { MAX_GLOSSARY_FILE_BYTES, glossaryFile, readSiteGlossary } from '../src/core/glossary/site';
+import { MAX_TOPICS_FILE_BYTES, readSiteTopics, topicsFile } from '../src/core/topics/site';
 import { readContent } from './content-files.mjs';
 import { buildLessonData, lessonData } from './lesson-data';
 
@@ -87,7 +88,13 @@ function project(name: string, lessons: Record<string, string>): string {
   const root = join(work, name);
   const files: Record<string, string> = {};
   const languages = real.languages === null ? [] : [real.languages];
-  for (const f of [...real.lessons, ...real.glossaries, ...real.ui, ...languages]) {
+  for (const f of [
+    ...real.lessons,
+    ...real.glossaries,
+    ...real.ui,
+    ...languages,
+    ...real.catalogs,
+  ]) {
     files[f.path] = f.text;
   }
   for (const [path, text] of Object.entries({ ...files, ...lessons })) {
@@ -148,7 +155,11 @@ describe('vite build', () => {
     });
     if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
     const names = out.output.map((o) => o.fileName).filter((n) => n.startsWith('data/'));
-    expect(names).toHaveLength(real.lessons.length + 1 + real.glossaries.length);
+    // The catalog, a file per lesson, the glossary and the topics of each site language.
+    expect(names).toHaveLength(
+      real.lessons.length + 1 + real.glossaries.length + real.catalogs.length,
+    );
+    expect(names).toContain('data/topics/ru.json');
     expect(names).toContain(CATALOG_FILE);
     expect(names).toContain('data/glossary/ru.json');
     expect(names.some((n) => /^data\/lessons\/B1\.ru\.[0-9a-f]{8}\.json$/.test(n))).toBe(true);
@@ -427,3 +438,63 @@ async function bundledLocales(root: string): Promise<string> {
   if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
   return out.output.map((o) => ('code' in o ? o.code : '')).join('\n');
 }
+
+// ---------------------------------------------------------------------------------------------
+// M2.1b (E3, K112): every topic of the site, per language, for the lessons panel.
+
+describe('topics of the lessons panel', () => {
+  it.each(['ru', 'en'])(
+    'ships every topic of the site in %s; the lessons that exist are ready',
+    (lang) => {
+      const result = buildLessonData(real);
+      if (!result.ok) throw new Error(result.errors.join('\n'));
+      const topics = readSiteTopics(JSON.parse(fileText(result.files, topicsFile(lang))), lang);
+      if (!topics.ok) throw new Error(topics.error.message);
+      const all = topics.value.sections.flatMap((s) => s.topics);
+      expect(topics.value.sections).toHaveLength(12);
+      expect(all).toHaveLength(75);
+      const ready = all.filter((t) => t.ready).map((t) => t.id);
+      const lessonIds = real.lessons
+        .filter((f) => f.path.endsWith(`/${lang}.md`))
+        .map((f) => /lessons\/([A-Z][0-9]+)\//.exec(f.path)?.[1] ?? '');
+      expect(ready.sort()).toEqual(lessonIds.sort());
+      const bytes = new TextEncoder().encode(fileText(result.files, topicsFile(lang))).length;
+      expect(bytes).toBeLessThanOrEqual(MAX_TOPICS_FILE_BYTES);
+    },
+  );
+
+  it('a lesson folder that is not in the catalog fails the build and names it', () => {
+    const catalogs = real.catalogs.map((f) => ({
+      ...f,
+      text: f.text.replace(/^- `B1` .*\n/m, ''),
+    }));
+    const result = buildLessonData({ ...real, catalogs });
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors.join('\n')).toContain(
+      'content/lessons/B1:1:1: lesson B1 is not in content/locales/ru/catalog.md',
+    );
+  });
+
+  it('a site language without its catalog fails the build (K94)', () => {
+    const result = buildLessonData({
+      ...real,
+      catalogs: real.catalogs.filter((f) => !f.path.includes('/en/')),
+    });
+    expect(!result.ok && result.errors.join('\n')).toContain(
+      'content/locales/en/catalog.md:1:1: en is a site language',
+    );
+  });
+
+  it('a broken catalog line fails with its file and line', () => {
+    const catalogs = real.catalogs.map((f) =>
+      f.path.includes('/ru/') ? { ...f, text: f.text.replace('- `B8` ', '- `B88x` ') } : f,
+    );
+    const result = buildLessonData({ ...real, catalogs });
+    const ru = fileText(real.catalogs, 'content/locales/ru/catalog.md');
+    const line = ru.slice(0, ru.indexOf('- `B8` ')).split('\n').length;
+    expect(!result.ok && result.errors.join('\n')).toContain(
+      `content/locales/ru/catalog.md:${String(line)}:1: a topic looks like`,
+    );
+  });
+});

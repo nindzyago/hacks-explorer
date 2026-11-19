@@ -4,6 +4,7 @@
 //   first load   JS that index.html loads (scripts and module preloads), gzip: ≤ 150 KB
 //   lesson file  each data/lessons/*.json, as served (bytes, no compression): ≤ 30 KB
 //   glossary     each data/glossary/*.json (M2.4, loaded on the first opened term): ≤ 30 KB
+//   topics       each data/topics/*.json (M2.1b, loaded when the lessons panel opens): ≤ 30 KB
 // Usage: node scripts/budget.mjs [folder]   (default dist)
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -13,6 +14,7 @@ import { gzipSync } from 'node:zlib';
 export const FIRST_LOAD_JS_GZIP = 150 * 1024;
 export const LESSON_FILE = 30 * 1024;
 export const GLOSSARY_FILE = 30 * 1024;
+export const TOPICS_FILE = 30 * 1024;
 
 const SCRIPT = /<script\b[^>]*\bsrc="([^"]+)"/g;
 const PRELOAD = /<link\b[^>]*\brel="modulepreload"[^>]*\bhref="([^"]+)"/g;
@@ -35,7 +37,8 @@ export function firstLoadScripts(html) {
  * @param {string} folder a built site
  * @returns {{ firstLoad: { files: { path: string, gzip: number }[], gzip: number },
  *             lessons: { path: string, bytes: number }[],
- *             glossaries: { path: string, bytes: number }[], catalog: number | null,
+ *             glossaries: { path: string, bytes: number }[],
+ *             topics: { path: string, bytes: number }[], catalog: number | null,
  *             problems: string[] }}
  */
 export function measure(folder) {
@@ -46,6 +49,7 @@ export function measure(folder) {
       firstLoad: { files: [], gzip: 0 },
       lessons: [],
       glossaries: [],
+      topics: [],
       catalog: null,
       problems: [`${indexPath}: no such file; build the site first`],
     };
@@ -99,12 +103,29 @@ export function measure(folder) {
       );
     }
   }
+  const topicsDir = join(folder, 'data', 'topics');
+  const topics = existsSync(topicsDir)
+    ? readdirSync(topicsDir)
+        .filter((name) => name.endsWith('.json'))
+        .sort()
+        .map((name) => ({
+          path: `data/topics/${name}`,
+          bytes: readFileSync(join(topicsDir, name)).length,
+        }))
+    : [];
+  for (const file of topics) {
+    if (file.bytes > TOPICS_FILE) {
+      problems.push(
+        `${file.path}: ${String(file.bytes)} bytes; a topics file is at most ${String(TOPICS_FILE)}`,
+      );
+    }
+  }
   const catalogPath = join(folder, 'data', 'catalog.json');
   const catalog = existsSync(catalogPath) ? readFileSync(catalogPath).length : null;
   if (catalog === null)
     problems.push(`${catalogPath}: no catalog; the lesson data plugin did not run`);
   if (lessons.length === 0) problems.push(`${lessonsDir}: no lesson files`);
-  return { firstLoad: { files, gzip }, lessons, glossaries, catalog, problems };
+  return { firstLoad: { files, gzip }, lessons, glossaries, topics, catalog, problems };
 }
 
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
@@ -112,7 +133,7 @@ const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 function main() {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..');
   const folder = resolve(root, process.argv[2] ?? 'dist');
-  const { firstLoad, lessons, glossaries, catalog, problems } = measure(folder);
+  const { firstLoad, lessons, glossaries, topics, catalog, problems } = measure(folder);
   console.log(`budget: ${folder}`);
   console.log(
     `  first load JS (gzip): ${kb(firstLoad.gzip)} of ${kb(FIRST_LOAD_JS_GZIP)}  [${firstLoad.files.map((f) => `${f.path} ${kb(f.gzip)}`).join(', ')}]`,
@@ -123,6 +144,9 @@ function main() {
   }
   for (const glossary of glossaries) {
     console.log(`  ${glossary.path}: ${kb(glossary.bytes)} of ${kb(GLOSSARY_FILE)}`);
+  }
+  for (const file of topics) {
+    console.log(`  ${file.path}: ${kb(file.bytes)} of ${kb(TOPICS_FILE)}`);
   }
   for (const problem of problems) console.error(`budget: ${problem}`);
   if (problems.length > 0) process.exit(1);

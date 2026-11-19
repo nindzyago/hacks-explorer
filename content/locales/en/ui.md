@@ -129,6 +129,34 @@ in. Keep the same keys and the same `{names}`.
 - `glossary.see` See also
 - `glossary.lessons` Lessons
 
+## Lessons and glossary panel
+
+- `drawer.lessons` Lessons
+- `drawer.glossary` Glossary
+- `drawer.label` Lessons and glossary
+- `drawer.tabs` What the panel shows
+- `drawer.close` Close the panel
+- `catalog.search` Find a lesson
+- `catalog.searchHint` For example, SQL or B1
+- `catalog.section` Section
+- `catalog.allSections` All sections
+- `catalog.total` Lessons ready: {ready} of {count}
+- `catalog.ready` {ready} of {count} ready
+- `catalog.soon` soon
+- `catalog.soonTitle` This lesson is still being written
+- `catalog.open` open
+- `catalog.current` open now
+- `catalog.found` Topics found: {count}
+- `catalog.empty` Nothing found. Check the spelling or choose another section.
+- `catalog.reset` Clear the search
+- `catalog.loading` Loading the list of lessons…
+- `catalog.error` The list of lessons could not be loaded.
+- `glossaryList.search` Find a word
+- `glossaryList.searchHint` For example, phishing or SQL
+- `glossaryList.found` Words found: {count}
+- `glossaryList.empty` This word is not in the glossary. Check the spelling.
+- `glossaryList.back` All words
+
 ## Command names
 
 - `command.theme.set` Colour theme
@@ -136,6 +164,8 @@ in. Keep the same keys and the same `{names}`.
 - `command.locale.set` Site language
 - `command.glossary.open` Open a definition
 - `command.glossary.close` Close the definition
+- `command.drawer.open` Open the lessons and glossary panel
+- `command.drawer.close` Close the lessons and glossary panel
 - `command.clock.set` Set the player clock
 - `command.clock.tick` Move the player clock
 - `command.player.play` Play

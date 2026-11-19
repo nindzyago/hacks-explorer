@@ -129,6 +129,34 @@
 - `glossary.see` См. также
 - `glossary.lessons` Уроки
 
+## Панель уроков и словаря
+
+- `drawer.lessons` Уроки
+- `drawer.glossary` Словарь
+- `drawer.label` Уроки и словарь
+- `drawer.tabs` Что показать в панели
+- `drawer.close` Закрыть панель
+- `catalog.search` Найти урок
+- `catalog.searchHint` Например, SQL или B1
+- `catalog.section` Раздел
+- `catalog.allSections` Все разделы
+- `catalog.total` Готово уроков: {ready} из {count}
+- `catalog.ready` готово {ready} из {count}
+- `catalog.soon` скоро
+- `catalog.soonTitle` Этот урок ещё пишется
+- `catalog.open` открыть
+- `catalog.current` открыт сейчас
+- `catalog.found` Найдено тем: {count}
+- `catalog.empty` Ничего не нашлось. Проверьте написание или выберите другой раздел.
+- `catalog.reset` Сбросить поиск
+- `catalog.loading` Загружаем список уроков…
+- `catalog.error` Не удалось загрузить список уроков.
+- `glossaryList.search` Найти слово
+- `glossaryList.searchHint` Например, фишинг или SQL
+- `glossaryList.found` Найдено слов: {count}
+- `glossaryList.empty` Такого слова в словаре нет. Проверьте написание.
+- `glossaryList.back` Все слова
+
 ## Названия команд
 
 - `command.theme.set` Тема оформления
@@ -136,6 +164,8 @@
 - `command.locale.set` Язык сайта
 - `command.glossary.open` Открыть определение
 - `command.glossary.close` Закрыть определение
+- `command.drawer.open` Открыть панель уроков и словаря
+- `command.drawer.close` Закрыть панель уроков и словаря
 - `command.clock.set` Перевести часы плеера
 - `command.clock.tick` Сдвинуть часы плеера
 - `command.player.play` Пуск

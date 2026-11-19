@@ -11,6 +11,7 @@ import {
   storedLanguage,
 } from './services/i18n/i18n';
 import { startRouter } from './services/router/router';
+import { createTopicsLoader } from './services/topics/topics';
 import { createRealTimeDriver } from './time/real-time-driver';
 import App from './ui/App.svelte';
 import './ui/tokens.css';
@@ -65,6 +66,12 @@ const glossary = createGlossaryLoader({
   base: import.meta.env.BASE_URL,
 });
 
+// Every topic of the site (M2.1b) loads the first time the lessons panel opens.
+const topics = createTopicsLoader({
+  fetch: (url) => window.fetch(url),
+  base: import.meta.env.BASE_URL,
+});
+
 // The language (M2.3, D3, K96): the address wins; without one, what the reader chose before
 // (localStorage), else the browser's languages. Storage is hostile and may throw (L0.2).
 const storage = () => window.localStorage;
@@ -101,6 +108,7 @@ mount(App, {
     app,
     loader,
     glossary,
+    topics,
     locales,
     home: import.meta.env.BASE_URL,
     notFound: router.notFound,

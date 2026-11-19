@@ -7,6 +7,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { checkGlossaries } from '../src/core/glossary/check';
 import { checkContent, formatError } from '../src/core/lesson/check';
 import { unknownId } from '../src/core/lesson/ids';
+import { checkCatalogs } from '../src/core/topics/check';
 import { ROOT, readContent } from './content-files.mjs';
 
 describe('content', () => {
@@ -28,6 +29,21 @@ describe('content', () => {
     });
     expect(checked.errors.map(formatError).join('\n')).toBe('');
     expect(checked.glossaries[0]?.terms.length).toBeGreaterThanOrEqual(25);
+  });
+
+  // M2.1b (K112): the catalog of every language lists every topic; every lesson is in it.
+  it('has catalogs of topics that pass the catalog checker', () => {
+    const { catalogs } = readContent();
+    expect(catalogs.map((f) => f.path).sort()).toEqual([
+      'content/locales/en/catalog.md',
+      'content/locales/ru/catalog.md',
+    ]);
+    const checked = checkCatalogs(catalogs, {
+      lessons: result.lessons,
+      lessonPaths: lessons.map((f) => f.path),
+      siteLanguages: ['ru', 'en'],
+    });
+    expect(checked.errors.map(formatError).join('\n')).toBe('');
   });
 
   it('passes the lesson checker', () => {
@@ -137,6 +153,7 @@ describe('readContent', () => {
       glossaries: [],
       ui: [],
       languages: null,
+      catalogs: [],
     });
     rmSync(empty, { recursive: true, force: true });
   });

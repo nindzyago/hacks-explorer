@@ -9,4 +9,6 @@ export declare function readContent(root?: string): {
   ui: { path: string; text: string }[];
   /** content/locales/languages.md (M2.3, K94), null when missing. */
   languages: { path: string; text: string } | null;
+  /** content/locales/<lang>/catalog.md (M2.1b, K112). */
+  catalogs: { path: string; text: string }[];
 };
