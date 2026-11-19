@@ -17,6 +17,9 @@
     // it is the default.
     "html_handling": "auto-trailing-slash"
   },
+  // M4.7 (K120): the site on the owner's domain. Cloudflare creates the DNS record and the
+  // certificate on deploy (zone antipic.com is in the same account).
+  "routes": [{ "pattern": "hacks.antipic.com", "custom_domain": true }],
   // The draft address (main) and pull request previews live on workers.dev.
   "workers_dev": true,
   // Said out loud: without it wrangler warns and falls back to the account default.

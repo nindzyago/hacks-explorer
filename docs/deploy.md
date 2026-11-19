@@ -176,3 +176,12 @@ M4.7.
 - **M4.7, публикация:** **Settings** → **Domains & Routes** → **Add** → **Custom Domain** →
   `hacks.antipic.com` → **Add Custom Domain**. Cloudflare сам создаёт запись DNS и сертификат; у
   имени не должно быть записи CNAME.
+
+## Домен сайта (M4.7, K120)
+
+Основная версия открывается по адресу https://hacks.antipic.com. Домен подключён строкой
+`routes` в `wrangler.jsonc` (`custom_domain: true`): при выкладке Cloudflare сам создаёт запись
+DNS в зоне antipic.com (она в том же аккаунте) и сертификат. Черновой адрес на workers.dev
+продолжает работать и закрыт от поиска (`X-Robots-Tag: noindex` в `public/_headers`); на домене
+этого заголовка нет. Проверка `scripts/deploy-config.mjs` пропускает только этот один домен.
+Откатить: убрать `routes` и выложить — домен перестанет отвечать, черновой адрес останется.
