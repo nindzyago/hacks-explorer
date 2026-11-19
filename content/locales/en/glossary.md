@@ -10,6 +10,7 @@
 - `mail` Email
 - `network` Network
 - `catalogs` Catalogs and scores
+- `malware` Malware
 
 ## `attacker` Attacker
 
@@ -475,3 +476,41 @@ Forms: MITRE ATT&CK, ATT&CK
 
 MITRE's open knowledge base of attacker tactics and techniques, built from real-world attacks.
 Each technique has its own number: T1566 is phishing, T1566.002 is spearphishing with a link.
+
+## `ransomware` Ransomware
+
+`category` malware · `see` backup, network-segmentation, macro · `lessons` H2
+
+Forms: ransomware
+
+Malicious software that encrypts the victim's files and demands a ransom for the key. Before that
+it often deletes backups and copies the data out, to threaten publication as well. In MITRE
+ATT&CK encrypting data to cause harm is technique T1486.
+
+## `macro` Macro
+
+`category` malware · `see` ransomware, phishing · `lessons` H2
+
+Forms: macro, macros
+
+A small program inside an office document that automates work with it. A harmful macro can
+download and start another program, so macros in files from email are best kept turned off.
+
+## `backup` Backup
+
+`category` malware · `see` ransomware · `lessons` H2
+
+Forms: backup, backups
+
+A copy of data that it can be restored from after a failure or an attack. Only a copy the
+ransomware cannot reach saves you from it: one disconnected from the network or immutable. The
+3-2-1 rule: three copies, two types of media, one copy outside the office.
+
+## `network-segmentation` Network segmentation
+
+`category` malware · `see` ransomware, trust-boundary · `lessons` H2
+
+Forms: network segmentation, segmentation
+
+Splitting a network into parts with rules on who may talk to whom. Work computers do not see every
+server, so an infection of one machine does not spread through the whole company.

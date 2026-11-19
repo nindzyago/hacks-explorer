@@ -9,15 +9,10 @@ import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
 import { expect, openApp, sceneReady, test } from './support';
 
-// Lessons are added in parallel (K120): the ready count follows content/lessons, not a literal.
-const READY = readdirSync('content/lessons', { withFileTypes: true }).filter((d) =>
-  d.isDirectory(),
-).length;
-
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
-/** Lessons in content/lessons: the panel counts them as ready (grows as M3 lessons land). */
-const READY = readdirSync('content/lessons').filter((name) => /^[A-Z]\d+$/.test(name)).length;
+/** Lessons in content/lessons: the ready count grows with every lesson (M3), so it is not a literal. */
+const READY = readdirSync('content/lessons').length;
 
 async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   await sceneReady(page);
