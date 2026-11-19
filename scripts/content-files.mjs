@@ -23,10 +23,12 @@ function walk(dir, out) {
 }
 
 /**
- * Every file under content/lessons and content/sources.md, as `{ path, text }` with paths
- * relative to the repository root and forward slashes.
+ * Every file under content/lessons, content/sources.md and the glossaries
+ * (`content/locales/<lang>/glossary.md`, M2.4), as `{ path, text }` with paths relative to the
+ * repository root and forward slashes.
  * @param {string} [root]
- * @returns {{ lessons: { path: string, text: string }[], sources: { path: string, text: string } }}
+ * @returns {{ lessons: { path: string, text: string }[], sources: { path: string, text: string },
+ *             glossaries: { path: string, text: string }[] }}
  */
 export function readContent(root = ROOT) {
   const toFile = (full) => ({
@@ -42,5 +44,8 @@ export function readContent(root = ROOT) {
     if (error?.code !== 'ENOENT') throw error;
     sources = { path: 'content/sources.md', text: '' };
   }
-  return { lessons, sources };
+  const glossaries = walk(join(root, 'content', 'locales'), [])
+    .map(toFile)
+    .filter((f) => f.path.endsWith('/glossary.md'));
+  return { lessons, sources, glossaries };
 }

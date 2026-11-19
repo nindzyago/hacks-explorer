@@ -21,14 +21,14 @@
 
 ## Участники
 
-- `attacker` **Атакующий** — 203.0.113.66
-- `server` **Веб-сервер** — 198.51.100.10
-- `db` **База данных** — таблица users
+- `attacker` **Атакующий** — 203.0.113.66 · `term:attacker`
+- `server` **Веб-сервер** — 198.51.100.10 · `term:web-server`
+- `db` **База данных** — таблица users · `term:database`
 
 ## Зоны
 
 - `internet` Интернет: `attacker`
-- `site` Сайт shop.example: `server`, `db`
+- `site` Сайт shop.example: `server`, `db` · `term:trust-boundary`
 
 ## Шаги
 

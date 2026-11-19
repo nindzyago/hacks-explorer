@@ -62,6 +62,7 @@ describe('initialState', () => {
         counts: { without: 0, with: 0 },
       },
       depth: 'simple',
+      glossary: null,
     });
     expect(Object.isFrozen(state)).toBe(true);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);

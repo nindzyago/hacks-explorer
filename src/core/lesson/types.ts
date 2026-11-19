@@ -90,6 +90,8 @@ export interface Participant {
   readonly note: string;
   /** Icon name from `content/icons`; the id unless the line says `icon:<name>`. */
   readonly icon: string;
+  /** The glossary term the participant explains (`term:<id>`, M2.4), or null. */
+  readonly term: string | null;
   readonly position: Position;
 }
 
@@ -100,6 +102,8 @@ export interface Zone {
   readonly members: readonly string[];
   /** A dangerous zone (a fake site) is drawn red. */
   readonly danger: boolean;
+  /** The glossary term the zone explains (`term:<id>`, M2.4), or null. */
+  readonly term: string | null;
   readonly position: Position;
 }
 
@@ -200,6 +204,10 @@ export type LessonErrorCode =
   | 'unknown-level'
   | 'missing-level'
   | 'unknown-participant'
+  // glossary (M2.4)
+  | 'unknown-term'
+  | 'unknown-lesson'
+  | 'missing-glossary'
   // content rules (S8, L4, L5)
   | 'too-many-participants'
   | 'zone-not-contiguous'

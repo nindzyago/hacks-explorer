@@ -24,16 +24,16 @@
 
 ## Участники
 
-- `attacker` **Атакующий** — 203.0.113.66
-- `user` **Сотрудник** — 192.0.2.24
-- `fake` **Поддельная страница** — bank-login.example · `icon:browser`
-- `bank` **Банк** — bank.example
+- `attacker` **Атакующий** — 203.0.113.66 · `term:attacker`
+- `user` **Сотрудник** — 192.0.2.24 · `term:victim`
+- `fake` **Поддельная страница** — bank-login.example · `icon:browser` · `term:fake-page`
+- `bank` **Банк** — bank.example · `term:domain`
 
 ## Зоны
 
 - `internet` Интернет: `attacker`
 - `office` Офис: `user`
-- `forgery` Подделка: `fake` · `danger`
+- `forgery` Подделка: `fake` · `danger` · `term:phishing`
 - `bank-site` Банк: `bank`
 
 ## Шаги

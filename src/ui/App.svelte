@@ -6,10 +6,12 @@
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
+  import type { GlossaryLoader } from '../services/glossary/glossary';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
   import DefenceToggle from './DefenceToggle.svelte';
   import EventFeed from './EventFeed.svelte';
+  import GlossaryPopover from './GlossaryPopover.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
   import { loadErrorText, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
@@ -18,8 +20,9 @@
   const {
     app,
     loader,
+    glossary,
     home = '/',
-  }: { app: AppContext; loader: LessonLoader; home?: string } = $props();
+  }: { app: AppContext; loader: LessonLoader; glossary: GlossaryLoader; home?: string } = $props();
   const store = $derived(app.store);
   const player = $derived($store.player);
 
@@ -176,6 +179,8 @@
         {/if}
       </section>
     </div>
+    <!-- M2.4: the definition of a glossary term, opened from the text or the scene. -->
+    <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} />
   {/if}
 </main>
 

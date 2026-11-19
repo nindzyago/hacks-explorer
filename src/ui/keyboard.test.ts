@@ -114,4 +114,15 @@ describe('keyCommand', () => {
       expect(keyCommand(press('d', { target }), false), tag).toBe('defence.toggle');
     }
   });
+
+  it('leaves every key to an open definition of a term (M2.4): the player takes none', () => {
+    for (const tag of ['div', 'button']) {
+      const target: KeyTarget = { tag, type: '', editable: false, role: '', dialog: true };
+      for (const key of [' ', 'ArrowLeft', 'ArrowRight', 'd', 'в', 'Escape', 'Enter']) {
+        expect(
+          keyCommand(press(key, { code: key === ' ' ? 'Space' : '', target }), false),
+        ).toBeNull();
+      }
+    }
+  });
 });

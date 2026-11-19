@@ -44,11 +44,12 @@ function utf8Bytes(text: string): number {
   return text.length * 3 <= MAX_FILE_BYTES ? text.length : new TextEncoder().encode(text).length;
 }
 
-function failure(code: LoadError['code'], message: string): { ok: false; error: LoadError } {
+export function failure(code: LoadError['code'], message: string): { ok: false; error: LoadError } {
   return { ok: false, error: { code, message } };
 }
 
-async function fetchJson(fetch: FetchLike, url: string): Promise<Loaded<unknown>> {
+/** Fetches a JSON file of this site as hostile input (size, status, syntax); never throws. */
+export async function fetchJson(fetch: FetchLike, url: string): Promise<Loaded<unknown>> {
   const tooLarge = failure('bad-data', `${url}: the file is over ${String(MAX_FILE_BYTES)} bytes`);
   let body: unknown;
   try {

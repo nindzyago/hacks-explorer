@@ -362,8 +362,50 @@ function parseSources(
 // ---------------------------------------------------------------------------------------------
 // Participants and zones
 
-const PARTICIPANT = /^`([^`]*)`\s+\*\*([^*`]+)\*\*(?:\s+—\s+(.+?))?(?:\s+·\s+`icon:([^`]*)`)?$/;
-const PARTICIPANT_HINT = '- `server` **Веб-сервер** — 198.51.100.10 (· `icon:name` optional)';
+const PARTICIPANT = /^`([^`]*)`\s+\*\*([^*`]+)\*\*(?:\s+—\s+(.+?))?((?:\s+·\s+`[^`]*`)*)$/;
+const PARTICIPANT_HINT =
+  '- `server` **Веб-сервер** — 198.51.100.10 (· `icon:name` and · `term:id` optional)';
+
+/**
+ * The service words at the end of a participant or zone line (` · `icon:name` · `term:id``):
+ * each allowed word at most once. `term:<id>` links the participant or zone to a glossary term
+ * (M2.4, K98); the glossary checker makes sure the term exists.
+ */
+function tailWords(
+  ctx: Context,
+  at: Position,
+  path: string,
+  tail: string,
+  allowed: readonly string[],
+): Map<string, string> | null {
+  const words = new Map<string, string>();
+  for (const m of tail.matchAll(/`([^`]*)`/g)) {
+    const word = m[1] ?? '';
+    const colon = word.indexOf(':');
+    const key = colon < 0 ? word : word.slice(0, colon);
+    const value = colon < 0 ? '' : word.slice(colon + 1);
+    if (!allowed.includes(key) || colon < 0 !== (key === 'danger')) {
+      ctx.reporter.add(
+        at,
+        path,
+        'unknown-word',
+        `unknown word \`${quote(word, 32)}\` at the end of the line; allowed: ${allowed.map((a) => (a === 'danger' ? '`danger`' : `\`${a}:…\``)).join(', ')}`,
+      );
+      return null;
+    }
+    if (words.has(key)) {
+      ctx.reporter.add(at, path, 'duplicate', `\`${key}\` is given twice on this line`);
+      return null;
+    }
+    if (
+      key !== 'danger' &&
+      !checkId(ctx, at, path, key === 'icon' ? 'icon name' : 'term id', value)
+    )
+      return null;
+    words.set(key, value);
+  }
+  return words;
+}
 
 function checkId(ctx: Context, at: Position, path: string, what: string, id: string): boolean {
   if (ID.test(id)) return true;
@@ -388,21 +430,29 @@ function parseParticipants(ctx: Context, nodes: readonly RootContent[]): Partici
       );
       continue;
     }
-    const [, id = '', name = '', note = '', icon] = match;
+    const [, id = '', name = '', note = '', tail = ''] = match;
     const path = `participants.${quote(id, 32)}`;
     if (!checkId(ctx, at, path, 'participant id', id)) continue;
-    if (icon !== undefined && !checkId(ctx, at, path, 'icon name', icon)) continue;
+    const words = tailWords(ctx, at, path, tail, ['icon', 'term']);
+    if (words === null) continue;
     if (out.some((x) => x.id === id)) {
       ctx.reporter.add(at, path, 'duplicate', `participant \`${id}\` is listed twice`);
       continue;
     }
-    out.push({ id, name: name.trim(), note: note.trim(), icon: icon ?? id, position: at });
+    out.push({
+      id,
+      name: name.trim(),
+      note: note.trim(),
+      icon: words.get('icon') ?? id,
+      term: words.get('term') ?? null,
+      position: at,
+    });
   }
   return out;
 }
 
-const ZONE = /^`([^`]*)`\s+(.+?):\s+((?:`[^`]*`\s*,\s*)*`[^`]*`)(\s+·\s+`danger`)?$/;
-const ZONE_HINT = '- `site` Сайт: `server`, `db` (· `danger` optional)';
+const ZONE = /^`([^`]*)`\s+(.+?):\s+((?:`[^`]*`\s*,\s*)*`[^`]*`)((?:\s+·\s+`[^`]*`)*)$/;
+const ZONE_HINT = '- `site` Сайт: `server`, `db` (· `danger` and · `term:id` optional)';
 
 function parseZones(ctx: Context, nodes: readonly RootContent[]): Zone[] {
   const out: Zone[] = [];
@@ -415,15 +465,24 @@ function parseZones(ctx: Context, nodes: readonly RootContent[]): Zone[] {
       ctx.reporter.add(at, 'zones', 'bad-line', `a zone line looks like ${ZONE_HINT}`);
       continue;
     }
-    const [, id = '', label = '', list = '', danger] = match;
+    const [, id = '', label = '', list = '', tail = ''] = match;
     const path = `zones.${quote(id, 32)}`;
     if (!checkId(ctx, at, path, 'zone id', id)) continue;
+    const words = tailWords(ctx, at, path, tail, ['danger', 'term']);
+    if (words === null) continue;
     if (out.some((z) => z.id === id)) {
       ctx.reporter.add(at, path, 'duplicate', `zone \`${id}\` is listed twice`);
       continue;
     }
     const members = [...list.matchAll(/`([^`]*)`/g)].map((m) => m[1] ?? '');
-    out.push({ id, label: label.trim(), members, danger: danger !== undefined, position: at });
+    out.push({
+      id,
+      label: label.trim(),
+      members,
+      danger: words.has('danger'),
+      term: words.get('term') ?? null,
+      position: at,
+    });
   }
   return out;
 }

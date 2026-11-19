@@ -26,6 +26,8 @@
 
 <style>
   .blocks {
+    /* The terms' touch areas (RichInline) stack inside the text, not over the page. */
+    isolation: isolate;
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
