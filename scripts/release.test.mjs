@@ -18,18 +18,18 @@ describe('the repository as committed', () => {
     expect(checkReleaseWorkflow(WORKFLOW)).toEqual([]);
   });
 
-  it('has notes for 0.1.0 in CHANGELOG.md', () => {
-    const notes = notesFor(read('CHANGELOG.md'), 'v0.1.0');
+  it('has notes for 0.1.1 in CHANGELOG.md', () => {
+    const notes = notesFor(read('CHANGELOG.md'), 'v0.1.1');
     expect(notes).toContain('SQL');
     expect(notes).not.toMatch(/^## /m);
   });
 
   it('prints the notes from the command line the workflow runs', () => {
-    const out = execFileSync('node', ['scripts/release.mjs', 'notes', 'v0.1.0'], {
+    const out = execFileSync('node', ['scripts/release.mjs', 'notes', 'v0.1.1'], {
       cwd: ROOT,
       encoding: 'utf8',
     });
-    expect(out.trim()).toBe(notesFor(read('CHANGELOG.md'), 'v0.1.0'));
+    expect(out.trim()).toBe(notesFor(read('CHANGELOG.md'), 'v0.1.1'));
     expect(
       execFileSync('node', ['scripts/release.mjs', 'notes', 'v99.0.0'], {
         cwd: ROOT,
