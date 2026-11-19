@@ -153,8 +153,9 @@
 <figure class="scene" data-testid="scene" data-lesson={lesson.id} bind:clientWidth={width}>
   <svg
     viewBox="0 0 {round(layout.width)} {round(layout.height)}"
-    role="img"
-    aria-labelledby="{uid}-title {uid}-desc"
+    role="group"
+    aria-labelledby="{uid}-title"
+    aria-describedby="{uid}-desc"
   >
     <title id="{uid}-title">{title}</title>
     <desc id="{uid}-desc" data-testid="scene-description">{description}</desc>
@@ -179,7 +180,12 @@
           height={round(zone.rect.height)}
           rx="10"
         />
-        <text class="zone-label" data-part="label" font-size={zone.label.fontSize}>
+        <text
+          class="zone-label"
+          data-part="label"
+          aria-hidden="true"
+          font-size={zone.label.fontSize}
+        >
           {@render lines(zone.label)}
         </text>
         {@render hit(`z:${zone.id}`, zone.label.box, `zone-term-${zone.id}`, 4)}
@@ -209,6 +215,7 @@
         {#if url !== null}
           <image
             data-part="icon"
+            aria-hidden="true"
             href={url}
             x={round(p.icon.x)}
             y={round(p.icon.y)}
@@ -218,7 +225,7 @@
             onerror={() => failed.add(p.id)}
           />
         {:else}
-          <g data-testid="icon-placeholder" data-part="icon">
+          <g data-testid="icon-placeholder" data-part="icon" aria-hidden="true">
             <rect
               class="placeholder"
               x={round(p.icon.x + p.icon.width * 0.15)}
@@ -236,11 +243,23 @@
             >
           </g>
         {/if}
-        <text class="name" data-part="name" text-anchor="middle" font-size={p.name.fontSize}>
+        <text
+          class="name"
+          data-part="name"
+          aria-hidden="true"
+          text-anchor="middle"
+          font-size={p.name.fontSize}
+        >
           {@render lines(p.name)}
         </text>
         {#if p.note !== null}
-          <text class="note" data-part="note" text-anchor="middle" font-size={p.note.fontSize}>
+          <text
+            class="note"
+            data-part="note"
+            aria-hidden="true"
+            text-anchor="middle"
+            font-size={p.note.fontSize}
+          >
             {@render lines(p.note)}
           </text>
         {/if}
@@ -253,6 +272,7 @@
         class="message {message.trailPaint}"
         class:stopped={message.paint === 'stopped'}
         data-testid="message"
+        aria-hidden="true"
         data-step={current.step.id}
         data-from={current.step.from}
         data-to={current.step.to}
