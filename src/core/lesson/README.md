@@ -336,7 +336,7 @@ result.errors.map(formatError); // 'content/lessons/B1/ru.md:41:1: step `glue`: 
   `⟦…⟧` — сегменты кода с `marked: true`. Файл больше 30 КБ — ошибка сборки. Слова словаря в
   тексте уровней и «Как защититься» — узлы `{ type: 'term', id, children }` (M2.4, правило
   поиска — `src/core/glossary/README.md`); у участников и зон поле `term` (id или null);
-- `data/glossary/<язык>.json` — словарь (M2.4).
+- `data/glossary/<язык>.json` — оглавление словаря и `data/glossary/<язык>.<hash8>.json` — куски определений (M2.4, CI3).
 
 `npm run dev` отдаёт те же файлы из памяти (только GET и HEAD, иначе 405), собирая их на каждый запрос; сломанный урок отвечает
 500 с сообщениями, сервер не падает. `site.ts` и `site-read.ts` не тянут разборщик Markdown, их

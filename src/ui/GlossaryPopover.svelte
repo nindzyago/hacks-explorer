@@ -4,15 +4,14 @@
   // holds the open term (`glossary.open` / `glossary.close`). «См. также» opens the next
   // definition in the same place; a related lesson opens the lesson. Esc, the close button, a
   // click elsewhere or focus leaving it close it; Esc and the button return focus to the word.
-  // The glossary file is loaded the first time a term opens.
+  // The glossary index is loaded the first time a term opens, a term's definition with its chunk.
   //
   // Positions are set as CSS custom properties through the CSSOM: the page's CSP forbids style
   // attributes, not that.
-  import { tick, untrack } from 'svelte';
+  import { tick } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import type { AppContext } from '../commands/app';
-  import type { SiteGlossary } from '../core/glossary/site';
-  import type { GlossaryLoader } from '../services/glossary/glossary';
+  import type { GlossaryLoader, GlossaryView } from '../services/glossary/glossary';
   import type { Translate } from '../services/i18n/i18n';
   import RichBlocks from './RichBlocks.svelte';
   import { openTerm, setTermOpener } from './terms';
@@ -32,7 +31,7 @@
 
   type Data =
     | { readonly state: 'loading' }
-    | { readonly state: 'ready'; readonly glossary: SiteGlossary }
+    | { readonly state: 'ready'; readonly view: GlossaryView }
     | { readonly state: 'error' };
   let data = $state.raw<Data>({ state: 'loading' });
   let attempt = $state(0);
@@ -42,19 +41,12 @@
   let anchor: Element | null = null;
   const phone = new MediaQuery('max-width: 760px', false);
 
-  const term = $derived(
-    open !== null && data.state === 'ready'
-      ? data.glossary.terms.find((t) => t.id === open)
-      : undefined,
-  );
-  const titles = $derived(
-    data.state === 'ready'
-      ? new Map(data.glossary.terms.map((t) => [t.id, t.title]))
-      : new Map<string, string>(),
-  );
+  const view = $derived(data.state === 'ready' ? data.view : null);
+  const term = $derived(view?.term ?? undefined);
+  const titles = $derived(new Map(view?.glossary.terms.map((t) => [t.id, t.title]) ?? []));
   const category = $derived(
-    data.state === 'ready' && term !== undefined
-      ? data.glossary.categories.find((c) => c.id === term.category)?.label
+    view !== null && term !== undefined
+      ? view.glossary.categories.find((c) => c.id === term.category)?.label
       : undefined,
   );
 
@@ -66,18 +58,24 @@
     }),
   );
 
-  // Load the glossary of the page's language the first time a term opens.
+  // Load the glossary index of the page's language the first time a term opens, and the chunk
+  // with each term's definition the first time that term (or one of its chunk) opens (CI3). A term
+  // already here shows at once, without a loading step.
   $effect(() => {
     // `attempt` is read so «Попробовать снова» runs this again.
-    if (open === null || attempt < 0) return;
-    const ready = untrack(() => data);
-    if (ready.state === 'ready' && ready.glossary.language === language) return;
+    const id = open;
+    const lang = language;
+    if (id === null || attempt < 0) return;
+    const known = loader.known(lang, id);
+    if (known !== undefined) {
+      data = { state: 'ready', view: known };
+      return;
+    }
     let current = true;
     data = { state: 'loading' };
-    void loader.glossary(language).then(
+    void loader.term(lang, id).then(
       (result) => {
-        if (current)
-          data = result.ok ? { state: 'ready', glossary: result.value } : { state: 'error' };
+        if (current) data = result.ok ? { state: 'ready', view: result.value } : { state: 'error' };
       },
       () => {
         if (current) data = { state: 'error' };

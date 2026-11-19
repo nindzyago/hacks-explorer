@@ -4,7 +4,8 @@
 // glossaries, and M2.3: the site languages are complete, K94) and
 //   - `vite build`: fails on any error, printing `file:line:column: message` per line; emits
 //     `data/catalog.json` and `data/lessons/<id>.<lang>.<hash>.json` per lesson per site language,
-//     `data/glossary/<lang>.json` and `data/topics/<lang>.json` (M2.1b: every topic of the site,
+//     the glossary as an index `data/glossary/<lang>.json` plus chunks of definitions
+//     `data/glossary/<lang>.<hash>.json` (CI3), and `data/topics/<lang>.json` (M2.1b: every topic of the site,
 //     ready or not, for the lessons panel) per site language;
 //   - `vite` (dev): serves the same files from memory, built afresh on each request; a broken
 //     lesson answers 500 with the messages, the dev server keeps running.
@@ -24,10 +25,20 @@ import {
   lessonFile,
   toSiteLesson,
 } from '../src/core/lesson/site';
-import { glossaryMatcher, linkLessonTerms, toSiteGlossary } from '../src/core/glossary/build';
+import {
+  glossaryMatcher,
+  linkLessonTerms,
+  splitSiteGlossary,
+  toSiteGlossary,
+} from '../src/core/glossary/build';
 import { checkGlossaries } from '../src/core/glossary/check';
 import type { Matcher } from '../src/core/glossary/match';
-import { MAX_GLOSSARY_FILE_BYTES, glossaryFile } from '../src/core/glossary/site';
+import {
+  MAX_GLOSSARY_FILE_BYTES,
+  glossaryChunkFile,
+  glossaryFile,
+} from '../src/core/glossary/site';
+import type { Glossary } from '../src/core/glossary/types';
 import { checkLocales } from '../src/core/i18n/locales';
 import { checkCatalogs } from '../src/core/topics/check';
 import { MAX_TOPICS_FILE_BYTES, toSiteTopics, topicsFile } from '../src/core/topics/site';
@@ -57,6 +68,51 @@ const BASE_LANGUAGE = 'ru';
 
 function byteLength(text: string): number {
   return Buffer.byteLength(text, 'utf8');
+}
+
+function contentHash(text: string): string {
+  return createHash('sha256').update(text).digest('hex').slice(0, 8);
+}
+
+/**
+ * The site files of one checked glossary (CI3): the index `data/glossary/<lang>.json` and the
+ * chunks of definitions `data/glossary/<lang>.<hash8>.json`, or errors when a file would pass
+ * the 30 KB budget. Only the index grows with the number of terms; chunks stay near
+ * GLOSSARY_CHUNK_BYTES however long the glossary gets.
+ */
+export function glossaryDataFiles(
+  glossary: Glossary,
+  titles: ReadonlyMap<string, string>,
+): { readonly files: readonly DataFile[]; readonly errors: readonly string[] } {
+  const source = `content/locales/${glossary.language}/glossary.md`;
+  const split = splitSiteGlossary(toSiteGlossary(glossary, titles), contentHash);
+  const errors: string[] = [];
+  const index = JSON.stringify(split.index);
+  const indexBytes = byteLength(index);
+  if (indexBytes > MAX_GLOSSARY_FILE_BYTES) {
+    errors.push(
+      `${source}:1:1: the index of this glossary is ${String(indexBytes)} bytes; at most ${String(MAX_GLOSSARY_FILE_BYTES)}: shorten the titles or split the glossary index (CI3)`,
+    );
+  }
+  for (const chunk of split.chunks) {
+    const bytes = byteLength(chunk.text);
+    if (bytes > MAX_GLOSSARY_FILE_BYTES) {
+      errors.push(
+        `${source}:1:1: a chunk of this glossary is ${String(bytes)} bytes; at most ${String(MAX_GLOSSARY_FILE_BYTES)}: shorten the definitions`,
+      );
+    }
+  }
+  if (errors.length > 0) return { files: [], errors };
+  return {
+    files: [
+      { path: glossaryFile(glossary.language), text: index },
+      ...split.chunks.map((c) => ({
+        path: glossaryChunkFile(glossary.language, c.hash),
+        text: c.text,
+      })),
+    ],
+    errors,
+  };
 }
 
 /**
@@ -144,15 +200,9 @@ export function buildLessonData(content: {
     const titles = new Map(
       checked.lessons.filter((l) => l.language === glossary.language).map((l) => [l.id, l.title]),
     );
-    const text = JSON.stringify(toSiteGlossary(glossary, titles));
-    const bytes = byteLength(text);
-    if (bytes > MAX_GLOSSARY_FILE_BYTES) {
-      errors.push(
-        `content/locales/${glossary.language}/glossary.md:1:1: the site data of this glossary is ${String(bytes)} bytes; at most ${String(MAX_GLOSSARY_FILE_BYTES)}: shorten the definitions`,
-      );
-      continue;
-    }
-    files.push({ path: glossaryFile(glossary.language), text });
+    const out = glossaryDataFiles(glossary, titles);
+    errors.push(...out.errors);
+    files.push(...out.files);
   }
 
   // M2.1b: every topic in each site language; a topic is ready when its lesson is in that language.
