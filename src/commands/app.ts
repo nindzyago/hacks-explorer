@@ -9,6 +9,7 @@ import { initialState, type AppState } from '../core/state';
 import { createStore, type Store } from '../core/store';
 import { registerClockCommands } from './clock';
 import { registerDepthCommands } from './depth';
+import { registerDrawerCommands } from './drawer';
 import { registerGlossaryCommands } from './glossary';
 import { registerLocaleCommands } from './locale';
 import { registerPlayerCommands } from './player';
@@ -59,6 +60,7 @@ export function createApp(options: AppOptions = {}): AppContext {
   registerThemeCommands(registry, store);
   registerDepthCommands(registry, store);
   registerGlossaryCommands(registry, store);
+  registerDrawerCommands(registry, store);
   registerLocaleCommands(registry, store, options.languages ?? ['ru']);
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
   const player = registerPlayerCommands(registry, store, clock, {

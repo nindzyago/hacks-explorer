@@ -3,7 +3,9 @@
 // Reads content/ (scripts/content-files.mjs), checks it (src/core/lesson, `checkContent`, the
 // glossaries, and M2.3: the site languages are complete, K94) and
 //   - `vite build`: fails on any error, printing `file:line:column: message` per line; emits
-//     `data/catalog.json` and `data/lessons/<id>.<lang>.<hash>.json` per lesson per site language;
+//     `data/catalog.json` and `data/lessons/<id>.<lang>.<hash>.json` per lesson per site language,
+//     `data/glossary/<lang>.json` and `data/topics/<lang>.json` (M2.1b: every topic of the site,
+//     ready or not, for the lessons panel) per site language;
 //   - `vite` (dev): serves the same files from memory, built afresh on each request; a broken
 //     lesson answers 500 with the messages, the dev server keeps running.
 // The site fetches these files (src/services/catalog) and never parses Markdown (K31).
@@ -27,6 +29,8 @@ import { checkGlossaries } from '../src/core/glossary/check';
 import type { Matcher } from '../src/core/glossary/match';
 import { MAX_GLOSSARY_FILE_BYTES, glossaryFile } from '../src/core/glossary/site';
 import { checkLocales } from '../src/core/i18n/locales';
+import { checkCatalogs } from '../src/core/topics/check';
+import { MAX_TOPICS_FILE_BYTES, toSiteTopics, topicsFile } from '../src/core/topics/site';
 import type { SiteLanguage } from '../src/core/i18n/languages-file';
 import { ROOT, readContent } from './content-files.mjs';
 
@@ -68,6 +72,8 @@ export function buildLessonData(content: {
   readonly glossaries: readonly ContentFile[];
   readonly ui: readonly ContentFile[];
   readonly languages: ContentFile | null;
+  /** content/locales/<lang>/catalog.md: every topic of the site (M2.1b, K111). */
+  readonly catalogs: readonly ContentFile[];
 }): LessonDataResult {
   const checked = checkContent(content.lessons, content.sources);
   const lessonPaths = content.lessons.map((f) => f.path);
@@ -78,7 +84,12 @@ export function buildLessonData(content: {
     lessonPaths,
     siteLanguages: [...onSite],
   });
-  const problems = [...checked.errors, ...glossaries.errors, ...locales.errors];
+  const catalogs = checkCatalogs(content.catalogs, {
+    lessons: checked.lessons,
+    lessonPaths,
+    siteLanguages: [...onSite],
+  });
+  const problems = [...checked.errors, ...glossaries.errors, ...locales.errors, ...catalogs.errors];
   if (problems.length > 0) return { ok: false, errors: problems.map(formatError) };
 
   const errors: string[] = [];
@@ -142,6 +153,22 @@ export function buildLessonData(content: {
       continue;
     }
     files.push({ path: glossaryFile(glossary.language), text });
+  }
+
+  // M2.1b: every topic in each site language; a topic is ready when its lesson is in that language.
+  for (const code of onSite) {
+    const catalog = catalogs.catalogs.get(code);
+    if (catalog === undefined) continue;
+    const ready = new Set(checked.lessons.filter((l) => l.language === code).map((l) => l.id));
+    const text = JSON.stringify(toSiteTopics(catalog, ready));
+    const bytes = byteLength(text);
+    if (bytes > MAX_TOPICS_FILE_BYTES) {
+      errors.push(
+        `${catalog.path}:1:1: the site data of this catalog is ${String(bytes)} bytes; at most ${String(MAX_TOPICS_FILE_BYTES)}: shorten the titles and notes`,
+      );
+      continue;
+    }
+    files.push({ path: topicsFile(code), text });
   }
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, files, locales: { languages: locales.languages, strings: locales.strings } };

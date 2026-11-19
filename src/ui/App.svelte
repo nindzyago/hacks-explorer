@@ -8,10 +8,12 @@
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
   import type { GlossaryLoader } from '../services/glossary/glossary';
+  import type { TopicsLoader } from '../services/topics/topics';
   import { translator, type Locales } from '../services/i18n/i18n';
   import { LOAD_TIMEOUT_MS, withDeadline } from '../time/load-timer';
   import { keyCommand, keyTarget } from './keyboard';
   import DefenceToggle from './DefenceToggle.svelte';
+  import Drawer from './Drawer.svelte';
   import GlossaryPopover from './GlossaryPopover.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
   import { loadErrorKey, type ShownErrorCode } from './load-error';
@@ -22,6 +24,7 @@
     app,
     loader,
     glossary,
+    topics,
     locales,
     home = '/',
     notFound = createStore(false),
@@ -29,6 +32,8 @@
     app: AppContext;
     loader: LessonLoader;
     glossary: GlossaryLoader;
+    /** M2.1b: every topic of the site for the lessons panel (src/services/topics). */
+    topics: TopicsLoader;
     /** M2.3: the site languages and their interface strings (src/services/i18n). */
     locales: Locales;
     home?: string;
@@ -133,7 +138,9 @@
 
   /** S6: Space, ← →, D. Keys are ignored while typing and with Ctrl, ⌘ or Alt. */
   function onkeydown(event: KeyboardEvent): void {
+    // M2.1b: while the side panel is open the player takes no keys.
     if ($notFound || shown.state !== 'ready' || event.defaultPrevented) return;
+    if ($store.drawer !== null) return;
     const id = keyCommand(
       {
         key: event.key,
@@ -154,6 +161,8 @@
   }
 
   /** A button is pressed by Space on key up: on the player's own buttons Space was play/pause. */
+  let lessonsButton = $state<HTMLButtonElement | null>(null);
+
   function onkeyup(event: KeyboardEvent): void {
     if (event.key !== ' ' && event.code !== 'Space') return;
     if (keyTarget(event.target).player === true) event.preventDefault();
@@ -172,6 +181,28 @@
     {:else}
       <p class="tagline">{t('app.tagline')}</p>
     {/if}
+    <!-- M2.1b: the side panel with the lessons and the glossary (K102: 44 px). -->
+    <div class="panels" data-testid="panel-buttons">
+      <button
+        type="button"
+        data-testid="open-lessons"
+        aria-haspopup="dialog"
+        aria-expanded={$store.drawer === 'lessons'}
+        bind:this={lessonsButton}
+        onclick={() => {
+          run('drawer.open', { tab: 'lessons' });
+        }}>{t('drawer.lessons')}</button
+      >
+      <button
+        type="button"
+        data-testid="open-glossary"
+        aria-haspopup="dialog"
+        aria-expanded={$store.drawer === 'glossary'}
+        onclick={() => {
+          run('drawer.open', { tab: 'glossary' });
+        }}>{t('drawer.glossary')}</button
+      >
+    </div>
     <!-- M2.3: the language switch, only when the site has more than one language. -->
     {#if locales.languages.length > 1}
       <div class="languages" role="group" aria-label={t('app.language')} data-testid="languages">
@@ -251,9 +282,13 @@
         {/if}
       </section>
     </div>
-    <!-- M2.4: the definition of a glossary term, opened from the text or the scene. -->
-    <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
+    <!-- M2.4: the definition of a glossary term, opened from the text or the scene. While the
+         side panel is open a term shows in the panel instead (M2.1b). -->
+    {#if $store.drawer === null}
+      <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
+    {/if}
   {/if}
+  <Drawer {app} {topics} {glossary} {home} {t} fallbackFocus={() => lessonsButton} />
 </main>
 
 <style>
@@ -302,9 +337,32 @@
     font-size: var(--text-sm);
   }
 
+  /* M2.1b: «Уроки» and «Словарь» before the language switch, at the end of the top bar. */
+  .panels {
+    margin-left: auto;
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .panels button {
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    border: var(--line-width) solid var(--legit);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    color: var(--legit);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .panels button:hover {
+    background: var(--paper);
+  }
+
   /* M2.3: «RU / EN» at the end of the top bar, 44 px targets (K102). */
   .languages {
-    margin-left: auto;
     display: flex;
     gap: var(--space-1);
   }

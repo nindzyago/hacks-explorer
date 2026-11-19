@@ -12,6 +12,10 @@ export type Theme = (typeof THEMES)[number];
 export const DEPTHS = ['simple', 'steps', 'deep'] as const;
 export type Depth = (typeof DEPTHS)[number];
 
+/** The tabs of the side panel (M2.1b, E2): the lessons by section and the glossary. */
+export const DRAWER_TABS = ['lessons', 'glossary'] as const;
+export type DrawerTab = (typeof DRAWER_TABS)[number];
+
 export interface AppState {
   readonly theme: Theme;
   /** The lesson on the page (M1: one page, `lesson.open` switches it; addresses are M2). */
@@ -36,6 +40,11 @@ export interface AppState {
    * One of the site languages; `locale.set` changes it and keeps the lesson, step, mode and depth.
    */
   readonly locale: string;
+  /**
+   * The side panel (M2.1b, E2): closed (null) or open on a tab. `drawer.open` and `drawer.close`
+   * change it. While it is open a glossary term (`glossary`) shows in the panel, not in place.
+   */
+  readonly drawer: DrawerTab | null;
 }
 
 export function initialState(): AppState {
@@ -46,5 +55,6 @@ export function initialState(): AppState {
     depth: 'simple',
     glossary: null,
     locale: 'ru',
+    drawer: null,
   });
 }
