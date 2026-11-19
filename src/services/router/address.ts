@@ -70,10 +70,15 @@ export function parseAddress(pathname: unknown, hash: unknown, options: AddressO
   const [lang, word, id] = parts;
   if (lang === undefined || !LANG.test(lang)) return { kind: 'unknown' };
   const site = language(lang, options);
-  if (parts.length === 1 || (parts.length === 2 && word === 'lesson')) {
+  if (parts.length === 1 || (parts.length === 2 && word?.toLowerCase() === 'lesson')) {
     return { kind: 'home', place: { lang: site, lesson: options.home, step: 1, defence: false } };
   }
-  if (parts.length !== 3 || word !== 'lesson' || id === undefined || !LESSON.test(id)) {
+  if (
+    parts.length !== 3 ||
+    word?.toLowerCase() !== 'lesson' ||
+    id === undefined ||
+    !LESSON.test(id)
+  ) {
     return { kind: 'unknown' };
   }
   return { kind: 'lesson', place: { lang: site, lesson: id.toUpperCase(), ...readHash(hash) } };

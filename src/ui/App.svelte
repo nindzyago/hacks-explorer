@@ -54,6 +54,8 @@
 
   $effect(() => {
     const id = lessonId;
+    // M2.2: an address that is no page of the site loads no lesson behind its message.
+    if ($notFound) return;
     let current = true;
     shown = { state: 'loading', attempt };
     const lesson = loader
@@ -88,6 +90,15 @@
       without: stepsInMode(steps, false).length,
       with: stepsInMode(steps, true).length,
     });
+  });
+
+  // M2.2: the page title says when the address is no page; the heading takes the focus.
+  let notFoundHeading = $state<HTMLElement | null>(null);
+  $effect(() => {
+    document.title = $notFound ? `Такой страницы нет — ${PROJECT.name}` : PROJECT.name;
+  });
+  $effect(() => {
+    notFoundHeading?.focus();
   });
 
   const step = $derived(
@@ -139,7 +150,14 @@
 
   {#if $notFound}
     <div class="status error" data-testid="page-not-found" role="alert">
-      <p>Такой страницы нет.</p>
+      <h2
+        class="not-found-title"
+        tabindex="-1"
+        data-testid="not-found-title"
+        bind:this={notFoundHeading}
+      >
+        Такой страницы нет
+      </h2>
       <p>Проверьте адрес или откройте урок с главной.</p>
       <div class="actions">
         <a href={home} data-testid="not-found-home">На главную</a>
@@ -359,6 +377,13 @@
 
   .error p {
     margin: 0;
+  }
+
+  .not-found-title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--ink);
   }
 
   .actions {

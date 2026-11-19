@@ -38,6 +38,8 @@ describe('parseAddress', () => {
     expect(parse('/ru/lesson/B1/', '#step-2')).toEqual({ kind: 'lesson', place: place('B1', 2) });
     expect(parse('/ru/lesson/b1')).toEqual({ kind: 'lesson', place: place('B1') });
     expect(parse('/RU/lesson/B1')).toEqual({ kind: 'lesson', place: place('B1') });
+    expect(parse('/ru/LESSON/B1', '#step-2')).toEqual({ kind: 'lesson', place: place('B1', 2) });
+    expect(parse('/ru/Lesson')).toEqual({ kind: 'home', place: place('B1') });
   });
 
   it('a well-formed language the site does not have falls back to the base language', () => {
@@ -115,6 +117,10 @@ describe('parseAddress', () => {
       `/ru/lesson/${'B1'.repeat(5000)}`,
       `/${'a/'.repeat(1000)}`,
       'ru/lesson/B1',
+      // Without the leading slash, dropping the first character would read a valid address.
+      'xru/lesson/B1',
+      'x/ru/lesson/B1',
+      '/ru/lessonx/B1',
       '/ru/lesson/B1 ',
       '/ru/lesson/ B1',
     ]) {

@@ -152,12 +152,63 @@ test('an address that is no page of the site is a message with «На главн
     await expect(page.getByTestId('scene')).toHaveCount(0);
     // The address is left as the reader typed it.
     expect(new URL(page.url()).pathname, bad).toBe(bad);
-    // Keys do nothing on this page.
+    // A page of its own: a heading with focus and a title.
+    const heading = page.getByRole('heading', { level: 2, name: 'Такой страницы нет' });
+    await expect(heading).toBeFocused();
+    await expect(page).toHaveTitle('Такой страницы нет — Hacks Explorer');
+    // Keys do nothing on this page, and no lesson is loaded behind it.
     await page.waitForFunction(() => window.__app !== undefined);
-    await page.keyboard.press('d');
+    const before = await page.evaluate(() => window.__app?.state.get().player);
+    for (const key of ['d', 'ArrowRight', ' ']) await page.keyboard.press(key);
+    expect(await page.evaluate(() => window.__app?.state.get().player), bad).toEqual(before);
     expect(new URL(page.url()).hash).toBe('');
+    expect(before?.counts, 'no lesson loaded').toEqual({ without: 0, with: 0 });
   }
   await page.getByTestId('not-found-home').click();
   await expect(page).toHaveURL(/\/ru\/lesson\/B1$/);
   await expect(page.getByTestId('scene')).toBeVisible();
+  await expect(page).toHaveTitle('Hacks Explorer');
+});
+
+test('no lesson data is requested while the path is unknown', async ({ page }) => {
+  const asked: string[] = [];
+  page.on('request', (request) => asked.push(new URL(request.url()).pathname));
+  await page.goto('/ru/lesson/__proto__');
+  await expect(page.getByTestId('page-not-found')).toBeVisible();
+  await page.waitForFunction(() => window.__app !== undefined);
+  await page.waitForLoadState('networkidle');
+  expect(asked.filter((path) => path.startsWith('/data/'))).toEqual([]);
+});
+
+test('autoplay rewrites the address at most once per step', async ({ page }) => {
+  await openApp(page, '/ru/lesson/B1');
+  await expect(page.getByTestId('player-status')).toHaveText('Шаг 1 из 5');
+  // Step 1 has arrived: play goes on to step 2 at once, then one step every 2400 ms.
+  await page.evaluate(() => window.__app?.clock.tick(5000));
+  const writes = await page.evaluate(() => {
+    const app = window.__app;
+    if (app === undefined) return null;
+    const seen: string[] = [];
+    const replace = history.replaceState.bind(history);
+    const push = history.pushState.bind(history);
+    history.replaceState = (data: unknown, unused: string, url?: string | URL | null) => {
+      seen.push(`replace ${String(url)}`);
+      replace(data, unused, url);
+    };
+    history.pushState = (data: unknown, unused: string, url?: string | URL | null) => {
+      seen.push(`push ${String(url)}`);
+      push(data, unused, url);
+    };
+    app.commands.run('player.play');
+    for (let i = 0; i < 40; i += 1) app.clock.tick(250);
+    return { seen, player: app.state.get().player };
+  });
+  expect(writes?.player.step).toBe(5);
+  expect(writes?.player.playing).toBe(false);
+  expect(writes?.seen).toEqual([
+    'replace /ru/lesson/B1#step-2',
+    'replace /ru/lesson/B1#step-3',
+    'replace /ru/lesson/B1#step-4',
+    'replace /ru/lesson/B1#step-5',
+  ]);
 });
