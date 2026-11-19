@@ -24,7 +24,7 @@
 ## Participants
 
 - `attacker` **Attacker** — 203.0.113.66 · `term:attacker`
-- `pc` **Accountant's computer** — 192.0.2.24 · `icon:workstation` · `term:victim`
+- `pc` **Accountant PC** — 192.0.2.24 · `icon:workstation` · `term:victim`
 - `server` **File server** — 192.0.2.10
 - `backup` **Backups** — 198.51.100.20 · `term:backup`
 
@@ -240,7 +240,7 @@ network into parts and separating important systems to limit lateral movement.
 ### `restore` Restoring from a backup
 
 `backup → pc` · `safe` · `with-defence`
-Message: yesterday's backup · Result: files restored
+Message: last backup · Result: files restored
 
 ```text
 backup:  yesterday's, storage disconnected from the network

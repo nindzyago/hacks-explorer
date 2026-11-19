@@ -121,7 +121,7 @@ bank.
 ### `form` The form sends itself
 
 `evil → user` · `attack`
-Message: auto-submit · Result: browser sends a request to the bank
+Message: form submits · Result: browser sends a request to the bank
 
 #### Simple
 

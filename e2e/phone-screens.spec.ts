@@ -1,13 +1,15 @@
 // M2.6 acceptance (oracle D for the check, C R9 for the screenshots; scenario S10): on a phone
 // 360, 375 and 390 px wide, and on a phone held sideways, in Russian and English, no screen and
-// no state scrolls sideways and nothing sticks out past the right or left edge: lessons B1 and I1
-// at the first, middle and last step, in both modes, at every depth, while playing; a glossary
+// no state scrolls sideways and nothing sticks out past the right or left edge: every lesson
+// (G18; B1 and I1 before) at the first, middle and last step, in both modes, at every depth, while playing; a glossary
 // definition; the lessons panel (both tabs, a found list, a section, a long query with no result,
 // a glossary entry); the «no such page» and the load-error pages. A self-test shows the check
 // catches a deliberately broken layout. Screenshots go to PHONE_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
+import { stepsInMode } from '../src/core/scene-layout/message';
+import { LANGS, LESSONS, lessonData } from './lessons';
 import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
@@ -119,29 +121,36 @@ for (const phone of PHONES) {
   test.describe(`M2.6 at ${String(phone.width)}×${String(phone.height)}`, () => {
     test.use({ viewport: { width: phone.width, height: phone.height } });
 
-    for (const lang of ['ru', 'en'] as const) {
+    for (const lang of LANGS) {
       const at = `${lang} ${phone.name}`;
       const shot = (what: string) => `${what}-${lang}-${phone.name}`;
 
-      test(`${lang}: the lesson, every mode, depth and a glossary definition`, async ({
-        page,
-      }, testInfo) => {
-        await openApp(page, `/${lang}/lesson/B1`);
-        await sceneReady(page);
-        await noSideways(page, `${at} first paint`);
-        for (const lesson of ['B1', 'I1']) {
-          await run(page, 'lesson.open', { id: lesson });
+      // G18: each lesson its own test, its first, middle and last step from its data.
+      for (const lesson of LESSONS) {
+        test(`${lang} ${lesson}: every mode and depth, first, middle and last step, playing`, async ({
+          page,
+        }, testInfo) => {
+          await openApp(page, `/${lang}/lesson/${lesson}`);
           await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
           await sceneReady(page);
+          await noSideways(page, `${at} ${lesson} first paint`);
+          const data = await lessonData(page, lesson, lang);
           for (const defence of [false, true]) {
             const mode = defence ? 'defence' : 'attack';
-            for (const step of [1, 3, 5]) {
+            const count = stepsInMode(data.steps, defence).length;
+            expect(count).toBeGreaterThan(0);
+            for (const step of [...new Set([1, Math.ceil(count / 2), count])]) {
               await show(page, defence, step);
               await expect(page.getByTestId('message')).toHaveAttribute('data-arrived', 'true');
               for (const depth of ['simple', 'steps', 'deep'] as const) {
                 await run(page, 'depth.set', { depth });
                 await noSideways(page, `${at} ${lesson} ${mode} step ${String(step)} ${depth}`);
-                if (phone.name === '360' && step === 3 && depth !== 'steps') {
+                if (
+                  (lesson === 'B1' || lesson === 'I1') &&
+                  phone.name === '360' &&
+                  step === 3 &&
+                  depth !== 'steps'
+                ) {
                   await keep(page, testInfo, shot(`${lesson}-${mode}-step3-${depth}`));
                 }
               }
@@ -154,8 +163,12 @@ for (const phone of PHONES) {
           await page.evaluate((t) => window.__app?.clock.set(t), TRAVEL_MS / 2);
           await noSideways(page, `${at} ${lesson} playing`);
           await run(page, 'player.pause');
-        }
-        // A glossary definition over the lesson.
+        });
+      }
+
+      test(`${lang}: a glossary definition over the lesson`, async ({ page }, testInfo) => {
+        await openApp(page, `/${lang}/lesson/I1`);
+        await sceneReady(page);
         await run(page, 'glossary.open', { id: 'phishing' });
         await expect(page.getByTestId('glossary-popover')).toBeVisible();
         await expect(page.getByTestId('glossary-definition')).toBeVisible();

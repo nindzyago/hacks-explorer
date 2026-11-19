@@ -1,5 +1,5 @@
 // M2.7 acceptance (oracle D S6 S11, plus axe-core): accessibility of every screen and state.
-//   - axe-core with the WCAG 2.0, 2.1 and 2.2 A and AA rules finds nothing on ru and en: lessons B1 and I1
+//   - axe-core with the WCAG 2.0, 2.1 and 2.2 A and AA rules finds nothing on ru and en: every lesson (G18)
 //     at the first, a middle and the last step, with and without the defence, at every depth;
 //     the side panel on both tabs; a glossary definition open; the «no such page» page; the
 //     explanation panel scrolled to its sources at phone widths;
@@ -13,6 +13,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { stableDump } from '../src/core/dump';
+import { LESSONS as ALL_LESSONS } from './lessons';
 import { expect, openApp, test } from './support';
 
 const WCAG_AA = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'];
@@ -54,7 +55,8 @@ async function lesson(page: Page, path: string): Promise<void> {
 }
 
 const LOCALES = ['ru', 'en'] as const;
-const LESSONS = ['B1', 'I1', 'C4'] as const;
+// G18: every lesson in content/lessons.
+const LESSONS = ALL_LESSONS;
 
 test.describe('axe finds no WCAG A/AA violations', () => {
   for (const locale of LOCALES) {
