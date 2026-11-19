@@ -1,5 +1,12 @@
 # Decisions
 
+## K127 · 2026-11-19: свои страницы, карточки и sitemap (M4.3)
+
+By: agent · Area: выкладка · Status: active · Reviewed: no
+Source: during M4.3
+
+Каждый урок на каждом языке и «О проекте» получают при сборке свой HTML-файл `<язык>/lesson/<ID>.html` и `<язык>/about.html`: тот же index.html со своими `lang`, заголовком, описанием, canonical, hreflang (языки сайта и x-default = первый язык), Open Graph и Twitter card. Cloudflare отдаёт их через `html_handling: auto-trailing-slash` без переадресации, остальное — SPA-запасной вариант. Корневой index.html несёт Open Graph сайта без canonical. sitemap.xml перечисляет все страницы с альтернативами, robots.txt на него указывает. Адрес сайта — константа сборки `SITE_ORIGIN` в `scripts/site-pages.ts`. Описание урока собирается из паспорта (class, impact, defence) шаблоном `meta.lesson.description` из ui.md — одинаково при сборке и в приложении (`src/core/meta`). Карточки — по PNG на урок и язык, в репозитории (`npm run cards`, ImageMagick, шрифты и иконки сайта), устаревание ловит хеш входа внутри PNG (`scripts/cards.test.ts`); на карточках иконки Magnific, оговорка G10 касается и их.
+
 ## K126 · 2026-11-19: данные словаря — оглавление и куски (CI3)
 
 By: agent · Area: данные · Status: active · Reviewed: no
