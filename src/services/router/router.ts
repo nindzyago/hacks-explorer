@@ -6,7 +6,13 @@
  */
 import { initialState, type AppState } from '../../core/state';
 import { createStore, type Store } from '../../core/store';
-import { formatAddress, parseAddress, type AddressOptions, type Place } from './address';
+import {
+  formatAddress,
+  parseAddress,
+  pathLanguage,
+  type AddressOptions,
+  type Place,
+} from './address';
 
 /** The parts of `window` the router uses. */
 export interface RouterWindow {
@@ -38,6 +44,12 @@ export interface Router {
   readonly notFound: Pick<Store<boolean>, 'get' | 'subscribe'>;
   /** The language of the page, as the address shows it (`state.locale`). */
   lang(): string;
+  /**
+   * True while the state changes because the address was opened or Back / Forward was pressed:
+   * such a change shows the address, it is not the reader's choice (`src/main.ts` remembers
+   * only the reader's choice of language, K108).
+   */
+  applyingAddress(): boolean;
   stop(): void;
 }
 
@@ -78,6 +90,16 @@ export function startRouter(options: RouterOptions): Router {
   function apply(): void {
     const route = parseAddress(win.location.pathname, win.location.hash, address);
     if (route.kind === 'unknown') {
+      // «No such page» in the language of the address, when it has one of the site (K110).
+      const lang = pathLanguage(win.location.pathname, languages);
+      if (lang !== null && store.get().locale !== lang) {
+        applying = true;
+        try {
+          run('locale.set', { lang });
+        } finally {
+          applying = false;
+        }
+      }
       notFound.set(true);
       return;
     }
@@ -97,11 +119,17 @@ export function startRouter(options: RouterOptions): Router {
 
   apply();
 
-  /** The state → the address: a new lesson is a new history entry, anything else replaces. */
+  /**
+   * The state → the address: a new lesson or a new language is a new history entry (K79, K108:
+   * Back undoes a language switch), a step or a mode replaces the current one.
+   */
   const unsubscribe = store.subscribe((state) => {
     if (applying || notFound.get()) return;
     const shown = parseAddress(win.location.pathname, win.location.hash, address);
-    write(shown.kind === 'lesson' && shown.place.lesson !== state.lesson);
+    write(
+      shown.kind === 'lesson' &&
+        (shown.place.lesson !== state.lesson || shown.place.lang !== state.locale),
+    );
   });
 
   win.addEventListener('popstate', apply);
@@ -113,6 +141,7 @@ export function startRouter(options: RouterOptions): Router {
       subscribe: (listener: (value: boolean) => void) => notFound.subscribe(listener),
     },
     lang: () => store.get().locale,
+    applyingAddress: () => applying,
     stop() {
       unsubscribe();
       win.removeEventListener('popstate', apply);

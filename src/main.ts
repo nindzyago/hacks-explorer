@@ -85,13 +85,14 @@ const router = startRouter({
   preferred,
 });
 
-// A language the reader switches to after the page opened (the switch, back and forward, the
-// control channel) is remembered for the next visit; the address the page opened with is not.
-let remembered = app.store.get().locale;
+// Only the reader's own choice of language is remembered for the next visit: the switch or the
+// control channel. A language that comes from the address (the page opened with it, Back and
+// Forward) is shown, not remembered (K108).
+let shownLocale = app.store.get().locale;
 app.store.subscribe((state) => {
-  if (state.locale === remembered) return;
-  remembered = state.locale;
-  rememberLanguage(storage, state.locale);
+  if (state.locale === shownLocale) return;
+  shownLocale = state.locale;
+  if (!router.applyingAddress()) rememberLanguage(storage, state.locale);
 });
 
 mount(App, {
