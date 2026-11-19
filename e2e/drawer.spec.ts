@@ -11,8 +11,10 @@ import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
-/** Lessons in content/lessons: the ready count grows with every lesson (M3), so it is not a literal. */
-const READY = readdirSync('content/lessons').length;
+// Ready lessons are the folders in content/lessons: lessons written in parallel add to it.
+const READY = readdirSync('content/lessons', { withFileTypes: true }).filter((e) =>
+  e.isDirectory(),
+).length;
 
 async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   await sceneReady(page);
