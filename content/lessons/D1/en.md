@@ -1,4 +1,4 @@
-# Someone else's data by number (IDOR)
+# Other people's data by changing a number (IDOR)
 
 `lesson` D1 · `section` D · `wave` 1 · `format` 1
 
@@ -56,7 +56,7 @@ is her. The server writes the order into the `orders` table and remembers whose 
 
 #### Deeper
 
-Order numbers go in a row: 1001, 1002, 1003. That is handy for the shop, but it means the
+Order numbers are sequential: 1001, 1002, 1003. That is handy for the shop, but it means the
 neighbouring numbers are easy to guess. On its own this is not a bug yet: what matters is how the
 server hands out an order by its number.
 
@@ -77,7 +77,7 @@ The attacker also has an account in the shop and bought something cheap. Their o
 
 #### Step by step
 
-The browser asks for the page `/orders/1001`. The server shows the order: all fair, it is theirs.
+The browser asks for the page `/orders/1001`. The server shows the order: nothing wrong here: it is theirs.
 
 #### Deeper
 
@@ -192,7 +192,7 @@ user from the attacker's session (their number is 77). It cannot be faked throug
 
 This is an object-level access check: on every request for a record the server makes sure this
 user may see or change it. OWASP advises doing this on the server, for every object and every
-request, with one shared mechanism rather than anew in each place. A handy pattern is to look
+request, with one shared mechanism rather than re-implemented in each place. A handy pattern is to look
 for the record not in the whole table but among the current user's records.
 
 ### `notfound` No such order
@@ -233,7 +233,7 @@ log: many refusals in a row from one user look like someone trying numbers.
 - **Random numbers do not cure it.** Long random identifiers (such as UUIDs) are harder to guess,
   but a number can leak through a link or a log. OWASP treats them only as an extra layer, not a
   replacement for the check.
-- **Tests for foreign access.** An automated test logs in as one user and asks for another user's
+- **Tests for cross-user access.** An automated test logs in as one user and asks for another user's
   record: the answer must be a refusal.
 - **Log of refusals.** Access refusals are logged, and frequent refusals from one user raise an
   alarm.

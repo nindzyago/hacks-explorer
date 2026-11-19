@@ -65,7 +65,8 @@ the same browser.
 The browser attaches the cookie to every request to `bank.example`, no matter who started the
 request: the bank itself or another site's page. If the bank did not set the `SameSite` attribute,
 the behaviour depends on the browser: Chromium-based browsers treat such a cookie as `Lax`, Firefox
-and Safari do not. In this lesson the bank did not set the attribute.
+and Safari do not. But default `Lax` has a grace period: a cookie set no more than two minutes ago
+is still sent with a POST navigation from another site. The customer has just logged in. In this lesson the bank did not set the attribute.
 
 ### `plant` A trap on another site
 
@@ -95,7 +96,8 @@ not know it.
 All the attacker needs to know is what a transfer request looks like: the address and the field
 names. He can see them by opening his own account at the same bank. The only thing that differs
 between customers is the pass, and the victim's browser will supply it. The attack is called
-*Cross-Site Request Forgery*; in the MITRE catalogue it is CWE-352.
+*Cross-Site Request Forgery*; in the MITRE catalogue it is weakness CWE-352 and attack
+pattern CAPEC-62.
 
 ### `visit` The customer opens the page
 
@@ -150,6 +152,7 @@ Message: POST /transfer · Result: cookie attached
 ```http
 POST /transfer
 Origin: https://⟦cats.example⟧
+Sec-Fetch-Site: ⟦cross-site⟧
 Cookie: session=7f3a...
 
 to=⟦attacker-account⟧&sum=⟦50000⟧
@@ -167,10 +170,10 @@ came from.
 
 #### Deeper
 
-The hint is right in the request: the `Origin` header names the other site, and browsers also add
-`Sec-Fetch-Site: cross-site`. A bank that ignores them and does not expect a secret token cannot
+The hint is right in the request: the `Origin` header names the other site, and
+`Sec-Fetch-Site: cross-site` says the request was started from another site. A bank that ignores them and does not expect a secret token cannot
 tell the forgery from a real transfer. This is weakness CWE-352: the site does not check that the
-request was sent by the user's will.
+user actually meant to send the request.
 
 ### `done` Transfer completed
 
@@ -189,7 +192,7 @@ already done.
 
 #### Deeper
 
-The same way one can change the email or password in a profile, add a payee, send a message:
+In the same way, an attacker can change the email or password in a profile, add a payee, send a message:
 anything the site does on a single request from a logged-in user. In the OWASP Top 10:2021, CWE-352
 belongs to A01 "Broken Access Control".
 
@@ -200,6 +203,7 @@ Message: POST, no token · Result: request rejected
 
 ```http
 POST /transfer
+Origin: https://⟦cats.example⟧
 Sec-Fetch-Site: ⟦cross-site⟧
 Cookie: session=7f3a...
 
@@ -250,8 +254,8 @@ the bank's own page can read the token. So a CSRF token does not replace protect
 - **A CSRF token in every form that changes something.** Random, tied to the session, checked by
   the server on every request. Not in the address and not only in a cookie.
 - **Check where the request came from.** The server looks at `Sec-Fetch-Site` and rejects requests
-  to change data that come from other sites; if that header is missing, it compares `Origin` in
-  full.
+  to change data that come from other sites; if that header is missing, it rejects the request
+  or compares `Origin` in full.
 - **`GET` changes nothing.** Transfers, password changes and deletions go only through `POST` and
   other unsafe methods.
 - **The `SameSite` attribute on the session cookie.** `Lax` or `Strict`, set explicitly rather than

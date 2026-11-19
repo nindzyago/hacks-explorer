@@ -56,12 +56,14 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [759, 'Use of a One-Way Hash without a Salt'],
   [915, 'Improperly Controlled Modification of Dynamically-Determined Object Attributes'],
   [916, 'Use of Password Hash With Insufficient Computational Effort'],
+  [917, 'Improper Neutralization of Special Elements used in an Expression Language Statement'],
   [918, 'Server-Side Request Forgery'],
   [942, 'Permissive Cross-domain Security Policy with Untrusted Domains'],
   [943, 'Improper Neutralization of Special Elements in Data Query Logic'],
   [1021, 'Improper Restriction of Rendered UI Layers or Frames'],
   [1321, 'Improperly Controlled Modification of Object Prototype Attributes'],
   [1336, 'Improper Neutralization of Special Elements Used in a Template Engine'],
+  [1427, 'Improper Neutralization of Input Used for LLM Prompting'],
 ]);
 
 /** ATT&CK Enterprise technique or sub-technique → name as on its page. */

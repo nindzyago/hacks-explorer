@@ -15,7 +15,7 @@
 
 - [MITRE ATT&CK T1557: Adversary-in-the-Middle](https://attack.mitre.org/techniques/T1557/)
 - [MITRE ATT&CK T1557.002: ARP Cache Poisoning](https://attack.mitre.org/techniques/T1557/002/)
-- [OWASP Top 10:2021, A02 Cryptographic Failures](https://owasp.org/Top10/2021/A02_2021-Cryptographic_Failures/)
+- [OWASP Top 10:2021, A02 Cryptographic Failures](https://top10.owasp.org/2021/A02_2021-Cryptographic_Failures/)
 - [OWASP: Transport Layer Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html)
 - [OWASP: HTTP Strict Transport Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html)
 - [RFC 826: An Ethernet Address Resolution Protocol](https://www.rfc-editor.org/rfc/rfc826.html)
@@ -88,7 +88,7 @@ ARP-ответ: 192.0.2.1 находится по адресу ⟦00-00-5E-00-53
 
 Это отравление ARP-кеша, в MITRE ATT&CK — подтехника T1557.002 техники T1557
 «Adversary-in-the-Middle». По RFC 826 устройство обновляет уже известную запись по любому ARP-пакету,
-даже если сам ничего не спрашивал. Поэтому атакующему хватает повторять поддельный ответ, пока
+даже если сам ничего не спрашивал. Поэтому атакующему хватает повторять поддельный ответ, чтобы
 настоящий роутер не перебил его. Обычно он так же обманывает и роутер, чтобы ответы тоже шли через
 него. MAC-адреса в уроке взяты из диапазона для документации (RFC 9542).
 
@@ -181,7 +181,7 @@ TLS: начать соединение с bank.example
 #### Глубже
 
 TLS (версия 1.3 описана в RFC 8446) шифрует данные и проверяет сервер: сервер всегда должен
-доказать, кто он, сертификатом. Банк к тому же присылает заголовок HSTS, и браузер помнит: с
+доказать, кто он (при первом соединении — сертификатом). Банк к тому же присылает заголовок HSTS, и браузер помнит: с
 bank.example — только HTTPS. Поэтому атакующему не удастся подсунуть посетителю версию сайта по
 HTTP.
 

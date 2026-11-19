@@ -59,8 +59,8 @@ The attachment is a document with a **macro**: a small program inside the file.
 
 #### Deeper
 
-This is how ransomware most often gets in: through email, not by breaking into a server. In MITRE
-ATT&CK an email with a harmful attachment is sub-technique T1566.001 «Spearphishing Attachment».
+One of the most common ways in is email, not breaking into a server. In MITRE
+ATT&CK an email with a harmful attachment is sub-technique T1566.001 "Spearphishing Attachment".
 The file name and icon are chosen to look like an ordinary document, and an archive is sometimes
 locked with a password given in the email so that the mail filter cannot look inside.
 
@@ -87,7 +87,7 @@ the accountant's rights. On the screen nothing happens.
 #### Deeper
 
 The attacker needs the person to run the file themselves: in MITRE ATT&CK this is T1204.002
-«Malicious File». That is why the text in the document persuades rather than hacks. The program
+"Malicious File". That is why the text in the document persuades rather than hacks. The program
 does not encrypt right away; it looks around first: shared folders, network drives, accounts with
 broad rights. The more it takes over before encrypting, the harder the blow.
 
@@ -114,8 +114,8 @@ shared folders, and an administrator password found on the computer opens the wh
 #### Deeper
 
 Moving from one machine to another is called lateral movement. On Windows it often goes through
-administrative shares over the SMB protocol: in MITRE ATT&CK this is T1021.002 «SMB/Windows Admin
-Shares». A flat network, where a work computer can reach any server, turns one infection into an
+administrative shares over the SMB protocol: in MITRE ATT&CK this is T1021.002 "SMB/Windows Admin
+Shares". A flat network, where a work computer can reach any server, turns one infection into an
 infection of the whole company.
 
 ### `wipe` Deleting the backups
@@ -137,7 +137,7 @@ can write there, a captured server can delete there too.
 
 Without backups the victim has only one way to get the files back: the attacker's key. So
 deleting backups and disabling recovery features is a usual part of the attack: in MITRE ATT&CK
-this is T1490 «Inhibit System Recovery». A copy that can be reached over the network with the
+this is T1490 "Inhibit System Recovery". A copy that can be reached over the network with the
 server's rights does not save you from ransomware.
 
 ### `encrypt` Encrypting the files
@@ -163,8 +163,8 @@ Encryption runs fast and across many folders at once, so that nobody has time to
 #### Deeper
 
 Encryption by itself is a useful thing that protects data. Here it is turned against the owner:
-the data is intact, but without the key nobody can use it. In MITRE ATT&CK this is T1486 «Data
-Encrypted for Impact». If the key is not kept or not sent to the attacker, the same move simply
+the data is intact, but without the key nobody can use it. In MITRE ATT&CK this is T1486 "Data
+Encrypted for Impact". If the key is not kept or not sent to the attacker, the same move simply
 destroys the data.
 
 ### `ransom` The ransom note
@@ -185,7 +185,7 @@ days. The company's work stops.
 
 #### Step by step
 
-The attacker demands a ransom and presses with a deadline. A promise to return the key is only a
+The attacker demands a ransom and puts pressure on the victim with a deadline. A promise to return the key is only a
 promise: there is no way to check it in advance.
 
 #### Deeper
@@ -193,7 +193,7 @@ promise: there is no way to check it in advance.
 Often, before encrypting, attackers also copy the data out and then threaten to publish it. This
 is called double extortion: even with backups the victim still faces a leak. CISA advises
 contacting law enforcement in such an attack: decryption tools exist for some ransomware. In MITRE
-ATT&CK extorting money is described as T1657 «Financial Theft».
+ATT&CK extorting money is described as T1657 "Financial Theft".
 
 ### `blocked` The macro does not run
 
@@ -212,8 +212,8 @@ without running any code.
 
 #### Deeper
 
-CISA directly advises disabling macros in office files received by email. That closes the most
-common way in, but not all of them: ransomware can also come through a vulnerable server on the
+CISA directly advises disabling macros in office files received by email. That closes one of
+the main ways in, but not all of them: ransomware can also come through a vulnerable server on the
 internet or a stolen remote access password. That is why two more layers follow.
 
 ### `contain` The server is out of reach
@@ -244,13 +244,13 @@ Message: yesterday's backup · Result: files restored
 
 ```text
 backup:  yesterday's, storage disconnected from the network
-plan:    wipe the infected computer → bring the files back
+plan:    collect traces → wipe the infected computer → bring the files back
 ```
 
 #### Simple
 
-Even if something got encrypted, the company has a copy the program could not reach. The infected
-computer is wiped and the files come back from the copy. No need to pay.
+Even if something got encrypted, the company has a copy the program could not reach. Once the traces
+are collected, the infected computer is wiped and the files come back from the copy. No need to pay.
 
 #### Step by step
 
@@ -274,6 +274,6 @@ help against the threat of publishing stolen data: there the first two layers he
   a user should not work with administrator rights.
 - **Updates and secure remote access.** Fix known vulnerabilities, first of all on systems exposed
   to the internet; protect email and remote access with a phishing-resistant second factor.
-- **A plan for an attack.** Who disconnects infected machines from the network, where to restore
+- **An incident response plan.** Who disconnects infected machines from the network, where to restore
   from, whom to call. In an attack, report it to law enforcement and do not wipe the traces before
   the investigation.

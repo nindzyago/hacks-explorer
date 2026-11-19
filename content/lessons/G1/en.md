@@ -15,7 +15,7 @@
 
 - [MITRE ATT&CK T1557: Adversary-in-the-Middle](https://attack.mitre.org/techniques/T1557/)
 - [MITRE ATT&CK T1557.002: ARP Cache Poisoning](https://attack.mitre.org/techniques/T1557/002/)
-- [OWASP Top 10:2021, A02 Cryptographic Failures](https://owasp.org/Top10/2021/A02_2021-Cryptographic_Failures/)
+- [OWASP Top 10:2021, A02 Cryptographic Failures](https://top10.owasp.org/2021/A02_2021-Cryptographic_Failures/)
 - [OWASP: Transport Layer Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html)
 - [OWASP: HTTP Strict Transport Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html)
 - [RFC 826: An Ethernet Address Resolution Protocol](https://www.rfc-editor.org/rfc/rfc826.html)
@@ -185,7 +185,7 @@ send the password only once the secure connection is ready.
 #### Deeper
 
 TLS (version 1.3 is described in RFC 8446) encrypts the data and checks the server: the server
-always has to prove who it is with a certificate. The bank also sends an HSTS header, and the
+always has to prove who it is (on the first connection, with a certificate). The bank also sends an HSTS header, and the
 browser remembers: for bank.example, HTTPS only. So the attacker cannot slip the visitor a plain
 HTTP version of the site.
 
