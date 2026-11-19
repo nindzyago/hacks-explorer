@@ -6,6 +6,7 @@
  */
 export const UI_KEYS = [
   'app.tagline',
+  'app.description',
   'app.language',
   'format.decimal',
   'page.notFound.title',

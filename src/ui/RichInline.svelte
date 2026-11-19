@@ -11,6 +11,13 @@
 
   const { nodes }: { nodes: readonly SiteInline[] } = $props();
 
+  /**
+   * Inline code up to this many characters never breaks across lines (`admin' --` must not become
+   * «admin' -» / «- …» at a hyphen); longer code may break anywhere so a phone never scrolls
+   * sideways (S10).
+   */
+  const WHOLE_CODE_MAX = 24;
+
   function onkeydown(event: KeyboardEvent, id: string): void {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
@@ -20,7 +27,7 @@
 </script>
 
 {#each nodes as node, i (i)}{#if node.type === 'text'}{node.value}{:else if node.type === 'code'}<code
-      >{node.value}</code
+      class:whole={node.value.length <= WHOLE_CODE_MAX}>{node.value}</code
     >{:else if node.type === 'strong'}<strong><RichInline nodes={node.children} /></strong
     >{:else if node.type === 'emphasis'}<em><RichInline nodes={node.children} /></em
     >{:else if node.type === 'term'}<span
@@ -47,6 +54,10 @@
     color: var(--code-ink);
     border-radius: var(--radius-sm);
     overflow-wrap: anywhere;
+  }
+
+  code.whole {
+    white-space: nowrap;
   }
 
   /* A word with a definition: a dotted underline, the colour of the text (K7). */

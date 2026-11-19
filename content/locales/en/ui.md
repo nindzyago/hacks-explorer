@@ -9,6 +9,7 @@ in. Keep the same keys and the same `{names}`.
 ## Site
 
 - `app.tagline` How attacks work and how to stop them
+- `app.description` How attacks work and how to stop them: step-by-step lessons.
 - `app.language` Site language
 - `format.decimal` .
 

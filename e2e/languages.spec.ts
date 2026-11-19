@@ -97,6 +97,11 @@ test('S5: B1 step 3 in Russian → locale.set en → the same step and mode, Eng
   await expect(page.getByTestId('language-en')).toHaveAttribute('aria-pressed', 'true');
   const russian = (await wordsNotIn(page, 'en')).filter((t) => CYRILLIC.test(t));
   expect(russian).toEqual([]);
+  // K109: the description meta follows the language too.
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+    'content',
+    'How attacks work and how to stop them: step-by-step lessons.',
+  );
 
   // And back: the Russian strings return, the place stays.
   expect(await run(page, 'locale.set', { lang: 'ru' })).toEqual({ ok: true });
@@ -124,6 +129,17 @@ test('the RU / EN switch runs locale.set, keeps the defence mode and is remember
   expect(path(page)).toBe('/en/lesson/B1#step-2-defence');
   expect(await page.evaluate((k) => localStorage.getItem(k), STORAGE_KEY)).toBe('en');
 
+  // K108: Back undoes the switch (the previous language, the same place) and is not a choice:
+  // the remembered language stays. Forward brings English back.
+  await page.goBack();
+  await expect(page.getByTestId('player-status')).toHaveText('Шаг 2 из 5');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
+  expect(path(page)).toBe('/ru/lesson/B1#step-2-defence');
+  expect(await page.evaluate((k) => localStorage.getItem(k), STORAGE_KEY)).toBe('en');
+  await page.goForward();
+  await expect(page.getByTestId('player-status')).toHaveText('Step 2 of 5');
+  expect(path(page)).toBe('/en/lesson/B1#step-2-defence');
+
   // The next visit without a language in the address opens English.
   await page.goto('/');
   await expect(page).toHaveURL(/\/en\/lesson\/I1$/);
@@ -135,6 +151,17 @@ test('the RU / EN switch runs locale.set, keeps the defence mode and is remember
   await expect(page.getByTestId('player-status')).toHaveText('Шаг 1 из 5');
   // Opening an address is not a choice: the remembered language stays.
   expect(await page.evaluate((k) => localStorage.getItem(k), STORAGE_KEY)).toBe('en');
+});
+
+test('an unknown page under /en/ says so in English, whatever the browser (K110)', async ({
+  page,
+}) => {
+  await page.goto('/en/nope');
+  await expect(page.getByTestId('not-found-title')).toHaveText('There is no such page');
+  await expect(page.getByTestId('not-found-home')).toHaveText('Home page');
+  await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  await expect(page).toHaveTitle('There is no such page — Hacks Explorer');
+  expect(path(page)).toBe('/en/nope');
 });
 
 test('a glossary term opens its English definition', async ({ page }) => {

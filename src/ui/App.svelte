@@ -58,6 +58,13 @@
   $effect(() => {
     document.documentElement.lang = locale;
   });
+  // The description in index.html is the Russian default; the page says it in its language
+  // (K109). Search engines that do not run scripts see the default.
+  $effect(() => {
+    document
+      .querySelector('meta[name="description"]')
+      ?.setAttribute('content', t('app.description'));
+  });
 
   // The lesson in the state (I1 «Фишинг» until `lesson.open` or an address, K7), in the
   // language of the page (M2.3): a change of language loads the same lesson in the other one.

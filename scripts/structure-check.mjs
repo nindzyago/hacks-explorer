@@ -44,7 +44,10 @@
 //                     in code. Site code under src/ has no Cyrillic letter outside comments (a
 //                     string, a template, markup text, an attribute). Tests are not site code.
 //                     The language tables of the content checker are exempt (UI_STRINGS_EXEMPT,
-//                     each with its reason). Not seen: words of a Latin-script language, and
+//                     each with its reason). In index.html only the content of the description
+//                     meta may be Cyrillic: the Russian default of `app.description` (K109),
+//                     which the page replaces at run time. Not seen: words of a Latin-script
+//                     language, and
 //                     letters written as \u escapes (the keyboard's \u0432 for the D key).
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, posix, relative, sep } from 'node:path';
@@ -135,6 +138,14 @@ const NAMED_COLOURS = new Set(
 const WORD = /(?<![\w.$-])[a-z]+(?:-[a-z]+)*(?![\w(-])/gi;
 const QUOTED = /(['"`])((?:(?!\1)[^\\\n]|\\.)*)\1/g;
 
+/** index.html with the value of its description meta blanked, keeping every line (K109). */
+function withoutDescription(html) {
+  return html.replace(
+    /(<meta\s+name=(["'])description\2\s+content=)(["'])([^"']*)\3/i,
+    (_m, head, _q, quote, value) => `${head}${quote}${value.replace(/[^\n]/g, ' ')}${quote}`,
+  );
+}
+
 /** @param {string} path repo-relative, forward slashes @returns {keyof typeof RANK | null} */
 export function layerOf(path) {
   const parts = path.split('/');
@@ -213,8 +224,11 @@ export function checkFiles(files) {
       }
     }
 
-    if (site && !TEST.test(path) && path.startsWith('src/') && !UI_STRINGS_EXEMPT.has(path)) {
-      const { text: code } = parts(path, text);
+    const words =
+      path === 'index.html' || (path.startsWith('src/') && !UI_STRINGS_EXEMPT.has(path));
+    if (site && !TEST.test(path) && words) {
+      const { text: blanked } = parts(path, text);
+      const code = path === 'index.html' ? withoutDescription(blanked) : blanked;
       const seen = new Set();
       for (const [index, line] of code.split('\n').entries()) {
         const at = CYRILLIC.exec(line);

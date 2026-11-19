@@ -655,6 +655,14 @@ describe('ui-strings', () => {
     ).toEqual([]);
   });
 
+  it('allows Cyrillic in index.html only in the default description (K109)', () => {
+    const meta = '<meta\n      name="description"\n      content="Уроки по шагам."\n    />';
+    expect(found([file('index.html', `<html lang="ru"><head>${meta}</head></html>`)])).toEqual([]);
+    expect(
+      found([file('index.html', `<html><head>${meta}<title>Уроки</title></head></html>`)]),
+    ).toEqual(['index.html:4']);
+  });
+
   it('reports a line once and names the word', () => {
     const problems = checkFiles([file('src/ui/A.svelte', '<p>Шаг вперёд и Шаг назад</p>')]);
     expect(problems).toHaveLength(1);

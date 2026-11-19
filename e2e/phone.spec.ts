@@ -102,6 +102,15 @@ for (const phone of [
                 expect(small, where).toEqual([]);
                 const drawn = (await textSizes(page)).filter((t) => t.text.includes('…'));
                 expect(drawn, where).toEqual([]);
+                // Short inline code stays on one line: no «admin' -» / «- reaches» (M2.3b).
+                const broken = await page.evaluate(() =>
+                  Array.from(document.querySelectorAll('[data-testid="explain"] code'))
+                    .filter((c) => c.closest('pre') === null)
+                    .filter((c) => c.textContent.length <= 24)
+                    .filter((c) => c.getClientRects().length > 1)
+                    .map((c) => c.textContent),
+                );
+                expect(broken, where).toEqual([]);
               }
               await page.evaluate(() =>
                 window.__app?.commands.run('depth.set', { depth: 'simple' }),

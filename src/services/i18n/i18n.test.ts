@@ -40,6 +40,19 @@ describe('UI_KEYS', () => {
   });
 });
 
+// Verifier M2.3a (K109): the static description of index.html is the Russian default of
+// `app.description`; the page sets the language's own at run time.
+describe('index.html', () => {
+  it('describes the site with the Russian app.description', () => {
+    const html = readFileSync(new URL('../../../index.html', import.meta.url), 'utf8');
+    const meta = /<meta\s+name="description"\s+content="([^"]*)"\s*\/?>/.exec(html);
+    expect(meta?.[1]).toBe(ru['app.description']);
+    expect(en['app.description']).toBe(
+      'How attacks work and how to stop them: step-by-step lessons.',
+    );
+  });
+});
+
 describe('readLocales', () => {
   it('reads the bundled strings of every site language', () => {
     const r = readLocales(bundle);
