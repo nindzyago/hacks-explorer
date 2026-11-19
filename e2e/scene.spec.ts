@@ -65,6 +65,47 @@ test('icons and fonts come from this site', async ({ page }) => {
   ).toEqual([true, true]);
 });
 
+// CI1: the layout core estimates text at the fonts' own advances (JetBrains Mono 0.6 em a
+// character). Chromium on Linux hints text and rounds each advance to whole pixels (7 px for
+// 6.6 at 11 px), so names and notes came wider than laid out and touched the receiver ring;
+// the scene draws its text unhinted on every system.
+test('the scene draws its text at the advances the layout counts on, on every system', async ({
+  page,
+}) => {
+  await openApp(page);
+  for (const lesson of ['B1', 'I1']) {
+    await page.evaluate((id) => window.__app?.commands.run('lesson.open', { id }), lesson);
+    await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', lesson);
+    await sceneReady(page);
+    const off = await page.evaluate(() => {
+      const out: string[] = [];
+      const texts = document.querySelectorAll(
+        '[data-testid="scene"] [data-part="note"], [data-testid="scene"] [data-part="label"]',
+      );
+      for (const text of texts) {
+        if (!(text instanceof SVGTextElement)) continue;
+        const spans = Array.from(text.querySelectorAll(':scope > tspan'));
+        for (const line of spans.length > 0 ? spans : [text]) {
+          // A line drawn narrower to fit has its width given; the others have their own.
+          if (!(line instanceof SVGTextContentElement) || line.hasAttribute('textLength')) continue;
+          const style = getComputedStyle(line);
+          const size = Number.parseFloat(style.fontSize);
+          const spacing = Number.parseFloat(style.letterSpacing) || 0;
+          const n = Array.from(line.textContent).length;
+          const expected = n * (0.6 * size + spacing);
+          const real = line.getComputedTextLength();
+          if (Math.abs(real - expected) > 0.1) {
+            out.push(`${line.textContent}: ${real.toFixed(2)} px, not ${expected.toFixed(2)}`);
+          }
+        }
+      }
+      return { out, count: texts.length };
+    });
+    expect(off.count, lesson).toBeGreaterThanOrEqual(4);
+    expect(off.out, lesson).toEqual([]);
+  }
+});
+
 for (const viewport of VIEWPORTS) {
   test.describe(`at ${String(viewport.width)}×${String(viewport.height)}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height } });

@@ -394,6 +394,9 @@
     display: block;
     width: 100%;
     height: auto;
+    /* CI1: unhinted text, at the advances the layout counts on; Chromium on Linux otherwise
+       rounds every glyph to whole pixels and names come wider than laid out. */
+    text-rendering: geometricPrecision;
   }
 
   /* Visible to screen readers only (M1.3): the table under the scene shows the step. */
