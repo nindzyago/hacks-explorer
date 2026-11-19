@@ -86,6 +86,41 @@ Conditions for AI Products), а не этот пересказ.
 перерисовать). Пока репозиторий закрыт (K120), иконки никому не раздаются, кроме как картинками
 на сайте.
 
+## Карточки для соцсетей
+
+Картинки 1200×630 для превью ссылок (Open Graph, Twitter card, M4.3): по одной на урок и язык и
+карточка сайта на язык (страница «О проекте» и главный адрес). Нарисованы скриптом
+`npm run cards` (`scripts/make-cards.mjs`, ImageMagick) из названия урока и класса атаки
+(паспорт, `class`), до трёх иконок участников урока (`content/icons/`, их лицензия — выше) и
+шрифтов сайта Onest и JetBrains Mono (SIL OFL, ниже). Лицензия — как у текстов и схем уроков,
+CC BY-SA 4.0, с оговоркой G10 про иконки. Устаревшую карточку (поменялись название, иконки,
+цвета или вёрстка) ловит gate (`scripts/cards.test.ts`).
+
+| Файл | Что | Источник |
+|---|---|---|
+| `public/cards/about.ru.png` | карточка сайта и «О проекте», ru | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/B1.ru.png` | карточка урока B1, ru | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/C1.ru.png` | карточка урока C1, ru | `npm run cards` из текста урока, иконок (attacker, browser, server) и шрифтов сайта |
+| `public/cards/C4.ru.png` | карточка урока C4, ru | `npm run cards` из текста урока, иконок (attacker, document, browser) и шрифтов сайта |
+| `public/cards/D1.ru.png` | карточка урока D1, ru | `npm run cards` из текста урока, иконок (user, attacker, server) и шрифтов сайта |
+| `public/cards/F1.ru.png` | карточка урока F1, ru | `npm run cards` из текста урока, иконок (user, server, db) и шрифтов сайта |
+| `public/cards/G1.ru.png` | карточка урока G1, ru | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
+| `public/cards/H2.ru.png` | карточка урока H2, ru | `npm run cards` из текста урока, иконок (attacker, workstation, server) и шрифтов сайта |
+| `public/cards/I1.ru.png` | карточка урока I1, ru | `npm run cards` из текста урока, иконок (attacker, user, browser) и шрифтов сайта |
+| `public/cards/J1.ru.png` | карточка урока J1, ru | `npm run cards` из текста урока, иконок (attacker, server, assistant) и шрифтов сайта |
+| `public/cards/K1.ru.png` | карточка урока K1, ru | `npm run cards` из текста урока, иконок (server, attacker, log) и шрифтов сайта |
+| `public/cards/about.en.png` | карточка сайта и «О проекте», en | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/B1.en.png` | карточка урока B1, en | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/C1.en.png` | карточка урока C1, en | `npm run cards` из текста урока, иконок (attacker, browser, server) и шрифтов сайта |
+| `public/cards/C4.en.png` | карточка урока C4, en | `npm run cards` из текста урока, иконок (attacker, document, browser) и шрифтов сайта |
+| `public/cards/D1.en.png` | карточка урока D1, en | `npm run cards` из текста урока, иконок (user, attacker, server) и шрифтов сайта |
+| `public/cards/F1.en.png` | карточка урока F1, en | `npm run cards` из текста урока, иконок (user, server, db) и шрифтов сайта |
+| `public/cards/G1.en.png` | карточка урока G1, en | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
+| `public/cards/H2.en.png` | карточка урока H2, en | `npm run cards` из текста урока, иконок (attacker, workstation, server) и шрифтов сайта |
+| `public/cards/I1.en.png` | карточка урока I1, en | `npm run cards` из текста урока, иконок (attacker, user, browser) и шрифтов сайта |
+| `public/cards/J1.en.png` | карточка урока J1, en | `npm run cards` из текста урока, иконок (attacker, server, assistant) и шрифтов сайта |
+| `public/cards/K1.en.png` | карточка урока K1, en | `npm run cards` из текста урока, иконок (server, attacker, log) и шрифтов сайта |
+
 ## Шрифты
 
 Оба шрифта под SIL Open Font License 1.1; текст лицензии лежит рядом со шрифтами. Файлы — те, что

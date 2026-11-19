@@ -32,7 +32,11 @@ const wrangler = (patch = {}) =>
   JSON.stringify({
     name: 'hacks-explorer',
     compatibility_date: '2026-11-17',
-    assets: { directory: './dist', not_found_handling: 'single-page-application' },
+    assets: {
+      directory: './dist',
+      not_found_handling: 'single-page-application',
+      html_handling: 'auto-trailing-slash',
+    },
     workers_dev: true,
     preview_urls: true,
     previews: {},
@@ -150,6 +154,21 @@ describe('checkWrangler', () => {
     [{ name: 'other' }, 'name'],
     [{ assets: { directory: './public', not_found_handling: 'single-page-application' } }, 'dist'],
     [{ assets: { directory: './dist' } }, 'not_found_handling'],
+    // M4.3: /ru/lesson/K1 must be served from ru/lesson/K1.html, not redirected or skipped.
+    [
+      { assets: { directory: './dist', not_found_handling: 'single-page-application' } },
+      'html_handling',
+    ],
+    [
+      {
+        assets: {
+          directory: './dist',
+          not_found_handling: 'single-page-application',
+          html_handling: 'none',
+        },
+      },
+      'html_handling',
+    ],
     [{ assets: null }, 'assets'],
     [{ compatibility_date: 'today' }, 'compatibility_date'],
     [{ compatibility_date: '2999-01-01' }, 'compatibility_date'],

@@ -97,11 +97,13 @@ test('S5: B1 step 3 in Russian → locale.set en → the same step and mode, Eng
   await expect(page.getByTestId('language-en')).toHaveAttribute('aria-pressed', 'true');
   const russian = (await wordsNotIn(page, 'en')).filter((t) => CYRILLIC.test(t));
   expect(russian).toEqual([]);
-  // K109: the description meta follows the language too.
+  // K109: the description meta follows the language too; M4.3: it is the lesson's own, in the
+  // English template (content/locales/en/ui.md, meta.lesson.description).
   await expect(page.locator('meta[name="description"]')).toHaveAttribute(
     'content',
-    'How attacks work and how to stop them: step-by-step lessons.',
+    /^Injection into a database query\. .+\. How to stop it: .+\.$/,
   );
+  await expect(page).toHaveTitle('SQL injection — Hacks Explorer');
 
   // And back: the Russian strings return, the place stays.
   expect(await run(page, 'locale.set', { lang: 'ru' })).toEqual({ ok: true });

@@ -2,6 +2,8 @@
 // Static server for the e2e tests: serves a built folder the way the production host
 // (Cloudflare) does, in the parts that can break a reader's page:
 //   - headers from the `_headers` file in that folder (the CSP lives there);
+//   - a path without an extension is served from `<path>.html` when that file exists (M4.3, the
+//     static page of a lesson; Cloudflare assets.html_handling "auto-trailing-slash");
 //   - any unknown path answers with index.html (the site routes in the browser);
 //   - nothing outside the folder is ever served.
 // No dependencies. Usage: node scripts/serve-static.mjs <folder> <port>
@@ -107,7 +109,8 @@ function fileFor(root, pathname) {
   const file = resolve(join(root, ...segments));
   if (file === root || !file.startsWith(root + sep)) return null;
   if (file === join(root, '_headers')) return null;
-  if (extname(file) === '') return null;
+  // M4.3: `/ru/lesson/K1` is the page `ru/lesson/K1.html`; a slash at the end is a folder.
+  if (extname(file) === '') return decoded.endsWith('/') ? null : `${file}.html`;
   return file;
 }
 

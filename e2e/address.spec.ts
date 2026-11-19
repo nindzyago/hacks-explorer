@@ -169,7 +169,9 @@ test('an address that is no page of the site is a message with «На главн
   await page.getByTestId('not-found-home').click();
   await expect(page).toHaveURL(/\/ru\/lesson\/I1$/);
   await expect(page.getByTestId('scene')).toBeVisible();
-  await expect(page).toHaveTitle('Hacks Explorer');
+  // M4.3: a lesson page is titled by its lesson.
+  await expect(page).toHaveTitle(/^.+ — Hacks Explorer$/);
+  await expect(page).not.toHaveTitle('Такой страницы нет — Hacks Explorer');
 });
 
 test('no lesson data is requested while the path is unknown', async ({ page }) => {

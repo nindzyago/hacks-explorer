@@ -11,7 +11,11 @@
     "directory": "./dist",
     // Lesson addresses such as /ru/lesson/B1 are routes inside the page, not files.
     // On preview addresses this works only for browser navigation (docs/deploy.md).
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // M4.3: each lesson has a static page with its own title and card for link previews;
+    // /ru/lesson/K1 is served from ru/lesson/K1.html without a redirect. Said out loud, though
+    // it is the default.
+    "html_handling": "auto-trailing-slash"
   },
   // The draft address (main) and pull request previews live on workers.dev.
   "workers_dev": true,

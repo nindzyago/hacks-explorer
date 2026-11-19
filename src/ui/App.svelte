@@ -2,6 +2,7 @@
   import type { AppContext } from '../commands/app';
   import type { SiteLesson } from '../core/lesson/site';
   import { stepCount } from '../core/player/player';
+  import { lessonDescription, pageTitle } from '../core/meta/meta';
   import { PROJECT } from '../core/project';
   import { createStore, type Store } from '../core/store';
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
@@ -73,14 +74,6 @@
   $effect(() => {
     document.documentElement.lang = locale;
   });
-  // The description in index.html is the Russian default; the page says it in its language
-  // (K109). Search engines that do not run scripts see the default.
-  $effect(() => {
-    document
-      .querySelector('meta[name="description"]')
-      ?.setAttribute('content', t($about ? 'about.description' : 'app.description'));
-  });
-
   // The lesson in the state (I1 «Фишинг» until `lesson.open` or an address, K7), in the
   // language of the page (M2.3): a change of language loads the same lesson in the other one.
   type Shown =
@@ -134,13 +127,31 @@
   });
 
   // M2.2: the page title says when the address is no page; the heading takes the focus.
+  // M4.3: a lesson page has the lesson's own title and description, the same as the static page
+  // the build writes for it (scripts/site-pages.ts), so a search engine that runs scripts sees
+  // them too; the site's own description stays for «no page» and a lesson that failed to load.
+  // While a lesson loads the previous ones stay. The default in index.html is Russian (K109).
   let notFoundHeading = $state<HTMLElement | null>(null);
   $effect(() => {
-    document.title = $notFound
-      ? `${t('page.notFound.title')} — ${PROJECT.name}`
-      : $about
-        ? `${t('about.title')} — ${PROJECT.name}`
-        : PROJECT.name;
+    let title: string | null = null;
+    let description: string | null = null;
+    if ($notFound) {
+      title = pageTitle(t('page.notFound.title'));
+      description = t('app.description');
+    } else if ($about) {
+      title = pageTitle(t('about.title'));
+      description = t('about.description');
+    } else if (shown.state === 'ready') {
+      title = pageTitle(shown.lesson.title);
+      description = lessonDescription(shown.lesson.passport, t) ?? t('app.description');
+    } else if (shown.state === 'error') {
+      title = pageTitle(null);
+      description = t('app.description');
+    }
+    if (title !== null) document.title = title;
+    if (description !== null) {
+      document.querySelector('meta[name="description"]')?.setAttribute('content', description);
+    }
   });
   $effect(() => {
     notFoundHeading?.focus();

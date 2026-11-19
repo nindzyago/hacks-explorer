@@ -113,6 +113,8 @@ describe('createStaticServer', () => {
     writeFileSync(join(root, 'index.html'), '<!doctype html><title>home</title>');
     writeFileSync(join(root, 'assets', 'app.js'), 'export {};');
     writeFileSync(join(root, 'assets', 'app.css'), 'main{}');
+    mkdirSync(join(root, 'ru', 'lesson'), { recursive: true });
+    writeFileSync(join(root, 'ru', 'lesson', 'K1.html'), '<!doctype html><title>K1</title>');
     writeFileSync(join(root, '_headers'), HEADERS);
     writeFileSync(join(bare, 'index.html'), '<!doctype html><title>bare</title>');
   });
@@ -150,6 +152,20 @@ describe('createStaticServer', () => {
       expect(page.status, path).toBe(200);
       expect(page.body, path).toContain('<title>home</title>');
       expect(page.headers['content-security-policy'], path).toBeDefined();
+    }
+  });
+
+  // M4.3: Cloudflare's html_handling "auto-trailing-slash" serves /ru/lesson/K1 from K1.html.
+  it('serves the static page of an address from <path>.html, with the headers of that path', async () => {
+    const origin = await start(root);
+    const page = await raw(origin, '/ru/lesson/K1');
+    expect(page.status).toBe(200);
+    expect(page.headers['content-type']).toBe('text/html; charset=utf-8');
+    expect(page.body).toContain('<title>K1</title>');
+    expect(page.headers['content-security-policy']).toBeDefined();
+    // Another lesson, a near miss, or a path that escapes still get index.html.
+    for (const path of ['/ru/lesson/K2', '/ru/lesson/K1/', '/ru/lesson/..%2FK1', '/ru/lesson']) {
+      expect((await raw(origin, path)).body, path).toContain('<title>home</title>');
     }
   });
 
