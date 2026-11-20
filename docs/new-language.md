@@ -29,15 +29,18 @@ Below, `xx` stands for the language code: two or three lowercase letters (ISO 63
    says `xx needs its lesson headings (src/core/lesson/headings.ts) and glossary words
    (src/core/glossary/words.ts)`.
 
-2. **One folder `content/locales/xx/`** with three files. Copy them from `content/locales/en/`
-   (or `ru/`), change the language in the second line, translate the text:
+2. **One folder `content/locales/xx/`** with two files and the glossary folder. Copy them from
+   `content/locales/en/` (or `ru/`), change the language in the second line of every file,
+   translate the text:
    - `ui.md`, the interface strings. Second line `` `ui` xx · `format` 1 ``. Every key of
      `content/locales/ru/ui.md`, no other keys; a `{name}` in a string is filled in by the code
      and stays exactly as it is.
-   - `glossary.md`, the glossary. Second line `` `glossary` xx · `format` 1 ``. The same
-     sections and term ids in the same order, the same `category`, `see` and `lessons`; the
-     `Forms` line lists the forms of the word in your language that the site should link in lesson
-     text (see `src/core/glossary/README.md`).
+   - `glossary/`, the glossary: `index.md` (the title and the list of sections; second line
+     `` `glossary` xx · `format` 2 ``) and one file per section, `web.md`, `basics.md`, … (title:
+     the section's name from `index.md`; second line `` `glossary` xx · `category` web ``). The
+     same files as `ru/glossary/`, in each the same term ids in the same order, the same
+     `category`, `see` and `lessons`; the `Forms` line lists the forms of the word in your language
+     that the site should link in lesson text (see `src/core/glossary/README.md`).
    - `catalog.md`, the list of all topics. Second line `` `catalog` xx · `format` 1 ``. The same
      sections and topics in the same order.
 

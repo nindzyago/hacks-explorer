@@ -17,9 +17,9 @@
 
 ## Participants
 
-- `attacker` **Attacker** — 203.0.113.66
-- `server` **Web server** — 198.51.100.10
-- `db` **Database** — users table
+- `attacker` **Attacker** — 203.0.113.66 · `term:attacker`
+- `server` **Web server** — 198.51.100.10 · `term:web-server`
+- `db` **Database** — users table · `term:database`
 
 ## Zones
 

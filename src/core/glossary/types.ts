@@ -1,5 +1,6 @@
 /**
- * The glossary (M2.4, K7, K98): one Markdown file per language, `content/locales/<lang>/glossary.md`.
+ * The glossary (M2.4, K7, K98; split into files in G17): a folder per language,
+ * `content/locales/<lang>/glossary/` with `index.md` (categories) and one file per category.
  * `checkGlossaries` turns it into this data; the build links terms in lesson text and writes
  * `data/glossary/<lang>.json` for the site. Plain data that survives JSON.
  */
@@ -29,14 +30,18 @@ export interface GlossaryTerm {
   /** Related lesson ids, `B1`. */
   readonly lessons: readonly string[];
   readonly definition: readonly Block[];
-  /** The heading `## `id` Title`. */
+  /** The source file of the term: `content/locales/ru/glossary/web.md`. */
+  readonly file: string;
+  /** The heading `## `id` Title`, in `file`. */
   readonly position: Position;
 }
 
 export interface Glossary {
   readonly language: string;
-  /** The file heading: «Словарь». */
+  /** The heading of index.md: «Словарь». */
   readonly title: string;
+  /** Category positions are in this file: `content/locales/ru/glossary/index.md`. */
+  readonly index: string;
   readonly categories: readonly GlossaryCategory[];
   readonly terms: readonly GlossaryTerm[];
 }

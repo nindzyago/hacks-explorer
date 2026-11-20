@@ -1,7 +1,7 @@
 // M4.2, oracle level D (scenarios S5, S9; decisions K94, K105, K106): a new site language is
 // added the way docs/new-language.md says, and nothing else changes. The test makes a fictional
 // language `xx` in a copy of the real content: one folder content/locales/xx/ (interface strings,
-// glossary, catalog), an xx.md next to every lesson and one line in content/locales/languages.md.
+// the glossary folder, catalog), an xx.md next to every lesson and one line in content/locales/languages.md.
 // The two word tables of the checkers (src/core/lesson/headings.ts, src/core/glossary/words.ts)
 // get their one entry through a mock, because a real entry would put a fake language into the
 // product; with the entry switched off the gate names both tables.
@@ -48,7 +48,7 @@ afterAll(() => {
 });
 
 interface Steps {
-  /** Step 2: content/locales/xx/ with ui.md, glossary.md and catalog.md. */
+  /** Step 2: content/locales/xx/ with ui.md, glossary/ (index.md and a file per category) and catalog.md. */
   readonly folder: boolean;
   /** Step 3: xx.md in every lesson folder (all but `skip`). */
   readonly lessons: boolean;
@@ -66,7 +66,6 @@ function project(name: string, steps: Steps): string {
     mkdirSync(join(locales, CODE));
     for (const [file, word] of [
       ['ui.md', 'ui'],
-      ['glossary.md', 'glossary'],
       ['catalog.md', 'catalog'],
     ] as const) {
       const en = readFileSync(join(locales, 'en', file), 'utf8');
@@ -75,6 +74,19 @@ function project(name: string, steps: Steps): string {
       writeFileSync(
         join(locales, CODE, file),
         en.replace(header, `\`${word}\` ${CODE} · \`format\` 1`),
+      );
+    }
+    // The glossary folder: every file names its language on the second line.
+    mkdirSync(join(locales, CODE, 'glossary'));
+    const names = readdirSync(join(locales, 'en', 'glossary'));
+    expect(names).toContain('index.md');
+    for (const name of names) {
+      const en = readFileSync(join(locales, 'en', 'glossary', name), 'utf8');
+      const header = '`glossary` en · ';
+      expect(en).toContain(header);
+      writeFileSync(
+        join(locales, CODE, 'glossary', name),
+        en.replace(header, `\`glossary\` ${CODE} · `),
       );
     }
   }
@@ -151,7 +163,7 @@ describe('adding a site language (M4.2, K94)', () => {
     );
     const text = !result.ok && result.errors.join('\n');
     expect(text).toContain(`content/locales/${CODE}/ui.md:1:1: `);
-    expect(text).toContain(`content/locales/${CODE}/glossary.md:1:1: `);
+    expect(text).toContain(`content/locales/${CODE}/glossary/index.md:1:1: `);
     expect(text).toContain(`content/locales/${CODE}/catalog.md:1:1: `);
   });
 

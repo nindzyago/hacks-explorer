@@ -3,7 +3,7 @@ export declare const ROOT: string;
 export declare function readContent(root?: string): {
   lessons: { path: string; text: string }[];
   sources: { path: string; text: string };
-  /** content/locales/<lang>/glossary.md (M2.4). */
+  /** Every file of content/locales/<lang>/glossary/ and an old glossary.md (M2.4, G17). */
   glossaries: { path: string; text: string }[];
   /** content/locales/<lang>/ui.md (M2.3). */
   ui: { path: string; text: string }[];

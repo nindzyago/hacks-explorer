@@ -22,7 +22,9 @@ describe('content', () => {
   // `term:` words name its terms.
   it('has a Russian glossary that passes the glossary checker', () => {
     const { glossaries } = readContent();
-    expect(glossaries.map((f) => f.path)).toContain('content/locales/ru/glossary.md');
+    // G17: a folder per language, index.md and one file per category.
+    expect(glossaries.map((f) => f.path)).toContain('content/locales/ru/glossary/index.md');
+    expect(glossaries.map((f) => f.path)).toContain('content/locales/ru/glossary/web.md');
     const checked = checkGlossaries(glossaries, {
       lessons: result.lessons,
       lessonPaths: lessons.map((f) => f.path),

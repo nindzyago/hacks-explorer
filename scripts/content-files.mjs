@@ -23,8 +23,9 @@ function walk(dir, out) {
 }
 
 /**
- * Every file under content/lessons, content/sources.md, the glossaries
- * (`content/locales/<lang>/glossary.md`, M2.4), the interface strings
+ * Every file under content/lessons, content/sources.md, the glossaries (every file of
+ * `content/locales/<lang>/glossary/`, M2.4 and G17, and an old single `glossary.md` for the
+ * checker to name), the interface strings
  * (`content/locales/<lang>/ui.md`, M2.3) and the list of site languages
  * (`content/locales/languages.md`, null when missing) and the catalogs of topics
  * (`content/locales/<lang>/catalog.md`, M2.1b), as `{ path, text }` with paths relative
@@ -50,9 +51,12 @@ export function readContent(root = ROOT) {
     sources = { path: 'content/sources.md', text: '' };
   }
   const locales = walk(join(root, 'content', 'locales'), []).map(toFile);
-  const glossaries = locales.filter((f) => f.path.endsWith('/glossary.md'));
-  const ui = locales.filter((f) => f.path.endsWith('/ui.md'));
+  const isGlossary = (f) => /^content\/locales\/[^/]+\/glossary(\.md$|\/)/.test(f.path);
+  const glossaries = locales.filter(isGlossary);
+  // A glossary category may be called `ui` or `catalog`: its file is still the glossary's.
+  const others = locales.filter((f) => !isGlossary(f));
+  const ui = others.filter((f) => f.path.endsWith('/ui.md'));
   const languages = locales.find((f) => f.path === 'content/locales/languages.md') ?? null;
-  const catalogs = locales.filter((f) => f.path.endsWith('/catalog.md'));
+  const catalogs = others.filter((f) => f.path.endsWith('/catalog.md'));
   return { lessons, sources, glossaries, ui, languages, catalogs };
 }

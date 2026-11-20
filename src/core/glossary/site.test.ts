@@ -2,13 +2,15 @@
 // definitions linked to other terms, never to themselves, split into chunks of a bounded size.
 import { describe, expect, it } from 'vitest';
 import { splitSiteGlossary, toSiteGlossary } from './build';
-import { glossaryTerm, readGlossaryChunk, readSiteGlossary } from './site';
+import { MAX_GLOSSARY_TERMS, glossaryTerm, readGlossaryChunk, readSiteGlossary } from './site';
 import type { Glossary } from './types';
 
 const P = { line: 1, column: 1 };
+const FILE = 'content/locales/ru/glossary/web.md';
 const GLOSSARY: Glossary = {
   language: 'ru',
   title: 'Словарь',
+  index: 'content/locales/ru/glossary/index.md',
   categories: [{ id: 'web', label: 'Веб', position: P }],
   terms: [
     {
@@ -25,6 +27,7 @@ const GLOSSARY: Glossary = {
           position: P,
         },
       ],
+      file: FILE,
       position: P,
     },
     {
@@ -37,6 +40,7 @@ const GLOSSARY: Glossary = {
       definition: [
         { type: 'paragraph', children: [{ type: 'text', value: 'Запрос на SQL.' }], position: P },
       ],
+      file: FILE,
       position: P,
     },
   ],
@@ -180,7 +184,7 @@ describe('readSiteGlossary and readGlossaryChunk on hostile data', () => {
         g['terms'] = [...(g['terms'] as unknown[]), (g['terms'] as unknown[])[0]];
       },
       (g) => {
-        g['terms'] = Array.from({ length: 301 }, (_, i) => ({
+        g['terms'] = Array.from({ length: MAX_GLOSSARY_TERMS + 1 }, (_, i) => ({
           id: `t${String(i)}`,
           title: 'x',
           category: 'web',
