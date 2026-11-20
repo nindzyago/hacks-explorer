@@ -97,14 +97,15 @@ normal request from an app she knows.
 Message: foreign address · Result: address accepted
 
 ```text
-registered: https://print.example
+registered: https://print.example/cb
+checked:    starts with https://print.example
 received:   ⟦https://print.example.evil.example/cb⟧
 ```
 
 #### Simple
 
 The login service checks the return address **carelessly**: only that it starts with the
-registered one. The foreign address passes this check.
+site's address `https://print.example`. The foreign address passes this check.
 
 #### Step by step
 
@@ -141,8 +142,9 @@ refusal, and no code is created at all.
 #### Deeper
 
 RFC 9700 (section 2.1) requires the login service to use exact string matching. There is a single
-exception: the port in a `localhost` address for native apps on computers and phones. Such a check
-is simpler than patterns and leaves no gaps.
+exception: the port in a `localhost` address for native apps installed on the user's device. Such
+a check is simpler than patterns and closes this gap; the return page itself must also not contain
+an open redirect.
 
 ### `leak` The code goes to the attacker
 

@@ -19,6 +19,7 @@
 - [OWASP: JSON Web Token Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html)
 - [MITRE CWE-347: Improper Verification of Cryptographic Signature](https://cwe.mitre.org/data/definitions/347.html)
 - [OWASP Top 10:2021, A01 Broken Access Control](https://top10.owasp.org/2021/A01_2021-Broken_Access_Control)
+- [OWASP Top 10:2021, A02 Cryptographic Failures](https://top10.owasp.org/2021/A02_2021-Cryptographic_Failures)
 
 ## Participants
 
@@ -85,7 +86,7 @@ decode the token and read what is inside. Only the signature protects it.
 
 The format is defined in RFC 7519. The `alg` header says which algorithm signed the token: here
 HS256, that is HMAC with SHA-256 and a shared secret. The `exp` field is the token's expiry time.
-OWASP reminds that a signed JWT is not confidential: no passwords or personal data belong in it.
+OWASP points out that a signed JWT is not confidential: no passwords or personal data belong in it.
 
 ### `forge` The attacker rewrites the token
 
@@ -237,7 +238,8 @@ The refusal goes into the log. An unsigned token from a client is a clear sign o
 #### Deeper
 
 A strict signature check works together with other measures: an HS256 secret of at least 256 bits
-and random (RFC 7518, section 3.2), a short `exp`, checks of `iss` and `aud`. A JWT that has been
+(RFC 7518, section 3.2) that is random rather than a password (RFC 8725, section 3.5), a short
+`exp`, checks of `iss` and `aud`. A JWT that has been
 issued is hard to revoke, so OWASP advises keeping its lifetime short.
 
 ## How to defend

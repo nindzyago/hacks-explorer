@@ -19,6 +19,7 @@
 - [OWASP: JSON Web Token Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_Cheat_Sheet.html)
 - [MITRE CWE-347: Improper Verification of Cryptographic Signature](https://cwe.mitre.org/data/definitions/347.html)
 - [OWASP Top 10:2021, A01 Broken Access Control](https://top10.owasp.org/2021/A01_2021-Broken_Access_Control)
+- [OWASP Top 10:2021, A02 Cryptographic Failures](https://top10.owasp.org/2021/A02_2021-Cryptographic_Failures)
 
 ## Участники
 
@@ -230,8 +231,9 @@ HTTP/1.1 401 Unauthorized
 
 #### Глубже
 
-Строгая проверка подписи нужна вместе с другими: секрет HS256 — не короче 256 бит и случайный
-(RFC 7518, раздел 3.2), короткий срок `exp`, проверка `iss` и `aud`. Отозвать выданный JWT
+Строгая проверка подписи нужна вместе с другими: секрет HS256 не короче 256 бит (RFC 7518,
+раздел 3.2), случайный, а не пароль (RFC 8725, раздел 3.5), короткий срок `exp`, проверка `iss` и
+`aud`. Отозвать выданный JWT
 трудно, поэтому OWASP советует держать срок жизни коротким.
 
 ## Как защититься

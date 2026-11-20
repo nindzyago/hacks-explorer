@@ -162,8 +162,8 @@ the browser.
 
 OWASP requires renewing the session ID on any change of privilege level, and login is the most
 common such case. Cookie attributes protect against theft: `Secure` — send only over HTTPS,
-`HttpOnly` — hide from page scripts (RFC 6265), `SameSite` — do not attach to requests from other
-sites.
+`HttpOnly` — hide from page scripts (RFC 6265), `SameSite` — do not attach to most requests
+coming from other sites (`Strict` — to none).
 
 ### `replay` The attacker walks in
 
@@ -190,7 +190,7 @@ the session ends.
 Session **theft** ends the same way: the ID leaks through XSS if the cookie lacks `HttpOnly`,
 over plain HTTP without `Secure`, through malware on the victim's computer or through a phishing
 proxy. In MITRE ATT&CK the theft is T1539 and logging in with someone else's cookie is T1550.004;
-it notes that this can bypass a second factor as well.
+it notes that this can bypass some second-factor protections as well.
 
 ### `refused` The session is gone
 
@@ -214,9 +214,10 @@ The suspicious attempt is worth logging.
 
 #### Deeper
 
-Strict mode stops the attack even earlier: the server accepts only IDs it issued itself, and only
-from the cookie, never from the page address. OWASP warns that an ID in the address leaks through
-history, logs and the Referer header and makes fixation easier.
+Accepting the ID only from the cookie, never from the page address, closes this planting route.
+Strict mode (the server accepts only IDs it issued itself) would not help here: `K7Q2…` was issued
+by the server. It stops IDs the attacker makes up. OWASP warns that an ID in the address leaks
+through history, logs and the Referer header and makes fixation easier.
 
 ## How to defend
 
