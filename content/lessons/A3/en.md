@@ -109,7 +109,7 @@ PR:H + UI:R                                      6.8
 #### Simple
 
 The server saved the attachment into the site folder and **ran** it as a program. Nobody logged
-in, nobody clicked anything. That is two more questions: is a **login** needed, and is a **user**
+in, nobody clicked anything. That covers two more questions: is a **login** needed, and is a **user**
 needed.
 
 #### Step by step

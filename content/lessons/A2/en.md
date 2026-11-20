@@ -36,14 +36,14 @@
 
 ## Zones
 
-- `program` CVE Program: `cna`, `list`, `nvd`
+- `program` CVE Program: `cna`, `list`
 
 ## Steps
 
 ### `reserve` Number reserved
 
 `cna → list` · `legit`
-Message: reserve a number · Result: taken
+Message: reserve · Result: taken
 
 ```text
 CVE-2021-44228   state: RESERVED   since 2021-11-26
@@ -56,8 +56,8 @@ number exists, but what the bug is has not been said yet: the fix is not ready.
 
 #### Step by step
 
-Not just anyone hands out numbers, but a CNA: an organization the CVE Program has authorized to
-do so for its products. Apache is one. The number was reserved on 26 November 2021.
+Numbers are not handed out by just anyone: a CNA assigns them, an organization the CVE Program
+has authorized to do so for its products. Apache is one. The number was reserved on 26 November 2021.
 
 #### Deeper
 
@@ -96,7 +96,7 @@ against an attacker's LDAP servers, and whoever controls the log text can run th
 Read the fields carefully. The description text says «through 2.15.0», while the machine-readable
 version list already marks 2.15.0 as fixed; releases 2.12.2, 2.12.3 and 2.3.1 are excluded. The
 description adds that the bug is only in `log4j-core`. Apache's record lists three weakness
-classes, not one: that happens when a bug is made of several.
+classes, not one: a record may name several.
 
 ### `enrich` NVD adds a score
 

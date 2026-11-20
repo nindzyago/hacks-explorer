@@ -66,7 +66,8 @@ installing programs, moving into the internal network.
 Forms: vulnerability, vulnerabilities
 
 A flaw in a program or its settings that can be used to cause harm: read someone else's data,
-change it or stop a service. It exists before anyone finds it; once found, it gets a CVE number.
+change it or stop a service. It exists before anyone finds it; once found and disclosed, it often gets a CVE
+number.
 
 ## `exploit` Exploit
 
@@ -94,7 +95,7 @@ once installed: until the patch is in place, the server is as vulnerable as befo
 Forms: zero-day vulnerability, zero-day vulnerabilities, zero-day, 0-day
 
 A vulnerability the vendor does not know about yet, so there is no fix. If the fix is out but not
-installed, people say n-day: everyone knows about the flaw, attackers included.
+installed, people say n-day: the flaw is public, so attackers know about it too.
 
 ## `reverse-shell` Reverse shell
 

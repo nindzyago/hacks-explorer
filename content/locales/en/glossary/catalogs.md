@@ -68,7 +68,7 @@ projects.
 Forms: NVD
 
 National Vulnerability Database, the vulnerability database of NIST, part of the US government.
-It takes CVE records and adds its own CVSS score, the CWE weakness class and the list of affected
+It takes CVE records and usually adds its own CVSS score, the CWE weakness class and the list of affected
 products.
 
 ## `kev` KEV

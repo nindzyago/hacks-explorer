@@ -126,14 +126,14 @@ inside the documents folder.
 
 #### Deeper
 
-Not to miss an advisory, you need a list of everything that runs on the server, with versions.
+To avoid missing an advisory, you need a list of everything that runs on the server, with versions.
 CISA keeps the KEV catalog of vulnerabilities already used in attacks: if a bug is there, fix it
 first.
 
 ### `exploit` The exploit
 
 `attacker → server` · `attack`
-Message: ../.. · Result: accepted
+Message: ../.. · Result: sent
 
 ```http
 GET /download?file=⟦../../config⟧
@@ -141,7 +141,7 @@ GET /download?file=⟦../../config⟧
 
 #### Simple
 
-The attacker read the advisory and made an **exploit**: a request that uses the vulnerability.
+The attacker read the advisory and built an **exploit**: a request that uses the vulnerability.
 They send it to every site running «Docs».
 
 #### Step by step
@@ -162,8 +162,8 @@ Message: config file · Result: leaked
 
 #### Simple
 
-The old server hands the attacker a settings file with passwords. The hole is a week old; the fix
-has been out the whole time.
+The old server hands the attacker a settings file with passwords. The advisory is a week old; the
+fix has been available all that time.
 
 #### Step by step
 
@@ -176,7 +176,7 @@ only how strong the defence is, but how fast updates go in.
 
 ### `blocked` Path outside the folder
 
-`attacker → server` · `attack` · `with-defence` · `stopped`
+`server → server` · `attack` · `with-defence` · `stopped`
 Message: ../.. · Result: refused
 
 ```http
@@ -185,8 +185,8 @@ GET /download?file=⟦../../config⟧
 
 #### Simple
 
-The same request reaches the **updated** server. Version 2.4 sees that the file lies outside the
-documents folder and refuses.
+The **updated** server turns the name into a full path, sees it lies outside the documents folder
+and refuses.
 
 #### Step by step
 

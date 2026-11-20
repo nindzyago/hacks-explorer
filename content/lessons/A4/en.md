@@ -73,7 +73,7 @@ kilograms, `2*3`. The server answers: 6 kg.
 
 #### Step by step
 
-In the old version the server computed the formula the easiest way: it handed it to the
+Without the fix, the server computes the formula the easiest way: it hands it to the
 programming language as if it were a piece of the program, with a function like `eval`.
 
 #### Deeper
@@ -105,7 +105,7 @@ notation: «start a program that connects to the attacker's server».
 This is CWE-94: the program builds code from outside data and does not neutralize the parts that
 change what the code means. The special case with `eval` is CWE-95. In the OWASP Top 10:2021 code
 injection belongs to A03. There are other roads to RCE: OS command injection (CWE-78), unpacking
-submitted objects (CWE-502, as in Log4Shell, lesson K1) and memory errors such as writing past a
+objects from untrusted sources (CWE-502; Apache lists it for Log4Shell, lesson K1) and memory errors such as writing past a
 buffer's end (CWE-787).
 
 ### `callback` Reverse connection
