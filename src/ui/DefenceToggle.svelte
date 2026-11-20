@@ -57,67 +57,81 @@
 </div>
 
 <style>
+  /*
+   * M6.1: in the head of the scene panel — the caption on the left, the two buttons as one
+   * blueprint switch on the right: «Без защиты» filled red, «С защитой» filled green.
+   */
   .defence {
     box-sizing: border-box;
     display: flex;
+    flex-direction: row-reverse;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-2) var(--space-3);
-    flex: none;
-    padding: var(--space-2) var(--space-3);
-    background: var(--panel);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
+    gap: var(--space-1) var(--space-3);
     min-width: 0;
   }
 
   .seg {
     display: inline-flex;
-    padding: 2px;
-    gap: 2px;
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--paper);
   }
 
   button {
     box-sizing: border-box;
     min-width: 44px;
-    min-height: 44px;
+    min-height: var(--target);
     padding: 0 var(--space-3);
-    border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--ink);
-    font: inherit;
-    font-weight: 500;
+    border: var(--frame-width) solid var(--frame);
+    background: var(--panel);
+    color: var(--legit);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     white-space: nowrap;
     cursor: pointer;
   }
 
+  button:first-child {
+    border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+  }
+
+  button:last-child {
+    border-left: 0;
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  }
+
+  button:hover {
+    background: var(--paper);
+  }
+
   button[aria-pressed='true'] {
-    background: var(--ink);
+    border-color: var(--attack);
+    background: var(--attack);
     color: var(--panel);
   }
 
   button[data-mode='defence'][aria-pressed='true'] {
-    background: var(--scene-message-safe);
-    color: var(--scene-message-text);
+    border-color: var(--defence);
+    background: var(--defence);
   }
 
   /* Fixed width and two lines, whatever is in it: the buttons never move (verifier M1.5). */
   .caption {
     flex: none;
-    width: 12.5rem;
-    min-height: calc(2 * 1.35 * var(--text-sm));
+    width: 11rem;
+    min-height: calc(2 * 1.3 * var(--text-xs));
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    text-align: right;
   }
 
   .caption p {
     margin: 0;
-    font-size: var(--text-sm);
-    line-height: 1.35;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: 1.3;
     min-width: 0;
     overflow-wrap: anywhere;
     display: -webkit-box;
@@ -129,21 +143,25 @@
 
   .name {
     font-weight: 700;
-    color: var(--scene-message-safe);
+    color: var(--defence);
   }
 
   .off {
     color: var(--muted);
   }
 
-  /* Phone (S10): the two buttons share the row. */
+  /* Phone (S10): the two buttons share the row, the caption under them. */
   @media (max-width: 760px) {
     .defence {
       width: 100%;
+      flex-direction: column;
+      align-items: stretch;
     }
 
     .caption {
       width: 100%;
+      justify-content: flex-start;
+      text-align: left;
     }
 
     .seg {

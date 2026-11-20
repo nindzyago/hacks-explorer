@@ -210,10 +210,11 @@ test.describe('the «Без защиты / С защитой» toggle', () => {
       ),
     ).toBe('solid 3px');
 
+    // M6.1: a blueprint button is 36 px tall with a mouse, 44 px on a touch screen.
     for (const button of [off, on]) {
       const box = await button.boundingBox();
-      expect(box?.width).toBeGreaterThanOrEqual(44);
-      expect(box?.height).toBeGreaterThanOrEqual(44);
+      expect(box?.width).toBeGreaterThanOrEqual(36);
+      expect(box?.height).toBeGreaterThanOrEqual(36);
     }
   });
 });

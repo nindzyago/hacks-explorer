@@ -28,7 +28,7 @@ export const CARD_FONTS = {
   monoLatin: 'public/fonts/jetbrains-mono-latin.woff2',
 } as const;
 
-/** Token names from src/ui/tokens.css the card is painted with. */
+/** Token names from src/ui/tokens.css the card is painted with, as `--card-<name>` (M6.1). */
 export const CARD_TOKENS = ['scene-paper', 'scene-ink', 'muted', 'attack', 'defence'] as const;
 export type CardPalette = Readonly<Record<(typeof CARD_TOKENS)[number], string>>;
 
@@ -51,9 +51,9 @@ export interface CardSpec {
 /** The colours of the card, read from the design tokens (no colour lives in two places). */
 export function cardPalette(tokensCss: string): CardPalette {
   const get = (name: (typeof CARD_TOKENS)[number]): string => {
-    const match = new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`).exec(tokensCss);
+    const match = new RegExp(`--card-${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`).exec(tokensCss);
     if (match?.[1] === undefined) {
-      throw new Error(`src/ui/tokens.css: no colour --${name} for the cards (M4.3)`);
+      throw new Error(`src/ui/tokens.css: no colour --card-${name} for the cards (M4.3)`);
     }
     return match[1].toLowerCase();
   };

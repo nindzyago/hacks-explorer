@@ -34,7 +34,7 @@
 - `about.read.play` «Пуск» проводит сообщения по схеме сам, «Шаг» — по одному. Клавиши: пробел, ← и →.
 - `about.read.defence` «Без защиты» и «С защитой» (клавиша D): та же атака, но защита её останавливает.
 - `about.read.depth` Три уровня объяснения: «Просто», «По шагам» и «Глубже» — для тех, кому нужны детали.
-- `about.read.glossary` Словарь: выделенные слова объясняются на месте, весь словарь — кнопка «Словарь» вверху.
+- `about.read.glossary` Словарь: выделенные слова объясняются на месте, весь словарь — вкладка «Словарь» в панели уроков.
 - `about.lessons.title` Готовые уроки
 - `about.lessons.count` Готово {ready} из {count} тем, остальные пишутся.
 - `about.principles.title` Принципы
@@ -49,6 +49,22 @@
 - `about.licences.icons` Иконки участников нарисованы для проекта; условия их лицензии ещё проверяются. Откуда каждый файл — в ATTRIBUTION.md.
 - `about.help.title` Как помочь
 - `about.help.text` Новые уроки, переводы и языки принимаются через pull request. Репозиторий пока закрыт — откроется скоро.
+
+## Экран урока
+
+- `screen.sections` Раздел
+- `screen.section` Раздел {id}. {title}
+- `screen.search` Поиск уроков
+- `screen.view` Вид
+- `screen.scheme` Схема
+- `screen.legend` Обозначения
+- `screen.legend.path` обычный путь
+- `screen.legend.harmful` вредное сообщение
+- `screen.legend.stopped` остановлено
+- `screen.lessonsFilter` Какие уроки показать
+- `screen.lessonsReady` Готовые {count}
+- `screen.lessonsAll` Все {count}
+- `screen.lessonSteps` Шаги урока «{title}»
 
 ## Загрузка урока
 

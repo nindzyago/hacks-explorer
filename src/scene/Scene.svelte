@@ -380,13 +380,11 @@
 </figure>
 
 <style>
+  /* M6.1: the frame and the millimetre grid belong to the scene panel around it (src/ui/App). */
   .scene {
     position: relative;
     margin: 0;
     min-width: 0;
-    background: var(--scene-paper);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
@@ -412,16 +410,17 @@
     border: 0;
   }
 
+  /* The grid of the panel shows through the paper (M6.1). */
   .paper {
-    fill: var(--scene-paper);
+    fill: none;
   }
 
+  /* M6.1: a zone is a dashed blueprint frame. */
   .frame {
     fill: none;
-    stroke: var(--scene-ink);
+    stroke: var(--zone-line);
     stroke-width: 1.5;
-    stroke-dasharray: 2 7;
-    stroke-linecap: round;
+    stroke-dasharray: 6 5;
   }
 
   .zone-label {

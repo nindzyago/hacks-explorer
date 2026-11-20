@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { MediaQuery } from 'svelte/reactivity';
   import type { AppContext } from '../commands/app';
   import type { SiteLesson } from '../core/lesson/site';
   import { stepCount } from '../core/player/player';
@@ -6,6 +7,8 @@
   import { PROJECT } from '../core/project';
   import { createStore, type Store } from '../core/store';
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
+  import { MAX_QUERY_LENGTH } from '../core/topics/search';
+  import type { SiteTopicSection } from '../core/topics/site';
   import Scene from '../scene/Scene.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
   import type { GlossaryLoader } from '../services/glossary/glossary';
@@ -19,6 +22,7 @@
   import type DrawerPanel from './Drawer.svelte';
   import GlossaryPopover from './GlossaryPopover.svelte';
   import ExplainPanel from './ExplainPanel.svelte';
+  import type LessonsSidePanel from './LessonsSide.svelte';
   import { loadErrorKey, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
   import StepsTable from './StepsTable.svelte';
@@ -65,6 +69,14 @@
   const run = (id: string, params?: Readonly<Record<string, unknown>>) => {
     app.registry.run(id, params);
   };
+
+  /*
+   * M6.1 (design §2, §4): from 1280 px the lessons panel is a column of the screen, always open;
+   * below it is the side panel behind «☰ Уроки» (M2.1b). A phone (≤ 760 px) has one column with
+   * the player right under the scene.
+   */
+  const wide = new MediaQuery('min-width: 1280px', false);
+  const phone = new MediaQuery('max-width: 760px', false);
 
   // The theme stays an attribute of the page root (K43): no dark tokens and no button yet, the
   // `theme.set` command still sets it, so M2.6 adds a dark theme with tokens alone.
@@ -203,6 +215,54 @@
     );
   });
 
+  // M6.1: the lessons column of a wide screen is its own chunk too, with the topics of the page's
+  // language; both load once the window is wide enough to show it.
+  const showSide = $derived(wide.current && !$notFound && !$about);
+  let Side = $state.raw<typeof LessonsSidePanel | null>(null);
+  $effect(() => {
+    if (!showSide || Side !== null) return;
+    void import('./LessonsSide.svelte').then(
+      (module) => {
+        Side = module.default;
+      },
+      () => {
+        // Without the chunk the column stays an empty frame; «☰ Уроки» is not needed to read.
+      },
+    );
+  });
+  type TopicsState =
+    | { readonly state: 'loading' }
+    | { readonly state: 'ready'; readonly sections: readonly SiteTopicSection[] }
+    | { readonly state: 'error' };
+  let catalog = $state.raw<TopicsState>({ state: 'loading' });
+  $effect(() => {
+    if (!showSide) return;
+    const lang = locale;
+    let live = true;
+    void topics.topics(lang).then(
+      (result) => {
+        if (live)
+          catalog = result.ok
+            ? { state: 'ready', sections: result.value.sections }
+            : { state: 'error' };
+      },
+      () => {
+        if (live) catalog = { state: 'error' };
+      },
+    );
+    return () => {
+      live = false;
+    };
+  });
+  const sections = $derived(catalog.state === 'ready' ? catalog.sections : []);
+  /** The search and the section chips of the top bar filter the lessons column. */
+  let lessonQuery = $state('');
+  let lessonSection = $state('');
+  let sideTab = $state<'lessons' | 'glossary'>('lessons');
+  const lessonSectionId = $derived(shown.state === 'ready' ? shown.lesson.section : '');
+  /** A glossary word shows in the column while its glossary tab is open, not in place. */
+  const sideGlossary = $derived(showSide && Side !== null && sideTab === 'glossary');
+
   // M3.9: the way to the page «About» and back to the lesson where the reader was.
   const base = $derived(home.endsWith('/') ? home.slice(0, -1) : home);
   const aboutPath = $derived(formatAboutAddress(locale));
@@ -228,21 +288,71 @@
 
 <svelte:window {onkeydown} {onkeyup} />
 
-<main data-testid="app" class:page={$about}>
+{#snippet player_controls()}
+  <PlayerControls {player} {run} {t} />
+{/snippet}
+
+<main data-testid="app" class:page={$about} class:wide={showSide}>
   <header class="top" data-testid="topbar">
-    <h1 class="brand">{PROJECT.name}</h1>
-    {#if shown.state === 'ready' && !$notFound && !$about}
-      <h2 class="lesson-title" id="lesson-title" data-testid="lesson-title">
-        {shown.lesson.title}
-      </h2>
-    {:else}
-      <p class="tagline">{t('app.tagline')}</p>
+    <div class="brand-box">
+      <svg class="logo" viewBox="0 0 30 30" aria-hidden="true">
+        <path d="M15 3 26 9v12L15 27 4 21V9z" />
+        <path d="M4 9l11 6 11-6M15 15v12" />
+      </svg>
+      <div class="brand-text">
+        <h1 class="brand">{PROJECT.name}</h1>
+        <p class="tagline">{t('app.tagline')}</p>
+      </div>
+    </div>
+    <!-- M6.1: the sections A–L filter the lessons column; the section of the open lesson is
+         marked, the chosen one filled. Pressing it again shows every section. -->
+    {#if showSide && sections.length > 0}
+      <div class="sections">
+        <span class="sections-label bp-caps" aria-hidden="true">{t('screen.sections')}</span>
+        <div class="chips" role="group" aria-label={t('screen.sections')} data-testid="sections">
+          {#each sections as s (s.id)}
+            <button
+              type="button"
+              class="bp-chip"
+              class:here={s.id === lessonSectionId}
+              aria-pressed={lessonSection === s.id}
+              aria-label={t('screen.section', { id: s.id, title: s.title })}
+              title={t('screen.section', { id: s.id, title: s.title })}
+              data-testid="section-{s.id}"
+              onclick={() => {
+                lessonSection = lessonSection === s.id ? '' : s.id;
+                sideTab = 'lessons';
+              }}>{s.id}</button
+            >
+          {/each}
+        </div>
+      </div>
     {/if}
-    <!-- M3.9: «О проекте» / «К урокам» before the panel buttons; on a phone it stays on the first
-         row with the title when there is room. -->
+    <div class="spacer"></div>
+    {#if showSide}
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"
+          ><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15 L20 20" /></svg
+        >
+        <span class="visually-hidden">{t('screen.search')}</span>
+        <input
+          type="search"
+          autocomplete="off"
+          spellcheck="false"
+          maxlength={MAX_QUERY_LENGTH}
+          placeholder={t('screen.search')}
+          data-testid="lesson-search"
+          bind:value={lessonQuery}
+          oninput={() => {
+            sideTab = 'lessons';
+          }}
+        />
+      </label>
+    {/if}
+    <!-- M3.9: «О проекте» / «К урокам». -->
     {#if $about}
       <a
-        class="nav"
+        class="bp-btn nav"
         href="{base}{lessonPath}"
         data-testid="nav-lessons"
         onclick={(event) => {
@@ -251,7 +361,7 @@
       >
     {:else}
       <a
-        class="nav"
+        class="bp-btn nav"
         href="{base}{aboutPath}"
         data-testid="nav-about"
         onclick={(event) => {
@@ -259,34 +369,31 @@
         }}>{t('nav.about')}</a
       >
     {/if}
-    <!-- M2.1b: the side panel with the lessons and the glossary (K102: 44 px). -->
-    <div class="panels" data-testid="panel-buttons">
+    <!-- M2.1b: «☰ Уроки» opens the side panel with the lessons and the glossary; on a wide
+         lesson screen the lessons are a column of their own and the button is not there. -->
+    {#if !showSide}
       <button
         type="button"
+        class="bp-btn menu"
         data-testid="open-lessons"
         aria-haspopup="dialog"
-        aria-expanded={$store.drawer === 'lessons'}
+        aria-expanded={$store.drawer !== null}
         bind:this={lessonsButton}
         onclick={() => {
           run('drawer.open', { tab: 'lessons' });
-        }}>{t('drawer.lessons')}</button
+        }}
       >
-      <button
-        type="button"
-        data-testid="open-glossary"
-        aria-haspopup="dialog"
-        aria-expanded={$store.drawer === 'glossary'}
-        onclick={() => {
-          run('drawer.open', { tab: 'glossary' });
-        }}>{t('drawer.glossary')}</button
-      >
-    </div>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7 H20 M4 12 H20 M4 17 H20" /></svg>
+        {t('drawer.lessons')}
+      </button>
+    {/if}
     <!-- M2.3: the language switch, only when the site has more than one language. -->
     {#if locales.languages.length > 1}
       <div class="languages" role="group" aria-label={t('app.language')} data-testid="languages">
         {#each locales.languages as language (language.code)}
           <button
             type="button"
+            class="bp-btn"
             lang={language.code}
             title={language.name}
             data-testid="language-{language.code}"
@@ -317,56 +424,140 @@
     </div>
   {:else if $about}
     <About loader={topics} language={locale} {home} {t} onopen={navigate} />
-  {:else if shown.state === 'loading'}
-    <p class="status" data-testid="lesson-loading" role="status">{t('lesson.loading')}</p>
-  {:else if shown.state === 'error'}
-    <div class="status error" data-testid="lesson-error" data-code={shown.code} role="alert">
-      <p>{t('lesson.error.title')}</p>
-      <p data-testid="lesson-error-text">{t(loadErrorKey(shown.code))}</p>
-      <div class="actions">
-        <button
-          type="button"
-          data-testid="lesson-error-retry"
-          onclick={() => {
-            attempt += 1;
-          }}>{t('lesson.retry')}</button
-        >
-        <a href={home} data-testid="lesson-error-home">{t('page.home')}</a>
-      </div>
-    </div>
   {:else}
-    <div class="work" data-testid="lesson" aria-labelledby="lesson-title" role="region">
-      <div class="scene-area">
-        {#key shown.lesson}
-          <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
-        {/key}
-      </div>
+    <div class="screen" class:with-side={showSide}>
+      {#if showSide}
+        <div class="side-area">
+          {#if Side !== null}
+            <Side
+              {sections}
+              status={catalog.state}
+              lesson={shown.state === 'ready' ? shown.lesson : null}
+              current={lessonId}
+              step={player.step}
+              defence={player.defence}
+              language={locale}
+              {glossary}
+              term={$store.glossary}
+              {home}
+              {t}
+              {run}
+              query={lessonQuery}
+              section={lessonSection}
+              bind:tab={sideTab}
+            />
+          {:else}
+            <div class="bp-panel side-frame" aria-hidden="true"></div>
+          {/if}
+        </div>
+      {/if}
+      {#if shown.state === 'loading'}
+        <p class="status" data-testid="lesson-loading" role="status">{t('lesson.loading')}</p>
+      {:else if shown.state === 'error'}
+        <div class="status error" data-testid="lesson-error" data-code={shown.code} role="alert">
+          <p>{t('lesson.error.title')}</p>
+          <p data-testid="lesson-error-text">{t(loadErrorKey(shown.code))}</p>
+          <div class="actions">
+            <button
+              type="button"
+              data-testid="lesson-error-retry"
+              onclick={() => {
+                attempt += 1;
+              }}>{t('lesson.retry')}</button
+            >
+            <a href={home} data-testid="lesson-error-home">{t('page.home')}</a>
+          </div>
+        </div>
+      {:else}
+        <div class="work" data-testid="lesson" aria-labelledby="lesson-title" role="region">
+          <!-- The scene panel (M6.1): the view tabs and «Без защиты / С защитой» in its head, the
+               scene on the millimetre grid, the legend at the bottom. -->
+          <section class="bp-panel scene-panel" data-testid="scene-panel">
+            <div class="bp-head scene-head">
+              <div class="views" role="tablist" aria-label={t('screen.view')}>
+                <!-- M6.2 adds the tab «Последовательность» here, run by `view.set`. -->
+                <button
+                  type="button"
+                  role="tab"
+                  class="bp-btn"
+                  id="view-tab-scene"
+                  aria-selected="true"
+                  aria-controls="view-scene"
+                  data-testid="view-scene"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"
+                    ><path
+                      d="M4 4 H10 V10 H4 Z M14 4 H20 V10 H14 Z M4 14 H10 V20 H4 Z M14 14 H20 V20 H14 Z"
+                    /></svg
+                  >
+                  {t('screen.scheme')}
+                </button>
+              </div>
+              <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} {t} />
+            </div>
+            <div
+              class="scene-body"
+              role="tabpanel"
+              id="view-scene"
+              aria-labelledby="view-tab-scene"
+            >
+              <div class="scene-fit">
+                {#key shown.lesson}
+                  <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
+                {/key}
+              </div>
+              <ul class="legend" aria-label={t('screen.legend')} data-testid="scene-legend">
+                <li>
+                  <span class="swatch path" aria-hidden="true"></span>{t('screen.legend.path')}
+                </li>
+                <li class="harmful">
+                  <span class="swatch harm" aria-hidden="true"></span>{t('screen.legend.harmful')}
+                </li>
+                <li class="stopped">
+                  <span class="swatch stop" aria-hidden="true"></span>{t('screen.legend.stopped')}
+                </li>
+              </ul>
+            </div>
+          </section>
 
-      <!-- The controls bar (K76): the player, then the «Без защиты / С защитой» toggle. -->
-      <div class="controls-area">
-        <div class="player-area"><PlayerControls {player} {run} {t} /></div>
-        <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} {t} />
-      </div>
+          <!-- Phone (design §4): the player right under the scene. -->
+          {#if phone.current}
+            <div class="bp-panel controls-panel">{@render player_controls()}</div>
+          {/if}
 
-      <!-- M1.4: the step at three depths, the passport, «Как защититься», the sources. -->
-      <div class="explain-area">
-        <ExplainPanel lesson={shown.lesson} current={step} depth={$store.depth} {run} {t} />
-      </div>
+          <!-- M1.4: the step at three depths, the passport, «Как защититься», the sources. -->
+          <div class="explain-area">
+            <ExplainPanel lesson={shown.lesson} current={step} depth={$store.depth} {run} {t} />
+          </div>
 
-      <!-- «Ход атаки» with the event feed inside (M2.1a, D2, K91): one area that scrolls by
-           itself on a laptop, the page does not. -->
-      <section class="panel log" data-testid="log" aria-labelledby="log-title">
-        <h2 id="log-title">{t('log.title')}</h2>
-        {#if stepCount(player) > 0}
-          <StepsTable lesson={shown.lesson} {player} clock={app.clock} {run} {t} />
+          <!-- «Ход атаки» with the event feed inside (M2.1a, D2, K91), the legend and the player
+               in its head (M6.1): one area that scrolls by itself on a laptop, the page does not. -->
+          <section class="bp-panel log" data-testid="log" aria-labelledby="log-title">
+            <div class="bp-head log-head">
+              <div class="log-title">
+                <h2 class="bp-title" id="log-title">{t('log.title')}</h2>
+                <ul class="marks" aria-label={t('screen.legend')}>
+                  <li class="legit">{t('mark.legit')}</li>
+                  <li class="attack">{t('mark.attack')}</li>
+                  <li class="stopped">{t('mark.stopped')}</li>
+                </ul>
+              </div>
+              {#if !phone.current}
+                <div class="player-slot">{@render player_controls()}</div>
+              {/if}
+            </div>
+            {#if stepCount(player) > 0}
+              <StepsTable lesson={shown.lesson} {player} clock={app.clock} {run} {t} />
+            {/if}
+          </section>
+        </div>
+        <!-- M2.4: the definition of a glossary term, opened from the text or the scene. While the
+             side panel or the glossary tab of the lessons column is open a term shows there. -->
+        {#if $store.drawer === null && !sideGlossary}
+          <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
         {/if}
-      </section>
+      {/if}
     </div>
-    <!-- M2.4: the definition of a glossary term, opened from the text or the scene. While the
-         side panel is open a term shows in the panel instead (M2.1b). -->
-    {#if $store.drawer === null}
-      <GlossaryPopover {app} loader={glossary} language={shown.lesson.language} {t} />
-    {/if}
   {/if}
   {#if Drawer !== null}
     <Drawer
@@ -384,231 +575,393 @@
 <style>
   main {
     box-sizing: border-box;
-    max-width: 90rem;
     margin: 0 auto;
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3);
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
   }
 
-  /* K102: the height of the top bar is already that of the «Уроки» and «Словарь» buttons (M2.1b). */
+  /* ---------------------------------------------------------------- top bar (M6.1, §2) */
+
   .top {
-    min-height: 44px;
+    min-height: var(--target);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-1) var(--space-3);
+    gap: var(--space-2) var(--space-4);
+  }
+
+  .brand-box {
+    box-sizing: border-box;
+    min-height: var(--target);
+    padding: var(--space-1) var(--space-3);
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    border: var(--frame-width) solid var(--frame);
+    border-radius: var(--radius-sm);
+    min-width: 0;
+  }
+
+  .logo {
+    flex: none;
+    width: 30px;
+    height: 30px;
+  }
+
+  .logo path,
+  .search path,
+  .search circle,
+  .menu path,
+  .views path {
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+
+  .logo {
+    color: var(--legit);
+  }
+
+  .brand-text {
+    min-width: 0;
   }
 
   .brand {
     margin: 0;
-    font-family: var(--font-sans);
-    font-size: var(--text-sm);
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--muted);
-  }
-
-  .top .lesson-title {
-    margin: 0;
-    font-family: var(--font-sans);
-    font-size: var(--text-lg);
+    font-family: var(--font-mono);
+    font-size: 1.1875rem;
     font-weight: 700;
     line-height: 1.2;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--ink);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--legit);
+    white-space: nowrap;
   }
 
   .tagline {
     margin: 0;
+    max-width: 22rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--muted);
-    font-size: var(--text-sm);
   }
 
-  /* M2.1b: «Уроки» and «Словарь» before the language switch, at the end of the top bar. */
-  .panels {
+  .sections {
     display: flex;
-    gap: var(--space-1);
+    flex-direction: column;
+    gap: 2px;
   }
 
-  .panels button {
-    min-height: 44px;
-    padding: 0 var(--space-3);
-    border: var(--line-width) solid var(--legit);
-    border-radius: var(--radius-md);
-    background: var(--panel);
-    color: var(--legit);
-    font: inherit;
-    font-size: var(--text-sm);
+  .sections-label {
+    font-size: var(--text-xs);
     font-weight: 700;
-    cursor: pointer;
+    color: var(--legit);
   }
 
-  /* M3.9: «О проекте» / «К урокам», a plain link with a 44 px target before the panel buttons. */
-  .nav {
-    margin-left: auto;
-    min-height: 44px;
+  .chips {
+    display: flex;
+    gap: 3px;
+  }
+
+  .chips .bp-chip {
+    padding: 0;
+  }
+
+  /* The section of the open lesson, when no section is chosen: a blue frame. */
+  .chips .here {
+    border-color: var(--legit);
+    font-weight: 700;
+  }
+
+  .spacer {
+    flex: 1 1 0;
+  }
+
+  .search {
+    box-sizing: border-box;
+    flex: 0 1 16rem;
+    min-width: 9rem;
+    min-height: var(--target);
     padding: 0 var(--space-2);
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    color: var(--legit);
-    font-size: var(--text-sm);
-    font-weight: 700;
+    gap: var(--space-2);
+    border: var(--frame-width) solid var(--line);
+    border-radius: var(--radius-xs);
+    color: var(--muted);
   }
 
-  .panels button:hover {
-    background: var(--paper);
+  .search:focus-within {
+    border-color: var(--legit);
   }
 
-  /* M2.3: «RU / EN» at the end of the top bar, 44 px targets (K102). */
-  .languages {
-    display: flex;
-    gap: var(--space-1);
+  .search svg,
+  .menu svg,
+  .views svg {
+    flex: none;
+    width: 16px;
+    height: 16px;
   }
 
-  .languages button {
-    min-width: 44px;
-    min-height: 44px;
-    padding: 0 var(--space-2);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--panel);
+  .search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: 0;
+    background: none;
     color: var(--ink);
     font: inherit;
     font-size: var(--text-sm);
-    font-weight: 700;
-    cursor: pointer;
   }
 
-  .languages button[aria-pressed='true'] {
-    border-color: var(--legit);
-    background: var(--legit);
-    color: var(--panel);
+  .languages {
+    display: flex;
   }
 
-  /*
-   * One screen (K7): the scene on the left, the explanation on the right, the «Ход атаки» table
-   * with the player controls across the bottom.
-   */
-  .work {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 22rem;
-    grid-template-areas:
-      'scene explain'
-      'controls controls'
-      'log log';
-    gap: var(--space-3);
-    min-width: 0;
+  .languages .bp-btn {
+    min-width: 44px;
+    border-radius: 0;
   }
 
-  .scene-area {
-    grid-area: scene;
-    min-width: 0;
+  .languages .bp-btn:first-child {
+    border-radius: var(--radius-xs) 0 0 var(--radius-xs);
   }
 
-  .controls-area {
-    grid-area: controls;
+  .languages .bp-btn:last-child {
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+  }
+
+  .languages .bp-btn + .bp-btn {
+    border-left: 0;
+  }
+
+  /* ---------------------------------------------------------------- the lesson screen */
+
+  .screen {
     min-width: 0;
     display: flex;
-    flex-wrap: wrap;
-    align-items: stretch;
+    flex-direction: column;
     gap: var(--space-3);
   }
 
-  .player-area {
-    flex: 1 1 30rem;
-    min-width: 0;
-    /* The player's bar takes the height of the row: as tall as the toggle next to it. */
+  .side-frame {
+    height: 100%;
+  }
+
+  .work {
     display: grid;
-  }
-
-  /*
-   * K73: on a wide screen the scene sets the height of the top row and the explanation scrolls
-   * inside it, so the controls stay right under the scene; on a phone it is a plain block.
-   */
-  .explain-area {
-    grid-area: explain;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
     min-width: 0;
-    min-height: 18rem;
+  }
+
+  .scene-head {
+    justify-content: space-between;
+  }
+
+  .views {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .scene-body {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--scene-paper);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: var(--grid-step) var(--grid-step);
   }
 
-  .explain-area > :global(.explain) {
-    position: absolute;
-    inset: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  .scene-fit {
+    min-width: 0;
   }
 
-  .log {
-    grid-area: log;
+  .legend {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--muted);
+  }
+
+  .legend li,
+  .marks li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .legend .harmful,
+  .marks .attack {
+    color: var(--attack);
+  }
+
+  .legend .stopped,
+  .marks .stopped {
+    color: var(--defence);
+  }
+
+  .swatch {
+    flex: none;
+    width: 20px;
+    height: 0;
+    border-top: 2px dashed var(--zone-line);
+  }
+
+  .swatch.harm {
+    border-top: 3px solid var(--attack);
+  }
+
+  .swatch.stop {
+    width: 8px;
+    height: 8px;
+    border: 0;
+    background: var(--defence);
+    transform: rotate(45deg);
+  }
+
+  .controls-panel :global(.controls) {
+    border: 0;
+  }
+
+  .explain-area {
+    min-width: 0;
+  }
+
+  .log-head {
+    justify-content: space-between;
+  }
+
+  .log-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-4);
+  }
+
+  .marks {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+
+  .marks li::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentcolor;
+  }
+
+  .marks .legit {
+    color: var(--legit);
+  }
+
+  .player-slot {
+    min-width: 0;
   }
 
   /*
-   * One screen (M2.1a, E1, K93): on a laptop the page is as tall as the window (100dvh); the
-   * scene row and the controls take their own height, the «Ход атаки» area the rest and scrolls
-   * inside it. When the window is too low for the smallest steps area the page grows and scrolls
-   * rather than squeezing the rows. The phone keeps one column and the page scrolls (S10).
+   * One screen (M2.1a, E1, K93; M6.1 design §2): from 761 px the page is as tall as the window
+   * (100dvh). The scene and the explanation share the top row, «Ход атаки» with the player takes
+   * the bottom one; from 1280 px the lessons column stands on the left through both rows.
+   * Panels scroll inside; the page does not.
    */
   @media (min-width: 761px) {
     main:not(.page) {
       height: 100dvh;
     }
 
+    .screen {
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .screen.with-side {
+      display: grid;
+      grid-template-columns: var(--col-lessons) minmax(0, 1fr);
+      gap: var(--space-3);
+    }
+
+    .side-area {
+      min-height: 0;
+    }
+
     .work {
       flex: 1 1 auto;
       min-height: 0;
-      grid-template-rows: auto auto minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) var(--col-explain);
+      grid-template-rows: minmax(0, 1fr) var(--row-log);
+      grid-template-areas:
+        'scene explain'
+        'log log';
     }
 
-    .log {
-      min-height: 10rem;
-    }
-  }
-
-  .panel {
-    box-sizing: border-box;
-    min-width: 0;
-    padding: var(--space-3);
-    background: var(--panel);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-  }
-
-  .panel h2 {
-    margin: 0;
-    font-size: var(--text-xs);
-    font-family: var(--font-mono);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-  }
-
-  /* Phone (S10): one column — scene, controls, explanation, then the table and the feed. */
-  @media (max-width: 760px) {
-    main {
-      padding: var(--space-3);
+    .scene-panel {
+      grid-area: scene;
     }
 
-    .work {
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: 'scene' 'controls' 'explain' 'log';
+    .scene-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+
+    .scene-fit {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
     .explain-area {
+      grid-area: explain;
       min-height: 0;
-      position: static;
     }
 
-    .explain-area > :global(.explain) {
-      position: static;
-      overflow-y: visible;
+    .log {
+      grid-area: log;
+    }
+  }
+
+  /* Phone (S10, design §4): one column — scene, player, explanation, «Ход атаки». */
+  @media (max-width: 760px) {
+    .top {
+      gap: var(--space-2);
+    }
+
+    .brand-box {
+      flex: 1 1 100%;
+    }
+
+    .brand {
+      font-size: var(--text-md);
+    }
+
+    .nav {
+      margin-left: auto;
+    }
+
+    .scene-head {
+      justify-content: flex-start;
     }
   }
 
@@ -616,8 +969,8 @@
     margin: 0;
     padding: var(--space-4);
     background: var(--panel);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
+    border: var(--frame-width) solid var(--frame);
+    border-radius: var(--radius-sm);
     color: var(--muted);
   }
 
@@ -649,8 +1002,8 @@
   .actions button {
     min-height: 44px;
     padding: 0 var(--space-4);
-    border: var(--line-width) solid var(--legit);
-    border-radius: var(--radius-md);
+    border: var(--frame-width) solid var(--legit);
+    border-radius: var(--radius-xs);
     background: var(--legit);
     color: var(--panel);
     font: inherit;

@@ -142,8 +142,9 @@ test('from the top bar to «About» and back to the same place, Back and Forward
 test('the keyboard reaches «About» from the top bar and the lessons on it', async ({ page }) => {
   await openApp(page, '/en/lesson/I1');
   await page.locator('body').focus();
+  // M6.1: on a wide screen the section chips and the search come before it.
   let found = false;
-  for (let i = 0; i < 10 && !found; i += 1) {
+  for (let i = 0; i < 30 && !found; i += 1) {
     await page.keyboard.press('Tab');
     found = await page.getByTestId('nav-about').evaluate((el) => el === document.activeElement);
   }

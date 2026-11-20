@@ -168,21 +168,24 @@
     font-size: var(--text-sm);
   }
 
+  /* M6.1: blue capitals over the columns, monospace rows on faint lines. */
   th {
     text-align: left;
-    font-weight: 500;
-    color: var(--muted);
+    font-weight: 700;
+    color: var(--legit);
     font-size: var(--text-xs);
     font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: var(--space-1) var(--space-2);
-    border-bottom: var(--line-width) solid var(--line);
+    letter-spacing: var(--caps-spacing);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: var(--frame-width) solid var(--line);
   }
 
   td {
-    padding: var(--space-1) var(--space-2);
-    border-bottom: var(--line-width) solid var(--line);
+    padding: var(--space-1) var(--space-3);
+    border-bottom: var(--line-width) solid var(--line-faint);
+    font-family: var(--font-mono);
+    font-size: 0.78125rem;
     vertical-align: middle;
     /* M1.6: one long word in a title or result wraps instead of widening the page. */
     overflow-wrap: anywhere;
@@ -210,11 +213,12 @@
 
   .num button {
     box-sizing: border-box;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: var(--chip);
+    min-height: var(--chip);
     border: 0;
     border-radius: 50%;
     font: inherit;
+    font-size: var(--text-xs);
     font-weight: 700;
     color: var(--scene-message-text);
     background: var(--scene-message-legit);

@@ -34,7 +34,7 @@ in. Keep the same keys and the same `{names}`.
 - `about.read.play` “Play” moves the messages across the diagram by itself, “Step” one at a time. Keys: Space, ← and →.
 - `about.read.defence` “No defence” and “With defence” (key D): the same attack, but the defence stops it.
 - `about.read.depth` Three depths of explanation: “Simple”, “Step by step” and “Deeper” for those who want the details.
-- `about.read.glossary` Glossary: highlighted words are explained in place; the whole glossary is the “Glossary” button at the top.
+- `about.read.glossary` Glossary: highlighted words are explained in place; the whole glossary is the “Glossary” tab of the lessons panel.
 - `about.lessons.title` Ready lessons
 - `about.lessons.count` {ready} of {count} topics are ready; the rest are being written.
 - `about.principles.title` Principles
@@ -49,6 +49,22 @@ in. Keep the same keys and the same `{names}`.
 - `about.licences.icons` The participant icons were made for the project; their licence terms are still being checked. Where each file comes from is in ATTRIBUTION.md.
 - `about.help.title` How to help
 - `about.help.text` New lessons, translations and languages are welcome as pull requests. The repository is not public yet — soon.
+
+## Lesson screen
+
+- `screen.sections` Section
+- `screen.section` Section {id}. {title}
+- `screen.search` Search lessons
+- `screen.view` View
+- `screen.scheme` Diagram
+- `screen.legend` Legend
+- `screen.legend.path` normal path
+- `screen.legend.harmful` harmful message
+- `screen.legend.stopped` stopped
+- `screen.lessonsFilter` Which lessons to show
+- `screen.lessonsReady` Ready {count}
+- `screen.lessonsAll` All {count}
+- `screen.lessonSteps` Steps of “{title}”
 
 ## Loading a lesson
 

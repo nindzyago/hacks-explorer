@@ -95,104 +95,115 @@
   ] as const;
 </script>
 
-<article class="about" data-testid="about" aria-labelledby="about-title">
-  <h2 id="about-title" tabindex="-1" data-testid="about-title" bind:this={heading}>
-    {t('about.title')}
-  </h2>
-  <p class="lead">{t('about.lead')}</p>
-  <p>{t('about.genre')}</p>
+<!-- M6.1: the page in the same blueprint panel as the lesson screen. -->
+<article class="bp-panel about" data-testid="about" aria-labelledby="about-title">
+  <div class="bp-head">
+    <h2
+      class="bp-title"
+      id="about-title"
+      tabindex="-1"
+      data-testid="about-title"
+      bind:this={heading}
+    >
+      {t('about.title')}
+    </h2>
+  </div>
+  <div class="body">
+    <p class="lead">{t('about.lead')}</p>
+    <p>{t('about.genre')}</p>
 
-  <section aria-labelledby="about-read">
-    <h3 id="about-read">{t('about.read.title')}</h3>
-    <ul>
-      {#each READ as key (key)}
-        <li>{t(key)}</li>
-      {/each}
-    </ul>
-  </section>
-
-  <section aria-labelledby="about-lessons" data-testid="about-lessons">
-    <h3 id="about-lessons">{t('about.lessons.title')}</h3>
-    {#if data.state === 'loading'}
-      <p role="status">{t('catalog.loading')}</p>
-    {:else if data.state === 'error'}
-      <div class="error" role="alert">
-        <p>{t('catalog.error')}</p>
-        <button
-          type="button"
-          onclick={() => {
-            attempt += 1;
-          }}>{t('lesson.retry')}</button
-        >
-      </div>
-    {:else}
-      <ul class="lessons">
-        {#each ready as topic (topic.id)}
-          <li>
-            <a
-              href="{base}{pathOf(topic.id)}"
-              data-testid="about-lesson"
-              data-topic={topic.id}
-              onclick={(event) => {
-                if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-                event.preventDefault();
-                onopen(pathOf(topic.id));
-              }}><span class="id">{topic.id}</span> {topic.title}</a
-            >
-          </li>
+    <section aria-labelledby="about-read">
+      <h3 id="about-read">{t('about.read.title')}</h3>
+      <ul>
+        {#each READ as key (key)}
+          <li>{t(key)}</li>
         {/each}
       </ul>
-      <p class="count" data-testid="about-count">{t('about.lessons.count', total)}</p>
-    {/if}
-  </section>
+    </section>
 
-  <section aria-labelledby="about-principles">
-    <h3 id="about-principles">{t('about.principles.title')}</h3>
-    <ul>
-      {#each PRINCIPLES as key (key)}
-        <li>{t(key)}</li>
-      {/each}
-    </ul>
-  </section>
+    <section aria-labelledby="about-lessons" data-testid="about-lessons">
+      <h3 id="about-lessons">{t('about.lessons.title')}</h3>
+      {#if data.state === 'loading'}
+        <p role="status">{t('catalog.loading')}</p>
+      {:else if data.state === 'error'}
+        <div class="error" role="alert">
+          <p>{t('catalog.error')}</p>
+          <button
+            type="button"
+            onclick={() => {
+              attempt += 1;
+            }}>{t('lesson.retry')}</button
+          >
+        </div>
+      {:else}
+        <ul class="lessons">
+          {#each ready as topic (topic.id)}
+            <li>
+              <a
+                href="{base}{pathOf(topic.id)}"
+                data-testid="about-lesson"
+                data-topic={topic.id}
+                onclick={(event) => {
+                  if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+                  event.preventDefault();
+                  onopen(pathOf(topic.id));
+                }}><span class="id">{topic.id}</span> {topic.title}</a
+              >
+            </li>
+          {/each}
+        </ul>
+        <p class="count" data-testid="about-count">{t('about.lessons.count', total)}</p>
+      {/if}
+    </section>
 
-  <section aria-labelledby="about-licences">
-    <h3 id="about-licences">{t('about.licences.title')}</h3>
-    <ul>
-      {#each LICENCES as key (key)}
-        <li>{t(key)}</li>
-      {/each}
-    </ul>
-  </section>
+    <section aria-labelledby="about-principles">
+      <h3 id="about-principles">{t('about.principles.title')}</h3>
+      <ul>
+        {#each PRINCIPLES as key (key)}
+          <li>{t(key)}</li>
+        {/each}
+      </ul>
+    </section>
 
-  <section aria-labelledby="about-help">
-    <h3 id="about-help">{t('about.help.title')}</h3>
-    <p>{t('about.help.text')}</p>
-  </section>
+    <section aria-labelledby="about-licences">
+      <h3 id="about-licences">{t('about.licences.title')}</h3>
+      <ul>
+        {#each LICENCES as key (key)}
+          <li>{t(key)}</li>
+        {/each}
+      </ul>
+    </section>
+
+    <section aria-labelledby="about-help">
+      <h3 id="about-help">{t('about.help.title')}</h3>
+      <p>{t('about.help.text')}</p>
+    </section>
+  </div>
 </article>
 
 <style>
   .about {
-    box-sizing: border-box;
     width: 100%;
-    max-width: 46rem;
+    max-width: 50rem;
     margin: 0 auto;
-    padding: var(--space-4) var(--space-6);
-    background: var(--panel);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
     overflow-wrap: anywhere;
   }
 
-  h2 {
-    margin: 0 0 var(--space-3);
-    font-size: var(--text-xl);
-    line-height: 1.2;
+  .body {
+    padding: var(--space-4) var(--space-6) var(--space-6);
   }
 
   h3 {
     margin: var(--space-6) 0 var(--space-2);
-    font-size: var(--text-lg);
+    padding-bottom: var(--space-1);
+    border-bottom: var(--line-width) solid var(--line-faint);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 700;
     line-height: 1.25;
+    letter-spacing: var(--caps-spacing);
+    text-transform: uppercase;
+    color: var(--legit);
   }
 
   p {
@@ -217,12 +228,18 @@
     gap: 0;
   }
 
+  .lessons li {
+    border-bottom: var(--line-width) solid var(--line-faint);
+  }
+
   .lessons a {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
     color: var(--legit);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
     font-weight: 700;
   }
 
@@ -241,16 +258,18 @@
   .error button {
     min-height: 44px;
     padding: 0 var(--space-4);
-    border: var(--line-width) solid var(--legit);
-    border-radius: var(--radius-md);
+    border: var(--frame-width) solid var(--legit);
+    border-radius: var(--radius-xs);
     background: var(--legit);
     color: var(--panel);
-    font: inherit;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    text-transform: uppercase;
     cursor: pointer;
   }
 
   @media (max-width: 760px) {
-    .about {
+    .body {
       padding: var(--space-4);
     }
   }

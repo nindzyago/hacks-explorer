@@ -12,6 +12,10 @@ import { expect, openApp, sceneReady, test } from './support';
 
 const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
+// M6.1 (design M6 §4): the side panel is the lessons of a window narrower than 1280 px, behind
+// «☰ Уроки»; from 1280 px the lessons are a column of the screen (e2e/layout.spec.ts).
+test.use({ viewport: { width: 1024, height: 768 } });
+
 async function keep(page: Page, testInfo: TestInfo, name: string): Promise<void> {
   await sceneReady(page);
   const path = testInfo.outputPath(`${name}.png`);
@@ -48,6 +52,16 @@ async function openLessons(page: Page): Promise<void> {
   await page.getByTestId('open-lessons').click();
   await expect(page.getByTestId('drawer')).toBeVisible();
   await expect(page.getByTestId('catalog')).toHaveAttribute('data-state', 'ready');
+}
+
+/**
+ * The glossary tab opened from «☰ Уроки» (M6.1: the glossary is a tab of the lessons panel, no
+ * button of its own): focus is on the button, as after a click on it.
+ */
+async function openGlossary(page: Page): Promise<void> {
+  await page.getByTestId('open-lessons').focus();
+  expect(await run(page, 'drawer.open', { tab: 'glossary' })).toEqual({ ok: true });
+  await expect(page.getByTestId('drawer')).toBeVisible();
 }
 
 /** The page height, sideways scroll and the drawer's box. */
@@ -89,7 +103,7 @@ test.describe('S7: the lessons panel', () => {
     await expect(b8.locator('a, button, [tabindex]')).toHaveCount(0);
     // Focus starts in the search field.
     await expect(page.getByTestId('catalog-search')).toBeFocused();
-    await keep(page, testInfo, 'drawer-lessons-1280x720');
+    await keep(page, testInfo, 'drawer-lessons-1024x768');
   });
 
   test('S7: «sql» → B1, B8 first; then the section «Сеть» → its seven topics; nothing found → a hint and a reset', async ({
@@ -100,7 +114,7 @@ test.describe('S7: the lessons panel', () => {
     await page.getByTestId('catalog-search').fill('sql');
     expect((await topics(page)).slice(0, 2)).toEqual(['B1', 'B8']);
     await expect(page.getByTestId('catalog-status')).toHaveText('Найдено тем: 2');
-    await keep(page, testInfo, 'drawer-search-sql-1280x720');
+    await keep(page, testInfo, 'drawer-search-sql-1024x768');
 
     // Choosing a section shows the whole section: the query is cleared (K114).
     await page.getByTestId('catalog-section').selectOption({ label: 'G. Сеть' });
@@ -117,7 +131,7 @@ test.describe('S7: the lessons panel', () => {
     await expect(page.getByTestId('catalog-empty')).toBeVisible();
     await expect(page.getByTestId('catalog-empty')).toContainText('Ничего не нашлось');
     await expect(page.getByTestId('catalog-topic')).toHaveCount(0);
-    await keep(page, testInfo, 'drawer-empty-1280x720');
+    await keep(page, testInfo, 'drawer-empty-1024x768');
     await page.getByTestId('catalog-reset').click();
     await expect(page.getByTestId('catalog-search')).toHaveValue('');
     await expect(page.getByTestId('catalog-search')).toBeFocused();
@@ -223,15 +237,15 @@ test.describe('S7: the lessons panel', () => {
 
     await openLessons(page);
     // The backdrop on the right of the panel.
-    await page.mouse.click(1200, 400);
+    await page.mouse.click(1000, 400);
     await expect(page.getByTestId('drawer')).toBeHidden();
     await expect(page.getByTestId('open-lessons')).toBeFocused();
 
-    await page.getByTestId('open-glossary').click();
+    await openGlossary(page);
     await expect(page.getByTestId('drawer')).toHaveAttribute('data-tab', 'glossary');
     await page.getByTestId('drawer-close').click();
     await expect(page.getByTestId('drawer')).toBeHidden();
-    await expect(page.getByTestId('open-glossary')).toBeFocused();
+    await expect(page.getByTestId('open-lessons')).toBeFocused();
     // Right after a close the panel opens again by a command and stays open.
     expect(await run(page, 'drawer.open', { tab: 'glossary' })).toEqual({ ok: true });
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
@@ -241,7 +255,7 @@ test.describe('S7: the lessons panel', () => {
     await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 100)));
     await expect(page.getByTestId('drawer')).toBeVisible();
     expect(await run(page, 'drawer.close')).toEqual({ ok: true });
-    await expect(page.getByTestId('open-glossary')).toBeFocused();
+    await expect(page.getByTestId('open-lessons')).toBeFocused();
 
     // Opened by a command, closed by one: the panel follows the state. Nothing had focus, so
     // it goes to «Уроки».
@@ -259,7 +273,7 @@ test.describe('S7: the lessons panel', () => {
     page,
   }) => {
     await openApp(page);
-    await page.getByTestId('open-glossary').click();
+    await openGlossary(page);
     await expect(page.getByTestId('drawer')).toBeVisible();
     // The browser removes `open` at once and fires the close event a task later. Focus moved in
     // between (the reader went on, here to «Уроки») stays where it went.
@@ -327,11 +341,11 @@ test.describe('the glossary tab', () => {
     page,
   }, testInfo) => {
     await openApp(page);
-    await page.getByTestId('open-glossary').click();
+    await openGlossary(page);
     await expect(page.getByTestId('glossary-list')).toHaveAttribute('data-state', 'ready');
     await expect(page.getByTestId('glossary-search')).toBeFocused();
     expect(await page.getByTestId('glossary-term').count()).toBeGreaterThanOrEqual(25);
-    await keep(page, testInfo, 'drawer-glossary-1280x720');
+    await keep(page, testInfo, 'drawer-glossary-1024x768');
 
     await page.getByTestId('glossary-search').fill('фишинг');
     await expect(page.locator('[data-testid="glossary-term"][data-term="phishing"]')).toBeVisible();
@@ -345,7 +359,7 @@ test.describe('the glossary tab', () => {
     });
     // No popover behind the panel.
     await expect(page.getByTestId('glossary-popover')).toHaveCount(0);
-    await keep(page, testInfo, 'drawer-glossary-term-1280x720');
+    await keep(page, testInfo, 'drawer-glossary-term-1024x768');
 
     // «См. также» opens the next term in the panel.
     const see = page.getByTestId('glossary-entry-see').first();
@@ -396,7 +410,7 @@ test.describe('the glossary tab', () => {
 test.describe('layout', () => {
   for (const size of [
     { width: 1024, height: 768 },
-    { width: 1280, height: 720 },
+    { width: 1200, height: 720 },
   ]) {
     test(`one screen still holds at ${String(size.width)}×${String(size.height)}, panel open or not`, async ({
       page,
@@ -407,11 +421,11 @@ test.describe('layout', () => {
         const closed = await geometry(page);
         expect(closed.height).toBe(closed.inner);
         expect(closed.sideways).toBe(0);
-        // The two buttons stand in the top bar, 44 px tall.
+        // «☰ Уроки» stands in the top bar, a blueprint button 36 px tall with a mouse (M6.1).
         const box = await page.getByTestId('open-lessons').boundingBox();
-        expect(box?.height).toBeGreaterThanOrEqual(44);
+        expect(box?.height).toBeGreaterThanOrEqual(36);
         const top = await page.getByTestId('topbar').boundingBox();
-        expect(top?.height).toBeLessThanOrEqual(48);
+        expect(top?.height).toBeLessThanOrEqual(64);
         await openLessons(page);
         const open = await geometry(page);
         expect(open.height).toBe(open.inner);
@@ -475,7 +489,6 @@ test.describe('in English (M2.3, K105)', () => {
   test('the panel speaks English: tabs, counts, search, «soon», the glossary', async ({ page }) => {
     await openApp(page, '/en/lesson/B1');
     await expect(page.getByTestId('open-lessons')).toHaveText('Lessons');
-    await expect(page.getByTestId('open-glossary')).toHaveText('Glossary');
     await openLessons(page);
     expect(await topics(page)).toHaveLength(75);
     await expect(page.getByTestId('catalog-status')).toHaveText(
