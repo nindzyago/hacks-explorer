@@ -348,7 +348,8 @@
         </div>
       </div>
     {/if}
-    <div class="spacer"></div>
+    <!-- CI5: with the search the free space goes to it (up to its width) and then to its left
+         margin; without it a spacer pushes the buttons to the right. -->
     {#if showSide}
       <label class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"
@@ -368,6 +369,8 @@
           }}
         />
       </label>
+    {:else}
+      <div class="spacer"></div>
     {/if}
     <!-- M3.9: «О проекте» / «К урокам». -->
     {#if $about}
@@ -643,7 +646,10 @@
 
   /* ---------------------------------------------------------------- top bar (M6.1, §2) */
 
+  /* CI5: the bar never shrinks below its content in the one-screen column (it used to squeeze
+     to 36 px and let a wrapped row slide under the lessons column); it grows instead. */
   .top {
+    flex: none;
     min-height: var(--target);
     display: flex;
     flex-wrap: wrap;
@@ -742,10 +748,15 @@
     flex: 1 1 0;
   }
 
+  /* CI5: a row of the bar is broken by the flex basis, not by min-width. With a 16rem basis the
+     bar at 1280 px had 2 px to spare on macOS and wrapped on Linux, whose same fonts draw a little
+     wider. The search now starts at its minimum and grows into the free space, up to 16rem. */
   .search {
     box-sizing: border-box;
-    flex: 0 1 16rem;
+    flex: 1 1 9rem;
     min-width: 9rem;
+    max-width: 16rem;
+    margin-left: auto;
     min-height: var(--target);
     padding: 0 var(--space-2);
     display: flex;
