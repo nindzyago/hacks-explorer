@@ -51,10 +51,57 @@ log too, so to the library it must stay plain text.
 
 ## `rce` Remote code execution
 
-`category` basics · `see` attacker, logging · `lessons` K1
+`category` basics · `see` attacker, logging · `lessons` K1, A4
 
 Forms: remote code execution, RCE
 
 An attacker makes someone else's server run their program over the network. Usually the worst
 outcome: from there the attacker acts with the rights of the hijacked program, reading data,
 installing programs, moving into the internal network.
+
+## `vulnerability` Vulnerability
+
+`category` basics · `see` exploit, patch, cve · `lessons` A1
+
+Forms: vulnerability, vulnerabilities
+
+A flaw in a program or its settings that can be used to cause harm: read someone else's data,
+change it or stop a service. It exists before anyone finds it; once found, it gets a CVE number.
+
+## `exploit` Exploit
+
+`category` basics · `see` vulnerability, zero-day · `lessons` A1
+
+Forms: exploit, exploits
+
+Code or a technique that turns a vulnerability into a result for the attacker: for example, a
+request after which the server hands over someone else's file. The lessons show the mechanism,
+not ready-made exploits.
+
+## `patch` Patch
+
+`category` basics · `see` vulnerability, zero-day · `lessons` A1
+
+Forms: patch, patches, security update, security updates
+
+A fix for a program that the vendor gives to users, usually as a new version. It protects only
+once installed: until the patch is in place, the server is as vulnerable as before.
+
+## `zero-day` Zero-day vulnerability
+
+`category` basics · `see` vulnerability, patch · `lessons` A1
+
+Forms: zero-day vulnerability, zero-day vulnerabilities, zero-day, 0-day
+
+A vulnerability the vendor does not know about yet, so there is no fix. If the fix is out but not
+installed, people say n-day: everyone knows about the flaw, attackers included.
+
+## `reverse-shell` Reverse shell
+
+`category` basics · `see` rce, attacker · `lessons` A4
+
+Forms: reverse shell, reverse connection
+
+A post-break-in trick: the captured server itself connects out to the attacker's machine and
+waits for commands. Outbound connections are often checked less strictly than inbound ones, so it
+helps to stop a server from making connections it does not need.

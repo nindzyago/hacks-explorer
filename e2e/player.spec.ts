@@ -238,7 +238,7 @@ test.describe('S6: the keyboard', () => {
     const ids = ['player-back', 'player-play', 'player-next', 'player-restart', 'player-speed'];
     const seen = new Set<string>();
     // M6.1: on a wide screen the section chips, the search and the lessons column come first.
-    for (let i = 0; i < 60 && seen.size < ids.length; i += 1) {
+    for (let i = 0; i < 120 && seen.size < ids.length; i += 1) {
       await page.keyboard.press('Tab');
       const info = await page.evaluate(() => {
         const el = document.activeElement;

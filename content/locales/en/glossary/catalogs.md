@@ -14,7 +14,7 @@ injection.
 
 ## `cve` CVE
 
-`category` catalogs · `see` cwe, cvss
+`category` catalogs · `see` cwe, cvss · `lessons` A2
 
 Forms: CVE
 
@@ -23,7 +23,7 @@ Each one gets a number like CVE-2021-44228, so that everyone talks about the sam
 
 ## `cvss` CVSS
 
-`category` catalogs · `see` cve
+`category` catalogs · `see` cve · `lessons` A3
 
 Forms: CVSS
 
@@ -50,3 +50,41 @@ Forms: MITRE ATT&CK, ATT&CK
 
 MITRE's open knowledge base of attacker tactics and techniques, built from real-world attacks.
 Each technique has its own number: T1566 is phishing, T1566.002 is spearphishing with a link.
+
+## `cna` CNA
+
+`category` catalogs · `see` cve, nvd · `lessons` A2
+
+Forms: CNA
+
+CVE Numbering Authority, an organization the CVE Program has authorized to assign CVE numbers and
+publish records within its scope. Often it is the vendor itself: Apache, for example, for its own
+projects.
+
+## `nvd` NVD
+
+`category` catalogs · `see` cve, cvss · `lessons` A2
+
+Forms: NVD
+
+National Vulnerability Database, the vulnerability database of NIST, part of the US government.
+It takes CVE records and adds its own CVSS score, the CWE weakness class and the list of affected
+products.
+
+## `kev` KEV
+
+`category` catalogs · `see` cve, epss · `lessons` A3
+
+Forms: KEV
+
+Known Exploited Vulnerabilities, a CISA catalog of vulnerabilities already used in real attacks.
+Being in KEV is a signal to fix it first, whatever its CVSS score.
+
+## `epss` EPSS
+
+`category` catalogs · `see` cvss, kev · `lessons` A3
+
+Forms: EPSS
+
+Exploit Prediction Scoring System, a FIRST model that every day gives each CVE a probability from
+0 to 1 that it will be exploited in attacks within the next 30 days.
