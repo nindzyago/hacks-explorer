@@ -35,6 +35,7 @@ import { checkGlossaries } from '../src/core/glossary/check';
 import type { Matcher } from '../src/core/glossary/match';
 import {
   MAX_GLOSSARY_FILE_BYTES,
+  MAX_GLOSSARY_INDEX_BYTES,
   glossaryChunkFile,
   glossaryFile,
 } from '../src/core/glossary/site';
@@ -95,22 +96,22 @@ function contentHash(text: string): string {
 
 /**
  * The site files of one checked glossary (CI3): the index `data/glossary/<lang>.json` and the
- * chunks of definitions `data/glossary/<lang>.<hash8>.json`, or errors when a file would pass
- * the 30 KB budget. Only the index grows with the number of terms; chunks stay near
+ * chunks of definitions `data/glossary/<lang>.<hash8>.json`, or errors when a chunk would pass
+ * the 30 KB budget or the index 60 KB (G17). Only the index grows with the number of terms; chunks stay near
  * GLOSSARY_CHUNK_BYTES however long the glossary gets.
  */
 export function glossaryDataFiles(
   glossary: Glossary,
   titles: ReadonlyMap<string, string>,
 ): { readonly files: readonly DataFile[]; readonly errors: readonly string[] } {
-  const source = `content/locales/${glossary.language}/glossary.md`;
+  const source = glossary.index;
   const split = splitSiteGlossary(toSiteGlossary(glossary, titles), contentHash);
   const errors: string[] = [];
   const index = JSON.stringify(split.index);
   const indexBytes = byteLength(index);
-  if (indexBytes > MAX_GLOSSARY_FILE_BYTES) {
+  if (indexBytes > MAX_GLOSSARY_INDEX_BYTES) {
     errors.push(
-      `${source}:1:1: the index of this glossary is ${String(indexBytes)} bytes; at most ${String(MAX_GLOSSARY_FILE_BYTES)}: shorten the titles or split the glossary index (CI3)`,
+      `${source}:1:1: the index of this glossary is ${String(indexBytes)} bytes; at most ${String(MAX_GLOSSARY_INDEX_BYTES)}: shorten the titles or split the glossary index (CI3, G17)`,
     );
   }
   for (const chunk of split.chunks) {

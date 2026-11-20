@@ -11,8 +11,8 @@
  *   `GLOSSARY_CHUNK_BYTES`. The index names each chunk by the hash of its text, so an index never
  *   pairs with a chunk of another build.
  *
- * Every file is at most `MAX_GLOSSARY_FILE_BYTES` however many definitions there are; only the
- * index grows with the number of terms. Definitions are text trees with terms already linked by
+ * Every chunk is at most `MAX_GLOSSARY_FILE_BYTES` however many definitions there are; only the
+ * index grows with the number of terms, up to `MAX_GLOSSARY_INDEX_BYTES`. Definitions are text trees with terms already linked by
  * the build; no forms are shipped, the site never searches text (K31).
  *
  * This file and the readers below import nothing that pulls the Markdown parser.
@@ -36,6 +36,12 @@ export const GLOSSARY_FORMAT = 2;
 /** Budget of one glossary file, index or chunk, as served (K98). */
 export const MAX_GLOSSARY_FILE_BYTES = 30 * 1024;
 /**
+ * Budget of the index alone (G17): it grows with the number of terms, about 84 bytes a term, so
+ * the cap of `MAX_GLOSSARY_TERMS` with ordinary titles is about 50 KB (12 KB in gzip). Chunks keep
+ * `MAX_GLOSSARY_FILE_BYTES`.
+ */
+export const MAX_GLOSSARY_INDEX_BYTES = 60 * 1024;
+/**
  * The build starts a new chunk before one would pass this many bytes, so opening a term fetches
  * at most about this much of definitions. One term is far smaller (a definition is at most 700
  * characters), so a chunk never passes the file budget.
@@ -45,8 +51,13 @@ export const GLOSSARY_CHUNK_BYTES = 16 * 1024;
 const LANGUAGE = /^[a-z]{2,3}$/;
 const LESSON_ID = /^[A-Z][0-9]{1,2}$/;
 const HASH = /^[0-9a-f]{8}$/;
-/** More is a hostile file: the checker allows 300 terms and 20 categories. */
-const MAX_TERMS = 300;
+/**
+ * The most terms of one language (G17): the checker stops a glossary with more, the site treats
+ * an index with more as hostile. About 84 bytes of index per term, so 600 terms fit the index
+ * budget below with room for long titles.
+ */
+export const MAX_GLOSSARY_TERMS = 600;
+const MAX_TERMS = MAX_GLOSSARY_TERMS;
 
 /** The index of a language. */
 export function glossaryFile(language: string): string {

@@ -3,8 +3,9 @@
 // build. Prints the numbers and fails when a budget is broken:
 //   first load   JS that index.html loads (scripts and module preloads), gzip: ≤ 150 KB
 //   lesson file  each data/lessons/*.json, as served (bytes, no compression): ≤ 30 KB
-//   glossary     each data/glossary/*.json, the index <lang>.json and every chunk of definitions
-//                <lang>.<hash>.json (M2.4, CI3; loaded on the first opened term): ≤ 30 KB
+//   glossary     each data/glossary/*.json (M2.4, CI3; loaded on the first opened term): every
+//                chunk of definitions <lang>.<hash>.json ≤ 30 KB, the index <lang>.json ≤ 60 KB
+//                (it grows with the number of terms, G17)
 //   topics       each data/topics/*.json (M2.1b, loaded when the lessons panel opens): ≤ 30 KB
 //   card         each cards/*.png, the social cards link previews fetch (M4.3): ≤ 100 KB
 // Usage: node scripts/budget.mjs [folder]   (default dist)
@@ -16,6 +17,9 @@ import { gzipSync } from 'node:zlib';
 export const FIRST_LOAD_JS_GZIP = 150 * 1024;
 export const LESSON_FILE = 30 * 1024;
 export const GLOSSARY_FILE = 30 * 1024;
+export const GLOSSARY_INDEX_FILE = 60 * 1024;
+/** The index of a language's glossary, data/glossary/<lang>.json; the rest are chunks. */
+const GLOSSARY_INDEX = /^[a-z]{2,3}\.json$/;
 export const TOPICS_FILE = 30 * 1024;
 export const CARD_FILE = 100 * 1024;
 
@@ -102,9 +106,11 @@ export function measure(folder) {
         }))
     : [];
   for (const glossary of glossaries) {
-    if (glossary.bytes > GLOSSARY_FILE) {
+    const isIndex = GLOSSARY_INDEX.test(glossary.path.slice('data/glossary/'.length));
+    const limit = isIndex ? GLOSSARY_INDEX_FILE : GLOSSARY_FILE;
+    if (glossary.bytes > limit) {
       problems.push(
-        `${glossary.path}: ${String(glossary.bytes)} bytes; a glossary file is at most ${String(GLOSSARY_FILE)}`,
+        `${glossary.path}: ${String(glossary.bytes)} bytes; a glossary ${isIndex ? 'index' : 'chunk'} is at most ${String(limit)}`,
       );
     }
   }
@@ -165,7 +171,10 @@ function main() {
     console.log(`  ${lesson.path}: ${kb(lesson.bytes)} of ${kb(LESSON_FILE)}`);
   }
   for (const glossary of glossaries) {
-    console.log(`  ${glossary.path}: ${kb(glossary.bytes)} of ${kb(GLOSSARY_FILE)}`);
+    const limit = GLOSSARY_INDEX.test(glossary.path.slice('data/glossary/'.length))
+      ? GLOSSARY_INDEX_FILE
+      : GLOSSARY_FILE;
+    console.log(`  ${glossary.path}: ${kb(glossary.bytes)} of ${kb(limit)}`);
   }
   for (const file of topics) {
     console.log(`  ${file.path}: ${kb(file.bytes)} of ${kb(TOPICS_FILE)}`);

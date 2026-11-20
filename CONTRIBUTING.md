@@ -47,6 +47,12 @@ The gate is the only check, and CI runs the same command. It prints problems in 
    `content/lessons/B1/` is a complete real lesson.
 5. Run `npm run content` until it is green, then `npm run gate`.
 
+A lesson that needs a new term adds it to the glossary in the same pull request: one
+`## `id` Title` section in `content/locales/ru/glossary/<section>.md` (the file of its section,
+e.g. `web.md`; the sections are listed in `glossary/index.md`) and the same term in every other
+language's `glossary/<section>.md`, at the same place. The lesson names it with `term:id` on a
+participant or zone. The format: [src/core/glossary/README.md](src/core/glossary/README.md).
+
 A lesson is added in every language of the site at once (decision K94): `ru.md` is the base, the
 other languages keep the same structure (ids, steps, participants) with translated text. If you
 write only one language, say so in the pull request and someone will help with the rest; the

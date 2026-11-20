@@ -9,6 +9,7 @@ import {
   CARD_FILE,
   FIRST_LOAD_JS_GZIP,
   GLOSSARY_FILE,
+  GLOSSARY_INDEX_FILE,
   TOPICS_FILE,
   LESSON_FILE,
   firstLoadScripts,
@@ -68,14 +69,25 @@ describe('measure', () => {
     ]);
   });
 
-  it('measures the glossary files and fails one over 30 KB (M2.4)', () => {
+  it('measures the glossary files and fails a chunk over 30 KB (M2.4)', () => {
     const dir = site('glossary');
     mkdirSync(join(dir, 'data', 'glossary'), { recursive: true });
     writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), '{}');
     expect(measure(dir).glossaries).toEqual([{ path: 'data/glossary/ru.json', bytes: 2 }]);
-    writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), 'x'.repeat(GLOSSARY_FILE + 1));
+    writeFileSync(join(dir, 'data', 'glossary', 'ru.0123abcd.json'), 'x'.repeat(GLOSSARY_FILE + 1));
     expect(measure(dir).problems).toEqual([
-      'data/glossary/ru.json: 30721 bytes; a glossary file is at most 30720',
+      'data/glossary/ru.0123abcd.json: 30721 bytes; a glossary chunk is at most 30720',
+    ]);
+  });
+
+  it('lets the index of a glossary grow to 60 KB, not further (G17)', () => {
+    const dir = site('glossary-index');
+    mkdirSync(join(dir, 'data', 'glossary'), { recursive: true });
+    writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), 'x'.repeat(GLOSSARY_FILE + 1));
+    expect(measure(dir).problems).toEqual([]);
+    writeFileSync(join(dir, 'data', 'glossary', 'ru.json'), 'x'.repeat(GLOSSARY_INDEX_FILE + 1));
+    expect(measure(dir).problems).toEqual([
+      'data/glossary/ru.json: 61441 bytes; a glossary index is at most 61440',
     ]);
   });
   it('measures the topics files and fails one over 30 KB (M2.1b)', () => {

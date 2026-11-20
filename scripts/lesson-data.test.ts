@@ -9,6 +9,8 @@ import { readCatalog, readSiteLesson } from '../src/core/lesson/site-read';
 import { CATALOG_FILE, MAX_LESSON_FILE_BYTES, lessonFile } from '../src/core/lesson/site';
 import {
   MAX_GLOSSARY_FILE_BYTES,
+  MAX_GLOSSARY_INDEX_BYTES,
+  MAX_GLOSSARY_TERMS,
   glossaryChunkFile,
   glossaryFile,
   glossaryTerm,
@@ -168,9 +170,11 @@ describe('vite build', () => {
     // The catalog, a file per lesson, the glossary (an index and its chunks) and the topics of
     // each site language.
     const chunks = names.filter((n) => /^data\/glossary\/[a-z]+\.[0-9a-f]{8}\.json$/.test(n));
-    expect(chunks.length).toBeGreaterThanOrEqual(real.glossaries.length);
+    // One glossary folder per language (G17): its files become one index and chunks.
+    const glossaryLanguages = new Set(real.glossaries.map((f) => f.path.split('/')[2])).size;
+    expect(chunks.length).toBeGreaterThanOrEqual(glossaryLanguages);
     expect(names).toHaveLength(
-      real.lessons.length + 1 + real.glossaries.length + chunks.length + real.catalogs.length,
+      real.lessons.length + 1 + glossaryLanguages + chunks.length + real.catalogs.length,
     );
     expect(names).toContain('data/topics/ru.json');
     expect(names).toContain(CATALOG_FILE);
@@ -298,7 +302,7 @@ describe('the glossary', () => {
     expect(linked.filter((id) => !ids.has(id))).toEqual([]);
   });
 
-  const glossaryPath = 'content/locales/ru/glossary.md';
+  const glossaryPath = 'content/locales/ru/glossary/web.md';
   const realGlossary = fileText(real.glossaries, glossaryPath);
   const withGlossary = (text: string) => ({
     ...real,
@@ -320,21 +324,21 @@ describe('the glossary', () => {
       const out = buildLessonData(withGlossary(text));
       expect(out.ok).toBe(false);
       if (out.ok) continue;
-      expect(out.errors[0]).toMatch(/^content\/locales\/ru\/glossary\.md:\d+:\d+: /);
+      expect(out.errors.join('\n')).toMatch(/^content\/locales\/ru\/glossary\/web\.md:\d+:\d+: /m);
     }
   });
 
   it('fails without a glossary, and on a term a lesson names that does not exist', () => {
     const none = buildLessonData({ ...real, glossaries: [] });
     expect(!none.ok && none.errors).toEqual([
-      'content/locales/en/glossary.md:1:1: every site language has a glossary (K94): add content/locales/en/glossary.md',
-      'content/locales/ru/glossary.md:1:1: every site language has a glossary (K94): add content/locales/ru/glossary.md',
+      'content/locales/en/glossary/index.md:1:1: every site language has a glossary (K94): add content/locales/en/glossary/index.md',
+      'content/locales/ru/glossary/index.md:1:1: every site language has a glossary (K94): add content/locales/ru/glossary/index.md',
     ]);
     const unknown = buildLessonData(
       withB1(b1Text.replace('`term:web-server`', '`term:web-servers`')),
     );
     expect(!unknown.ok && unknown.errors.join('\n')).toMatch(
-      /^content\/lessons\/B1\/ru\.md:\d+:\d+: `term:web-servers` is not in content\/locales\/ru\/glossary\.md$/m,
+      /^content\/lessons\/B1\/ru\.md:\d+:\d+: `term:web-servers` is not in content\/locales\/ru\/glossary\/$/m,
     );
   });
 
@@ -343,13 +347,15 @@ describe('the glossary', () => {
     const extra = Array.from(
       { length: 30 },
       (_, i) =>
-        `## \`extra-${String(i)}\` Слово ${String(i)}\n\n\`category\` basics\n\n${'Определение слова для проверки размера файла словаря, достаточно длинное. '.repeat(4)}\n`,
+        `## \`extra-${String(i)}\` Слово ${String(i)}\n\n\`category\` web\n\n${'Определение слова для проверки размера файла словаря, достаточно длинное. '.repeat(4)}\n`,
     ).join('\n');
     // Russian only: an English glossary without the extra terms would be a translation mismatch.
     const out = buildLessonData({
       ...real,
       lessons: real.lessons.filter((f) => f.path.endsWith('/ru.md')),
-      glossaries: [{ path: glossaryPath, text: `${realGlossary}\n${extra}` }],
+      glossaries: real.glossaries
+        .filter((f) => f.path.startsWith('content/locales/ru/'))
+        .map((f) => (f.path === glossaryPath ? { ...f, text: `${realGlossary}\n${extra}` } : f)),
       languages: {
         path: 'content/locales/languages.md',
         text: '# Языки\n\n`languages` · `format` 1\n\n- `ru` Русский\n',
@@ -366,7 +372,7 @@ describe('the glossary', () => {
     expect(back.terms.map((t) => t?.id)).toContain('extra-29');
   });
 
-  it('keeps every file within 30 KB for a glossary 5 times the real one (CI3)', () => {
+  it('keeps every chunk within 30 KB and the index within 60 KB at the cap of terms (CI3, G17)', () => {
     const checked = checkContent(real.lessons, real.sources);
     const all = checkGlossaries(real.glossaries, {
       lessons: checked.lessons,
@@ -375,7 +381,8 @@ describe('the glossary', () => {
     });
     expect(all.errors).toEqual([]);
     for (const g of all.glossaries) {
-      const times = 5;
+      // As many copies of today's terms as fit under the cap of the checker.
+      const times = Math.max(5, Math.floor(MAX_GLOSSARY_TERMS / g.terms.length));
       const copy = (id: string, k: number) => (k === 0 ? id : `${id.slice(0, 28)}-x${String(k)}`);
       const big: Glossary = {
         ...g,
@@ -396,8 +403,13 @@ describe('the glossary', () => {
       const out = glossaryDataFiles(big, titles);
       expect(out.errors).toEqual([]);
       const sizes = glossarySizes(out.files);
-      expect(sizes.filter((s) => s.bytes > MAX_GLOSSARY_FILE_BYTES)).toEqual([]);
-      // 5 times today's data: as one file this would be far over the budget.
+      const index = glossaryFile(g.language);
+      const indexSize = sizes.find((s) => s.path === index)?.bytes ?? Infinity;
+      expect(indexSize).toBeLessThanOrEqual(MAX_GLOSSARY_INDEX_BYTES);
+      expect(sizes.filter((s) => s.path !== index && s.bytes > MAX_GLOSSARY_FILE_BYTES)).toEqual(
+        [],
+      );
+      // Many times today's data: as one file this would be far over the budget.
       expect(sizes.reduce((sum, s) => sum + s.bytes, 0)).toBeGreaterThan(
         3 * MAX_GLOSSARY_FILE_BYTES,
       );
@@ -407,12 +419,13 @@ describe('the glossary', () => {
     }
   });
 
-  it('fails the build when the index alone is over 30 KB, naming the file', () => {
+  it('fails the build when the index alone is over 60 KB, naming the file', () => {
     const g: Glossary = {
       language: 'ru',
       title: 'G',
+      index: 'content/locales/ru/glossary/index.md',
       categories: [{ id: 'web', label: 'W', position: { line: 1, column: 1 } }],
-      terms: Array.from({ length: 300 }, (_, i) => ({
+      terms: Array.from({ length: MAX_GLOSSARY_TERMS }, (_, i) => ({
         id: `t${String(i)}`,
         title: 'Ж'.repeat(60),
         category: 'web',
@@ -420,13 +433,14 @@ describe('the glossary', () => {
         see: [],
         lessons: [],
         definition: [],
+        file: 'content/locales/ru/glossary/web.md',
         position: { line: 1, column: 1 },
       })),
     };
     const out = glossaryDataFiles(g, new Map());
     expect(out.errors).toEqual([
       expect.stringMatching(
-        /^content\/locales\/ru\/glossary\.md:1:1: the index of this glossary is \d+ bytes; at most 30720/,
+        /^content\/locales\/ru\/glossary\/index\.md:1:1: the index of this glossary is \d+ bytes; at most 61440/,
       ),
     ]);
   });
@@ -483,7 +497,7 @@ describe('site languages (S9)', () => {
     }
     expect(text).toContain('content/locales/en/ui.md:1:1: missing key player.pause');
     expect(text).toContain(
-      'content/locales/en/glossary.md:1:1: every site language has a glossary',
+      'content/locales/en/glossary/index.md:1:1: every site language has a glossary',
     );
   });
 
