@@ -195,7 +195,7 @@ the familiar form.
 Message: this is not cart JSON · Result: rejected, attack failed
 
 ```text
-JSON.parse(⟦rO0ABXNy...⟧) → error
+parse JSON(⟦rO0ABXNy...⟧) → error
 ```
 
 #### Simple
@@ -214,7 +214,8 @@ server creates no objects at all.
 If the built-in format can't be dropped, OWASP and MITRE advise signing the data (for example with
 an HMAC) and not unpacking anything whose signature does not match, and also limiting classes with
 an allowlist (in Java, serialization filters). But a class allowlist alone does not save you: new
-gadgets keep being found.
+gadgets keep being found. The JSON library itself must not create classes from a type name in the
+data either: some can, and that feature stays off.
 
 ### `refuse` An empty cart
 
@@ -243,7 +244,7 @@ text. Not a single foreign class was created, not a single method called.
   and does not unpack anything whose signature does not match.
 - **Allowlist classes.** In Java, serialization filters with a list of allowed classes and size
   limits. This is a layer of defence, not a replacement for the first two.
-- **Fewer unneeded classes.** Don't keep libraries and classes it doesn't need in an application
-  that parses someone else's data.
-- **Keep track of known gadgets.** OWASP advises knowing the dangerous classes of your platform and
-  watching especially where deserialization could create them.
+- **Fewer unneeded classes.** An application that parses someone else's data should not carry
+  libraries and classes it doesn't need.
+- **Keep track of known gadgets.** OWASP (in its .NET section) advises knowing the platform's
+  known dangerous classes and watching especially where deserialization could create them.

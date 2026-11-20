@@ -236,8 +236,8 @@ for a single task.
   arguments, without a shell: the visitor's input stays one argument.
 - **Allowlist checks on input.** The server picks the command from its own list, and arguments are
   matched against allowed values or a strict pattern: only the characters needed, no spaces,
-  quotes, brackets, `&`, `|`, `;`, `$`, `<` or `>`.
-- **Escaping is a fallback.** Functions like `escapeshellarg()` in PHP wrap the input in quotes, but
+  quotes, brackets, `&`, `|`, `;`, `$`, `<`, `>`, `\`, `` ` `` or `!`.
+- **Escaping is weaker than an argument list.** Functions like `escapeshellarg()` in PHP wrap the input in quotes, but
   an attacker can still pass the program an argument of his own.
 - **Minimal rights.** The site runs under an account that may do only what it needs. This does not
   stop the injection, but it reduces the damage.

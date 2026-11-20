@@ -214,7 +214,8 @@ swap.
 - **Check the full path.** If a name is needed after all, the server decodes it, joins it to the
   folder, resolves it to a full path and checks that it is inside the allowed folder, comparing
   whole path components.
-- **Allowlist the characters in the name.** Letters, digits, `-` and `_`, no slashes. This is an
-  extra layer, not a replacement for the path check.
+- **Allowlist the characters in the name.** Letters, digits, `-` and `_`, no slashes (the name
+  without extension; the server adds the extension itself). This is an extra layer, not a
+  replacement for the path check.
 - **Don't strip `../`.** Such a filter misses `\`, encoded dots and absolute paths.
 - **Minimal file rights.** The site can read only what it needs, so even a traversal gets little.
