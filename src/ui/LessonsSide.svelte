@@ -120,8 +120,15 @@
         const top = here.offsetTop;
         const bottom = top + here.offsetHeight;
         if (top - head < element.scrollTop) element.scrollTop = Math.max(0, top - head);
-        else if (bottom > element.scrollTop + element.clientHeight)
-          element.scrollTop = Math.max(0, bottom - element.clientHeight);
+        else if (bottom > element.scrollTop + element.clientHeight) {
+          // The open lesson goes to the bottom edge, then the column moves on to the next whole
+          // row, so no lesson link is left half under the chips (axe target-size).
+          const end = Math.max(0, bottom - element.clientHeight);
+          const rows = Array.from(element.querySelectorAll<HTMLElement>('li'));
+          const next = rows.find((row) => row.offsetTop >= end + head);
+          const snapped = next === undefined ? end : next.offsetTop - head;
+          element.scrollTop = snapped <= top - head ? snapped : end;
+        }
       });
     return () => {
       live = false;
