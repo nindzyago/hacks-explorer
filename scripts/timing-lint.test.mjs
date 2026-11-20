@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 import globals from 'globals';
 import ts from 'typescript-eslint';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { LOAD_TIMER, REAL_TIME_DRIVER, timingConfig } from './timing-rules.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -27,6 +27,21 @@ async function problemsOf(code, filePath = 'src/ui/planted.ts') {
   const [result] = await timingOnly.lintText(code, { filePath });
   return result.messages.map((m) => `${String(m.ruleId)}: ${m.message}`);
 }
+
+/**
+ * Loading the project's own ESLint config (eslint.config.js) imports typescript-eslint,
+ * eslint-plugin-svelte with the Svelte compiler and svelte.config.js: about 4 s measured with the
+ * machine busy (load average 77 on 8 cores), 11 s at load 220. It is loaded once for the file
+ * (CI6) and does not grow with the lessons.
+ */
+const LOAD_PROJECT_CONFIG_MS = 30_000;
+
+/** @type {ESLint} */
+let project;
+beforeAll(async () => {
+  project = new ESLint({ cwd: root });
+  await project.calculateConfigForFile('src/main.ts');
+}, LOAD_PROJECT_CONFIG_MS);
 
 describe('timing rules', () => {
   it.each([
@@ -121,7 +136,6 @@ describe('timing rules', () => {
   });
 
   it('is switched on for all site code except the real-time driver and tests', async () => {
-    const project = new ESLint({ cwd: root });
     const names = Object.keys(timingConfig.rules);
     expect(names).toEqual([
       'no-restricted-globals',
