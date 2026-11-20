@@ -145,10 +145,12 @@ test('sitemap.xml is valid XML with every page in every language and its alterna
   }, xml);
   expect(read.error).toBe(0);
   expect(read.root).toBe('http://www.sitemaps.org/schemas/sitemap/0.9 urlset');
-  // 10 lessons and «About», in Russian and English.
-  expect(read.urls).toHaveLength(22);
+  // Every shipped lesson and «About», in Russian and English.
+  const pages =
+    readdirSync(join('dist', 'data', 'lessons')).filter((n) => n.endsWith('.json')).length + 2;
+  expect(read.urls).toHaveLength(pages);
   const locs = read.urls.map((u) => u.loc);
-  expect(new Set(locs).size).toBe(22);
+  expect(new Set(locs).size).toBe(pages);
   expect(locs).toContain(`${SITE_ORIGIN}/ru/lesson/K1`);
   expect(locs).toContain(`${SITE_ORIGIN}/en/about`);
   for (const url of read.urls) {

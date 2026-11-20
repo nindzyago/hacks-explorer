@@ -225,3 +225,80 @@ Forms: LDAP
 Lightweight Directory Access Protocol, the protocol of directory services where organizations
 keep accounts, groups and other records (RFC 4511). Through JNDI a Java program can fetch an
 object from a directory, and code along with it.
+
+## `command-injection` OS command injection
+
+`category` web · `see` injection, shell, rce, cwe · `lessons` B2
+
+Forms: OS command injection, command injection
+
+Injection into an operating system command: a program glues a command line together from its own
+text and data it received, and hands it to the shell. Characters such as `;`, `&` or `|` in the
+input start a second command, and the server runs it with its own rights. The weakness class is
+CWE-78; in the OWASP Top 10:2021 it belongs to A03 Injection.
+
+## `shell` Shell
+
+`category` web · `see` command-injection · `lessons` B2
+
+Forms: shell, shells, command shell
+
+A program that reads a command line, splits it into parts and starts programs: `sh` or `bash` on
+Linux, `cmd.exe` on Windows. It has a language of its own: `;` separates commands, `|` passes one
+program's output to another, `$( )` puts a command's output into the line. So a line built from
+someone else's input can mean more to the shell than the program's author intended.
+
+## `path-traversal` Path traversal
+
+`category` web · `see` web-server, cwe · `lessons` B3
+
+Forms: path traversal, directory traversal
+
+An attack on a program that builds a file path from a name it received. `../` in a path means
+“the folder above”, and a few such steps lead the path out of the allowed folder to any file the
+program may read. The weakness class is CWE-22; in the OWASP Top 10:2021 it belongs to A01 Broken
+Access Control.
+
+## `web-root` Web root
+
+`category` web · `see` web-server, web-shell · `lessons` B4
+
+Forms: web root, webroot, document root
+
+The folder on the server from which the web server serves files at the site's addresses: the file
+`uploads/a.png` in it opens at `/uploads/a.png`. A server set up for PHP does not send `.php` files
+from this folder as they are, it runs them. That is why visitors' files are kept outside the web
+root.
+
+## `web-shell` Web shell
+
+`category` web · `see` web-root, rce, mitre-attack · `lessons` B4
+
+Forms: web shell, web shells, webshell
+
+A script an attacker has placed on a web server to control the server with ordinary requests: open
+the script's address and the server runs a command and returns the answer. In MITRE ATT&CK it is
+sub-technique T1505.003. It often gets onto a server through an unsafe file upload.
+
+## `deserialization` Deserialization
+
+`category` web · `see` gadget-chain, rce, cwe · `lessons` B5
+
+Forms: deserialization, deserializing, deserialize, deserializes, deserialized
+
+Rebuilding a program object from bytes or text; the opposite is serialization. Languages' built-in
+formats, such as Java Serializable or Python's pickle, also store the class name, so they can
+create an object of any class the program knows. If a visitor sent the data, the visitor chooses
+what gets created. The weakness class is CWE-502.
+
+## `gadget-chain` Gadget chain
+
+`category` web · `see` deserialization, rce · `lessons` B5
+
+Forms: gadget chain, gadget chains, gadget, gadgets
+
+A sequence of objects and calls to their methods that runs by itself during deserialization.
+Gadgets are classes the program and its libraries already have: the attacker brings no code of
+their own, but sends data that lines up those classes in the right order, and the last step may,
+for example, start a command. New chains keep being found, so blocking known classes alone is not
+enough.
