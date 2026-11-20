@@ -220,7 +220,7 @@ describe('sitemap.xml and robots.txt', () => {
       ...lessons.map((l) => `${ORIGIN}/${l.language}/lesson/${l.id}`),
     ];
     expect([...locs].sort()).toEqual([...want].sort());
-    expect(urls).toHaveLength(languages.length * 11);
+    expect(urls).toHaveLength(want.length);
   });
 
   it('gives each address its alternates in every language and x-default', () => {

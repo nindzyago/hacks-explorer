@@ -124,7 +124,7 @@ encoding was forgotten somewhere.
 
 ## `session-cookie` Session cookie
 
-`category` web · `see` xss, web-server, csrf, samesite · `lessons` C1, C4
+`category` web · `see` xss, web-server, csrf, samesite, session-fixation · `lessons` C1, C4, D3
 
 Forms: session cookie, session cookies
 
@@ -178,13 +178,68 @@ the number shows or changes someone else's data. The closest MITRE class is CWE-
 
 ## `authorization` Authorization
 
-`category` web · `see` idor, web-server · `lessons` D1
+`category` web · `see` idor, web-server, privilege-escalation · `lessons` D1, D2
 
 Forms: authorization, authorisation, permission check, permission checks
 
 Checking what a user is allowed to do: open this record, change it, delete it. Not to be confused
 with logging in (authentication), which answers “who are you”. The server does it itself on every
 request and refuses by default.
+
+## `privilege-escalation` Privilege escalation
+
+`category` web · `see` authorization, idor · `lessons` D2
+
+Forms: privilege escalation, escalation of privilege, elevation of privilege
+
+Gaining rights a user was never given. Vertical: an ordinary user acts as an administrator;
+horizontal: a user reaches the data of another user with the same role. A common cause is an
+internal address with no server-side permission check. In MITRE these are CWE-269 and CWE-862;
+in the OWASP Top 10:2021 it is item A01 Broken Access Control.
+
+## `session-fixation` Session fixation
+
+`category` web · `see` session-cookie, authorization · `lessons` D3
+
+Forms: session fixation
+
+An attack where the attacker imposes a session ID they already know on the victim in advance, for
+example with a link carrying that ID. If the site does not issue a new ID after login, the
+victim's session ends up in the attacker's hands. In the MITRE catalogue it is CWE-384. The
+defence is a new random session ID after login and refusing IDs from the page address.
+
+## `jwt` JWT
+
+`category` web · `see` session-cookie, authorization · `lessons` D4
+
+Forms: JWT, JWTs
+
+JSON Web Token (RFC 7519) — a pass in three parts: header, data and signature, base64url-encoded
+and separated by dots. Anyone can read the data; only the signature protects it from changes, so
+the server must verify it itself, with an algorithm fixed in advance. A failure to verify the
+signature is CWE-347.
+
+## `oauth` OAuth
+
+`category` web · `see` pkce, jwt · `lessons` D5
+
+Forms: OAuth, OAuth 2.0
+
+A protocol (RFC 6749) that lets a site access a user's account on another service without the
+user's password. The login service sends the browser back to a registered return address
+(`redirect_uri`) with a one-time code, and the site exchanges the code for an access token.
+Current security rules are collected in RFC 9700.
+
+## `pkce` PKCE
+
+`category` web · `see` oauth · `lessons` D5
+
+Forms: PKCE
+
+Proof Key for Code Exchange (RFC 7636). At the start of an OAuth login the app makes up a random
+secret and sends only its hash; when exchanging the code for a token it shows the secret itself. A
+code stolen on the way cannot be exchanged without the secret. RFC 9700 requires PKCE from public
+apps and recommends it for the rest.
 
 ## `salt` Salt
 
