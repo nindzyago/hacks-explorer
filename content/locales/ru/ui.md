@@ -150,6 +150,16 @@
 - `scene.stays` у участника «{name}»
 - `scene.term` {name}: что это
 
+## Последовательность
+
+- `view.label` Вид урока
+- `view.scene` Схема
+- `view.sequence` Последовательность
+- `sequence.title` Последовательность сообщений урока «{title}»
+- `sequence.row` Шаг {number} — {title}
+- `sequence.legend` Обозначения
+- `sequence.future` ещё впереди
+
 ## Словарь
 
 - `glossary.title` Словарь
@@ -197,6 +207,7 @@
 - `command.glossary.close` Закрыть определение
 - `command.drawer.open` Открыть панель уроков и словаря
 - `command.drawer.close` Закрыть панель уроков и словаря
+- `command.view.set` Вид урока: схема или последовательность
 - `command.clock.set` Перевести часы плеера
 - `command.clock.tick` Сдвинуть часы плеера
 - `command.player.play` Пуск

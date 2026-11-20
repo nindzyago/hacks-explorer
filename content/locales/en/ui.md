@@ -150,6 +150,16 @@ in. Keep the same keys and the same `{names}`.
 - `scene.stays` at “{name}”
 - `scene.term` {name}: what is it
 
+## Sequence
+
+- `view.label` Lesson view
+- `view.scene` Diagram
+- `view.sequence` Sequence
+- `sequence.title` Message sequence of the lesson “{title}”
+- `sequence.row` Step {number} — {title}
+- `sequence.legend` Key
+- `sequence.future` yet to come
+
 ## Glossary
 
 - `glossary.title` Glossary
@@ -197,6 +207,7 @@ in. Keep the same keys and the same `{names}`.
 - `command.glossary.close` Close the definition
 - `command.drawer.open` Open the lessons and glossary panel
 - `command.drawer.close` Close the lessons and glossary panel
+- `command.view.set` Lesson view: diagram or sequence
 - `command.clock.set` Set the player clock
 - `command.clock.tick` Move the player clock
 - `command.player.play` Play

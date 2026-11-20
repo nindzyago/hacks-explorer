@@ -70,7 +70,8 @@ test('the same scenario twice gives the same dump and the same screenshot', asyn
       '    "startedMs": 1230,',
       '    "step": 3',
       '  },',
-      '  "theme": "dark"',
+      '  "theme": "dark",',
+      '  "view": "scene"',
       '}',
     ].join('\n'),
   );

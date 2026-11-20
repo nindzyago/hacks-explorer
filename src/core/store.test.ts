@@ -65,6 +65,7 @@ describe('initialState', () => {
       glossary: null,
       locale: 'ru',
       drawer: null,
+      view: 'scene',
     });
     expect(Object.isFrozen(state)).toBe(true);
     expect(JSON.parse(JSON.stringify(state))).toEqual(state);

@@ -7,6 +7,7 @@
   import { createStore, type Store } from '../core/store';
   import { currentStep, stepsInMode } from '../core/scene-layout/message';
   import Scene from '../scene/Scene.svelte';
+  import Sequence from '../scene/Sequence.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
   import type { GlossaryLoader } from '../services/glossary/glossary';
   import type { TopicsLoader } from '../services/topics/topics';
@@ -22,6 +23,7 @@
   import { loadErrorKey, type ShownErrorCode } from './load-error';
   import PlayerControls from './PlayerControls.svelte';
   import StepsTable from './StepsTable.svelte';
+  import ViewSwitch from './ViewSwitch.svelte';
 
   const {
     app,
@@ -337,8 +339,13 @@
   {:else}
     <div class="work" data-testid="lesson" aria-labelledby="lesson-title" role="region">
       <div class="scene-area">
+        <!-- M6.2: the scene or the sequence view (`view.set`); M6.1 moves the switch. -->
         {#key shown.lesson}
-          <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
+          {#if $store.view === 'sequence'}
+            <Sequence lesson={shown.lesson} {player} clock={app.clock} {run} {t} />
+          {:else}
+            <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
+          {/if}
         {/key}
       </div>
 
@@ -346,6 +353,7 @@
       <div class="controls-area">
         <div class="player-area"><PlayerControls {player} {run} {t} /></div>
         <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} {t} />
+        <ViewSwitch view={$store.view} {run} {t} />
       </div>
 
       <!-- M1.4: the step at three depths, the passport, «Как защититься», the sources. -->
