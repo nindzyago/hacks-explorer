@@ -188,13 +188,14 @@ parse it as HTML. No `<img>` tag appears, and no handler runs.
 #### Deeper
 
 OWASP names choosing the right sink as the main way to fix DOM XSS: for text, `textContent`
-instead of `innerHTML`. If HTML is really needed, it goes through a sanitizer. The other extreme
-is dangerous too: `eval()` with user data cannot be fixed by any processing.
+instead of `innerHTML`. If HTML is really needed, it goes through a sanitizer. And user data
+should never reach `eval()`: OWASP advises simply not doing it rather than trying to clean the
+input.
 
 ### `tt` A Trusted Types policy
 
 `server → browser` · `attack` · `with-defence` · `stopped`
-Message: page with a policy · Result: string in innerHTML rejected
+Message: page with a policy · Result: header received; a string in innerHTML will be rejected
 
 ```http
 Content-Security-Policy: ⟦require-trusted-types-for 'script'⟧

@@ -88,7 +88,8 @@ and finds the victim's profile.
 
 #### Deeper
 
-The cookie goes along with a `fetch` from another site only if it is marked `SameSite=None`.
+The cookie goes along with a `fetch` from another site only if it is marked `SameSite=None` and
+the browser does not block third-party cookies.
 According to MDN, with `Lax` and `Strict` the browser does not attach cookies to such requests.
 Here the API serves widgets on different sites, so its cookie is `SameSite=None`.
 

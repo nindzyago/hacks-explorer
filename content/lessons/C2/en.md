@@ -44,7 +44,7 @@ Message: new comment · Result: accepted
 POST /recipes/42/comments
 Host: forum.example
 
-text=Great recipe! ⟦<script>steal()</script>⟧
+text=Great <b>recipe</b>! ⟦<script>steal()</script>⟧
 ```
 
 #### Simple
@@ -123,7 +123,7 @@ which is why attackers pick places that many people read, or that important peop
 Message: recipe page · Result: the script became part of the page
 
 ```html
-<div class="comment">Great recipe! ⟦<script>steal()</script>⟧</div>
+<div class="comment">Great <b>recipe</b>! ⟦<script>steal()</script>⟧</div>
 ```
 
 #### Simple
@@ -218,8 +218,9 @@ The browser gets a page where only the allowed markup is left of the comment, an
 #### Deeper
 
 If the forum does not need formatting, it is simpler and more reliable to encode the whole
-comment as text. A Content Security Policy without `'unsafe-inline'` works as a second layer: if
-the cleaning is forgotten somewhere, the browser still will not run an inline script.
+comment as text. A Content Security Policy whose `script-src` rule has no `'unsafe-inline'` works
+as a second layer: if the cleaning is forgotten somewhere, the browser still will not run an
+inline script.
 
 ## How to defend
 

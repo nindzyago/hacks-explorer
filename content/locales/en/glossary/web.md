@@ -192,9 +192,9 @@ protects against CSRF as an extra layer but does not replace a CSRF token.
 
 Forms: same-origin policy
 
-The browser's main security rule: a script from one site does not read another site's data. An
-origin is the scheme, host and port: `https://shop.example` and `https://api.shop.example` are
-different origins.
+The browser's main security rule: a script from one origin cannot read responses from another
+origin. An origin is the scheme, host and port: `https://shop.example` and
+`https://api.shop.example` are different origins, even though they are the same site.
 
 ## `cors` CORS
 

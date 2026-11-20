@@ -44,7 +44,7 @@
 POST /recipes/42/comments
 Host: forum.example
 
-text=Отличный рецепт! ⟦<script>steal()</script>⟧
+text=Отличный <b>рецепт</b>! ⟦<script>steal()</script>⟧
 ```
 
 #### Просто
@@ -120,7 +120,7 @@ Cookie: session=7f3a9c
 Сообщение: страница рецепта · Итог: скрипт стал частью страницы
 
 ```html
-<div class="comment">Отличный рецепт! ⟦<script>steal()</script>⟧</div>
+<div class="comment">Отличный <b>рецепт</b>! ⟦<script>steal()</script>⟧</div>
 ```
 
 #### Просто
@@ -216,8 +216,8 @@ Host: evil.example
 #### Глубже
 
 Если форуму не нужно оформление, проще и надёжнее экранировать комментарий целиком, как текст.
-Вторым слоем служит Content Security Policy без `'unsafe-inline'`: если очистку где-то забудут,
-браузер всё равно не запустит встроенный скрипт.
+Вторым слоем служит Content Security Policy с правилом `script-src` без `'unsafe-inline'`: если
+очистку где-то забудут, браузер всё равно не запустит встроенный скрипт.
 
 ## Как защититься
 

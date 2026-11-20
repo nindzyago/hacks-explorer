@@ -112,7 +112,9 @@ the page will be shown inside someone else's site and that nobody can see it.
 
 The cookie reaches the frame only if the browser attaches it to requests from other sites.
 According to OWASP, a cookie with `SameSite=Strict` or `SameSite=Lax` is not sent to a frame on
-someone else's site, and this attack would fail. Here the photo service uses `SameSite=None`.
+someone else's site, and this attack would fail. Browsers that block third-party cookies will
+not send it either. Here the photo service uses `SameSite=None`, and the victim's browser allows
+such cookies.
 
 ### `render` Settings in a transparent frame
 
@@ -131,8 +133,9 @@ browser lets any site embed the page.
 
 #### Deeper
 
-According to MDN, the browser lets anyone embed a document if the site sent none of these
-restrictions. So every page where one click changes something needs protection: settings,
+If the site sent none of these restrictions, the browser lets any site embed the document. MDN
+warns that even a strict `default-src 'none'` does not change this: framing is controlled only by
+`frame-ancestors`. So every page where one click changes something needs protection: settings,
 payments, deletion, subscriptions.
 
 ### `click` The click goes into the frame
