@@ -2,7 +2,7 @@
 // Release with the CHANGELOG.md notes and moves the branch `release` that Cloudflare deploys;
 // a run by hand with an older tag moves it back (rollback). The tag itself and the deploy happen
 // on GitHub and Cloudflare and are not tested here (docs/deploy.md). Oracle level A.
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,12 +38,21 @@ describe('the repository as committed', () => {
     ).toBe('');
   });
 
-  it('refuses a malformed tag on the command line', () => {
-    for (const tag of ['0.1.0', 'v0.1', 'v0.1.0-rc.1', '$(id)']) {
-      expect(() =>
-        execFileSync('node', ['scripts/release.mjs', 'notes', tag], { cwd: ROOT, stdio: 'pipe' }),
-      ).toThrow();
-    }
+  // The four refusals run at once: one node start each, in parallel, so a loaded machine
+  // does not push four serial starts past the test timeout.
+  it('refuses a malformed tag on the command line', async () => {
+    const tags = ['0.1.0', 'v0.1', 'v0.1.0-rc.1', '$(id)'];
+    const codes = await Promise.all(
+      tags.map(
+        (tag) =>
+          new Promise((resolve) => {
+            execFile('node', ['scripts/release.mjs', 'notes', tag], { cwd: ROOT }, (error) => {
+              resolve(error === null ? 0 : (error.code ?? 1));
+            });
+          }),
+      ),
+    );
+    expect(codes.every((code) => code !== 0)).toBe(true);
   });
 });
 
