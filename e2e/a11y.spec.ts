@@ -291,8 +291,11 @@ test.describe('S6: the keyboard', () => {
       );
       expect(expected).toBeGreaterThan(5);
       const seen: string[] = [];
-      let lastY = -Infinity;
-      let rows = 0;
+      // M5.1: reading order is checked by panel, not by screen position. The lessons column,
+      // the explanation and the log scroll on their own and the section chips are sticky, so a
+      // y position mixes scroll offsets. Instead: every panel is visited once, as one block, in
+      // the order of the one-screen grid (top bar, lessons, scene, explanation, log).
+      const regions: string[] = [];
       for (let i = 0; i < expected; i += 1) {
         await page.keyboard.press('Tab');
         const f = await focused(page);
@@ -301,24 +304,25 @@ test.describe('S6: the keyboard', () => {
         expect(f.ring, f.key).toBe(`solid 3px ${ring}`);
         expect(seen, `${f.key} twice: a trap or a loop`).not.toContain(f.key);
         seen.push(f.key);
-        // UI2: the place in the content, not on the screen. The lessons column is long and
-        // scrolls on its own; Chromium centres a focused row of it, which moves it up the screen
-        // while the reading order goes down. The scroll of every scrolling box above it is added.
-        const y = await page.evaluate(() => {
+        const region = await page.evaluate(() => {
           const el = document.activeElement;
-          if (el === null) return 0;
-          let top = el.getBoundingClientRect().top;
-          for (let box = el.parentElement; box !== null; box = box.parentElement) {
-            top += box.scrollTop;
-          }
-          return Math.round(top);
+          const panel = el?.closest(
+            '[data-testid="lessons-panel"], [data-testid="scene-panel"], [data-testid="explain"], [data-testid="log"], .controls-panel',
+          );
+          if (panel === null || panel === undefined) return 'top';
+          if (panel.classList.contains('controls-panel')) return 'controls';
+          return panel.getAttribute('data-testid') ?? 'top';
         });
-        if (y < lastY - 200) rows += 1;
-        lastY = y;
+        if (regions.at(-1) !== region) {
+          expect(regions, `${region} entered twice: ${seen.join(', ')}`).not.toContain(region);
+          regions.push(region);
+        }
       }
-      // Reading order: from the top down, at most one jump back up (from the scene row to the
-      // next column of the one-screen grid).
-      expect(rows, seen.join(', ')).toBeLessThanOrEqual(2);
+      const order = ['top', 'lessons-panel', 'scene-panel', 'controls', 'explain', 'log'];
+      expect(regions, seen.join(', ')).toEqual(order.filter((r) => regions.includes(r)));
+      expect(regions).toEqual(
+        expect.arrayContaining(['top', 'lessons-panel', 'scene-panel', 'explain', 'log']),
+      );
       // One more Tab leaves the page's controls: no trap.
       await page.keyboard.press('Tab');
       const after = await focused(page);
