@@ -51,6 +51,10 @@ export interface AppOptions {
    * Russian alone when not given.
    */
   readonly languages?: readonly string[] | undefined;
+  /** UI2: a lesson that opens starts playing by itself (see `PlayerCommandsOptions`). */
+  readonly autoplay?: boolean | undefined;
+  /** UI2: the reader asked for less motion: a lesson opens paused. */
+  readonly reducedMotion?: (() => boolean) | undefined;
 }
 
 export function createApp(options: AppOptions = {}): AppContext {
@@ -67,6 +71,8 @@ export function createApp(options: AppOptions = {}): AppContext {
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
   const player = registerPlayerCommands(registry, store, clock, {
     onTimeNeeded: options.onTimeNeeded,
+    autoplay: options.autoplay,
+    reducedMotion: options.reducedMotion,
   });
   return {
     store,

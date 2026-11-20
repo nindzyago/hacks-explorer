@@ -49,6 +49,18 @@ describe('parseCatalogFile', () => {
     ]);
   });
 
+  // UI2: the chips of the lessons column name a section by a short name after « · ».
+  it('reads the short name of a section after « · », the full name without it', () => {
+    const f = parsed(
+      RU,
+      file('ru', '## `B` Веб: инъекции · Инъекции\n\n- `B1` SQL\n\n## `G` Сеть\n\n- `G1` X\n'),
+    );
+    expect(f.sections.map((s) => [s.id, s.title, s.short])).toEqual([
+      ['B', 'Веб: инъекции', 'Инъекции'],
+      ['G', 'Сеть', null],
+    ]);
+  });
+
   it('names the file and the line of each error', () => {
     const errors = errorsOf(
       RU,
@@ -74,6 +86,9 @@ describe('parseCatalogFile', () => {
     ['a long title', `## \`B\` Web\n\n- \`B1\` ${'a'.repeat(81)}\n`, 'not-allowed'],
     ['an empty note', '## `B` Web\n\n- `B1` SQL — \n', 'not-allowed'],
     ['markup in a section name', '## `B` Web {x}\n\n- `B1` SQL\n', 'not-allowed'],
+    ['an empty short name', '## `B` Web · \n\n- `B1` SQL\n', 'not-allowed'],
+    ['a long short name', `## \`B\` Web · ${'a'.repeat(21)}\n\n- \`B1\` SQL\n`, 'not-allowed'],
+    ['markup in a short name', '## `B` Web · <i>W</i>\n\n- `B1` SQL\n', 'not-allowed'],
   ])('rejects %s', (_name, body, code) => {
     expect(errorsOf(RU, file('ru', body)).map((e) => e.code)).toContain(code);
   });
@@ -234,6 +249,18 @@ describe('site topics', () => {
     expect(back).toEqual({ ok: true, value: site });
   });
 
+  it('gives each section a short name: its own, else the full name (UI2)', () => {
+    const short = toSiteTopics(
+      parsed(RU, file('ru', '## `B` Веб: инъекции · Инъекции\n\n- `B1` SQL\n')),
+      new Set(),
+    );
+    expect(short.sections[0]?.short).toBe('Инъекции');
+    expect(site.sections.map((s) => s.short)).toEqual(['Веб: инъекции', 'Сеть']);
+    const without = JSON.parse(JSON.stringify(site)) as { sections: Record<string, unknown>[] };
+    delete without.sections[0]?.['short'];
+    expect(readSiteTopics(without, 'ru').ok).toBe(false);
+  });
+
   it.each([
     ['not an object', 42],
     ['another format', { ...site, format: 2 }],
@@ -241,14 +268,22 @@ describe('site topics', () => {
     ['a section twice', { ...site, sections: [site.sections[0], site.sections[0]] }],
     [
       'a topic of another section',
-      { ...site, sections: [{ id: 'G', title: 'x', topics: site.sections[0]?.topics }] },
+      {
+        ...site,
+        sections: [{ id: 'G', title: 'x', short: 'x', topics: site.sections[0]?.topics }],
+      },
     ],
     [
       'ready not a boolean',
       {
         ...site,
         sections: [
-          { id: 'B', title: 'x', topics: [{ id: 'B1', title: 'x', note: null, ready: 1 }] },
+          {
+            id: 'B',
+            title: 'x',
+            short: 'x',
+            topics: [{ id: 'B1', title: 'x', note: null, ready: 1 }],
+          },
         ],
       },
     ],
@@ -257,7 +292,12 @@ describe('site topics', () => {
       {
         ...site,
         sections: [
-          { id: 'B', title: 'x', topics: [{ id: 'B1<', title: 'x', note: null, ready: true }] },
+          {
+            id: 'B',
+            title: 'x',
+            short: 'x',
+            topics: [{ id: 'B1<', title: 'x', note: null, ready: true }],
+          },
         ],
       },
     ],
@@ -279,6 +319,15 @@ describe('search (S7)', () => {
   }
   const ids = (found: ReturnType<typeof filterTopics>) =>
     found.flatMap((f) => f.topics.map((t) => t.id));
+
+  // UI2: every section of the site's catalogs has its own short name for the chips.
+  it('every section of the ru and en catalogs has a short chip name', () => {
+    for (const topics of [ru, en]) {
+      for (const s of topics.sections) {
+        expect(s.short.length, `${topics.language} ${s.id}`).toBeLessThanOrEqual(16);
+      }
+    }
+  });
 
   it('normalizes case, ё and punctuation', () => {
     expect(normalize('  SQL-Инъекция!  ')).toBe('sql инъекция');

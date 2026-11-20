@@ -5,6 +5,7 @@
  *   # <any title>
  *   `catalog` <lang> · `format` 1
  *   ## `B` <section name>
+ *   ## `B` <section name> · <short name, optional: the chip of the lessons column, UI2>
  *   - `B1` <topic title>
  *   - `B8` <topic title> — <what the scene shows, optional>
  *
@@ -23,6 +24,8 @@ export const MAX_TOPICS = 300;
 export const MAX_TOPIC_TITLE_LENGTH = 80;
 export const MAX_SECTION_TITLE_LENGTH = 60;
 export const MAX_NOTE_LENGTH = 200;
+/** The short name of a section, on a chip of the lessons column (UI2). */
+export const MAX_SHORT_LENGTH = 20;
 /** Sections A to L (plan/content-catalog.md; L added by the owner, K9). */
 export const SECTION_ID = /^[A-L]$/;
 /** A topic: its section letter and a number, `B1`, `K12`. */
@@ -34,6 +37,8 @@ const TOPIC = /^- \x60([^\x60]*)\x60(?:[ \t]+(.*))?$/;
 const PATH = /^content\/locales\/([a-z]{2,3})\/catalog\.md$/;
 /** Between the title and the optional note. */
 const NOTE_SEPARATOR = /\s—(?:\s|$)/;
+/** Between the section name and its optional short name. */
+const SHORT_SEPARATOR = /\s·(?:\s|$)/;
 const MARKUP = /[<>{}\x60]/;
 
 export function catalogPath(language: string): string {
@@ -50,6 +55,8 @@ export interface CatalogTopic {
 export interface CatalogSection {
   readonly id: string;
   readonly title: string;
+  /** The short name after « · », null when the heading has none. */
+  readonly short: string | null;
   readonly line: number;
   readonly topics: readonly CatalogTopic[];
 }
@@ -94,7 +101,13 @@ export function parseCatalogFile(path: string, text: unknown): CatalogFileResult
 
   let title: string | null = null;
   let header = false;
-  const sections: { id: string; title: string; line: number; topics: CatalogTopic[] }[] = [];
+  const sections: {
+    id: string;
+    title: string;
+    short: string | null;
+    line: number;
+    topics: CatalogTopic[];
+  }[] = [];
   const topicIds = new Set<string>();
   let topicCount = 0;
 
@@ -143,7 +156,10 @@ export function parseCatalogFile(path: string, text: unknown): CatalogFileResult
     if (content.startsWith('#')) {
       const m = SECTION.exec(content);
       const id = m?.[1] ?? '';
-      const name = (m?.[2] ?? '').trim();
+      const heading = (m?.[2] ?? '').trim();
+      const split = heading.search(SHORT_SEPARATOR);
+      const name = (split < 0 ? heading : heading.slice(0, split)).trim();
+      const short = split < 0 ? null : heading.slice(split + 2).trim();
       if (m === null || !SECTION_ID.test(id) || name === '') {
         reporter.add(
           at,
@@ -162,6 +178,18 @@ export function parseCatalogFile(path: string, text: unknown): CatalogFileResult
         );
         continue;
       }
+      if (
+        short !== null &&
+        (short === '' || short.length > MAX_SHORT_LENGTH || !plainText(short))
+      ) {
+        reporter.add(
+          at,
+          id,
+          'not-allowed',
+          `the short name after « · » is plain text of 1 to ${String(MAX_SHORT_LENGTH)} characters`,
+        );
+        continue;
+      }
       if (sections.some((s) => s.id === id)) {
         reporter.add(at, id, 'duplicate', `section ${id} is already in this file`);
         continue;
@@ -175,7 +203,7 @@ export function parseCatalogFile(path: string, text: unknown): CatalogFileResult
           `sections go A to L: ${id} comes before ${previous.id}`,
         );
       }
-      sections.push({ id, title: name, line: at.line, topics: [] });
+      sections.push({ id, title: name, short, line: at.line, topics: [] });
       continue;
     }
     if (!content.startsWith('-') && !content.startsWith('*') && !content.startsWith('+')) continue;

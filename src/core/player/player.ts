@@ -134,6 +134,15 @@ export function play(state: PlayerState, nowMs: number): PlayerState {
   return freeze({ ...state, step: state.step + 1, startedMs: nowMs, playing: true });
 }
 
+/**
+ * A lesson that just opened starts playing by itself (UI2): its current step (1, or the step of
+ * the address) starts again now and plays on. Without steps nothing changes.
+ */
+export function startOnOpen(state: PlayerState, nowMs: number): PlayerState {
+  if (stepCount(state) === 0) return state;
+  return freeze({ ...state, startedMs: nowMs, playing: true });
+}
+
 /** Stops autoplay; a message on its way still arrives. */
 export function pause(state: PlayerState): PlayerState {
   return state.playing ? freeze({ ...state, playing: false }) : state;

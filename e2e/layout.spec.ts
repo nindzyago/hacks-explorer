@@ -1,7 +1,7 @@
 // M6.1 acceptance (design M6 §2–4, K129): the blueprint screen of variant A «Три колонки».
 // From 1280 px the lessons column is on the left without a click; at 1024 it is the side panel
-// behind «☰ Уроки». The section chips of the top bar filter the list; a step of the open lesson
-// in the list goes to that step. The page is one screen at 1024, 1280 and 1440 on every lesson in
+// behind «☰ Уроки». The section chips of the column (UI2) and the search of the top bar filter
+// the list; a step of the open lesson in the list goes to that step. The page is one screen at 1024, 1280 and 1440 on every lesson in
 // both languages; a phone has one column. Screenshots go to M61_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
@@ -90,7 +90,7 @@ test.describe('the lessons column at 1280 and wider', () => {
             if (brand instanceof HTMLElement) brand.style.marginRight = '40px';
           });
           const [bar, side] = await Promise.all([box(page, 'topbar'), box(page, 'lessons-panel')]);
-          for (const id of ['sections', 'lesson-search', 'nav-about', 'languages']) {
+          for (const id of ['lesson-search', 'nav-about', 'languages']) {
             const b = await box(page, id);
             expect(b.y, id).toBeGreaterThanOrEqual(bar.y - 0.5);
             expect(b.y + b.height, id).toBeLessThanOrEqual(bar.y + bar.height + 0.5);
@@ -128,31 +128,73 @@ test.describe('the lessons column at 1280 and wider', () => {
   test.describe('filters', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
-    test('the section chips filter the list; pressing again shows all', async ({ page }) => {
+    // UI2: the chips «Все» and one per section stand in the column, not in the top bar; the list
+    // is grouped by section, ready lessons first, the topics still being written after them.
+    test('the column lists every section; a section chip keeps one, «Все» shows all', async ({
+      page,
+    }) => {
       await openApp(page, '/ru/lesson/B1');
       const side = page.getByTestId('lessons-panel');
+      await expect(page.getByTestId('topbar').locator('[data-testid^="section-"]')).toHaveCount(0);
+      const chips = side.getByTestId('side-sections').getByRole('button');
+      await expect(chips).toHaveCount(13);
+      await expect(chips.first()).toHaveText('Все');
+      await expect(side.getByTestId('side-section-all')).toHaveAttribute('aria-pressed', 'true');
+      await expect(side.getByTestId('side-section-B')).toHaveText('Инъекции');
+      await expect(side.getByTestId('side-section-B')).toHaveClass(/own/);
+      await expect(side.getByTestId('side-section-B')).toHaveAttribute('aria-pressed', 'false');
+      // Every section, A to L, each under its heading with «готово N из M».
+      const groups = side.getByTestId('side-group');
+      await expect(groups).toHaveCount(12);
+      expect(await groups.evaluateAll((g) => g.map((e) => e.getAttribute('data-section')))).toEqual(
+        'ABCDEFGHIJKL'.split(''),
+      );
+      const b = side.locator('[data-testid="side-group"][data-section="B"]');
+      await expect(b.getByRole('heading')).toContainText('Веб: инъекции');
+      await expect(b.getByTestId('side-count')).toHaveText(/^готово \d+ из \d+$/);
+      // Ready lessons are links, first in their section; the rest are grey «скоро» after them.
       await expect(side.getByTestId('side-lesson')).toHaveCount(LESSONS.length);
-      // The section of the open lesson is marked, none is chosen.
-      await expect(page.getByTestId('section-B')).toHaveClass(/here/);
-      await expect(page.getByTestId('section-B')).toHaveAttribute('aria-pressed', 'false');
+      expect(await side.getByTestId('side-soon').count()).toBeGreaterThan(0);
+      for (const group of await groups.all()) {
+        const kinds = await group
+          .locator('ul > li')
+          .evaluateAll((li) => li.map((e) => e.getAttribute('data-testid')));
+        expect(kinds.indexOf('side-lesson')).toBeLessThanOrEqual(0);
+        const firstSoon = kinds.indexOf('side-soon');
+        if (firstSoon >= 0)
+          expect(kinds.slice(firstSoon).every((k) => k === 'side-soon')).toBe(true);
+      }
+      await expect(side.getByTestId('side-soon').first().locator('a')).toHaveCount(0);
+
       const inC = LESSONS.filter((id) => id.startsWith('C'));
-      await page.getByTestId('section-C').click();
-      await expect(page.getByTestId('section-C')).toHaveAttribute('aria-pressed', 'true');
+      await side.getByTestId('side-section-C').click();
+      await expect(side.getByTestId('side-section-C')).toHaveAttribute('aria-pressed', 'true');
+      await expect(side.getByTestId('side-section-all')).toHaveAttribute('aria-pressed', 'false');
+      await expect(groups).toHaveCount(1);
+      await expect(groups).toHaveAttribute('data-section', 'C');
       await expect(side.getByTestId('side-lesson')).toHaveCount(inC.length);
-      for (const topic of await side.getByTestId('side-lesson').all()) {
+      for (const topic of await side.locator('[data-topic]').all()) {
         expect(await topic.getAttribute('data-topic')).toMatch(/^C/);
       }
-      // «Все» adds the topics of the section still being written, after the ready ones.
-      await side.getByTestId('side-all').click();
-      await expect(side.getByTestId('side-soon').first()).toBeVisible();
-      for (const topic of await side.getByTestId('side-soon').all()) {
-        expect(await topic.getAttribute('data-topic')).toMatch(/^C/);
-      }
-      await side.getByTestId('side-ready').click();
-      await expect(side.getByTestId('side-soon')).toHaveCount(0);
-      await page.getByTestId('section-C').click();
-      await expect(page.getByTestId('section-C')).toHaveAttribute('aria-pressed', 'false');
+      await side.getByTestId('side-section-all').click();
+      await expect(groups).toHaveCount(12);
       await expect(side.getByTestId('side-lesson')).toHaveCount(LESSONS.length);
+    });
+
+    test('the section chips wrap inside the column, in both languages', async ({ page }) => {
+      for (const lang of LANGS) {
+        await openApp(page, `/${lang}/lesson/B1`);
+        const side = await box(page, 'lessons-panel');
+        const chips = page.getByTestId('side-sections').getByRole('button');
+        await expect(chips).toHaveCount(13);
+        for (const chip of await chips.all()) {
+          const b = await chip.boundingBox();
+          if (b === null) throw new Error('a chip is not drawn');
+          expect(b.x).toBeGreaterThanOrEqual(side.x);
+          expect(b.x + b.width).toBeLessThanOrEqual(side.x + side.width + 0.5);
+          expect(b.height).toBeGreaterThanOrEqual(24);
+        }
+      }
     });
 
     test('the search of the top bar filters the list, an empty result says so', async ({

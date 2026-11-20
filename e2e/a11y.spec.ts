@@ -301,9 +301,17 @@ test.describe('S6: the keyboard', () => {
         expect(f.ring, f.key).toBe(`solid 3px ${ring}`);
         expect(seen, `${f.key} twice: a trap or a loop`).not.toContain(f.key);
         seen.push(f.key);
+        // UI2: the place in the content, not on the screen. The lessons column is long and
+        // scrolls on its own; Chromium centres a focused row of it, which moves it up the screen
+        // while the reading order goes down. The scroll of every scrolling box above it is added.
         const y = await page.evaluate(() => {
           const el = document.activeElement;
-          return el === null ? 0 : Math.round(el.getBoundingClientRect().top);
+          if (el === null) return 0;
+          let top = el.getBoundingClientRect().top;
+          for (let box = el.parentElement; box !== null; box = box.parentElement) {
+            top += box.scrollTop;
+          }
+          return Math.round(top);
         });
         if (y < lastY - 200) rows += 1;
         lastY = y;
