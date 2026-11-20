@@ -32,6 +32,7 @@ describe('player state', () => {
       glossary: null,
       locale: 'ru',
       drawer: null,
+      view: 'scene',
     });
   });
 

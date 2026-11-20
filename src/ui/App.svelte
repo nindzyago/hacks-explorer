@@ -10,6 +10,7 @@
   import { MAX_QUERY_LENGTH } from '../core/topics/search';
   import type { SiteTopicSection } from '../core/topics/site';
   import Scene from '../scene/Scene.svelte';
+  import Sequence from '../scene/Sequence.svelte';
   import type { LessonLoader } from '../services/catalog/catalog';
   import type { GlossaryLoader } from '../services/glossary/glossary';
   import type { TopicsLoader } from '../services/topics/topics';
@@ -274,6 +275,25 @@
       defence: player.defence,
     }),
   );
+  /**
+   * M6.2: the view tabs, as tabs move (WAI-ARIA): ← → and Home / End choose the other view and
+   * take the focus to its tab; the player does not get these keys.
+   */
+  function onViewKey(event: KeyboardEvent): void {
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const keys: Readonly<Record<string, 'scene' | 'sequence'>> = {
+      ArrowLeft: 'scene',
+      Home: 'scene',
+      ArrowRight: 'sequence',
+      End: 'sequence',
+    };
+    const next = keys[event.key];
+    if (next === undefined) return;
+    event.preventDefault();
+    run('view.set', { view: next });
+    document.getElementById(`view-tab-${next}`)?.focus();
+  }
+
   function follow(event: MouseEvent, path: string): void {
     if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
@@ -474,23 +494,52 @@
                scene on the millimetre grid, the legend at the bottom. -->
           <section class="bp-panel scene-panel" data-testid="scene-panel">
             <div class="bp-head scene-head">
+              <!-- M6.2: «Схема / Последовательность», tabs that run `view.set` (K13); ← → and
+                   Home / End move between them (roving tabindex). -->
               <div class="views" role="tablist" aria-label={t('screen.view')}>
-                <!-- M6.2 adds the tab «Последовательность» here, run by `view.set`. -->
                 <button
                   type="button"
                   role="tab"
                   class="bp-btn"
                   id="view-tab-scene"
-                  aria-selected="true"
-                  aria-controls="view-scene"
+                  aria-selected={$store.view === 'scene'}
+                  aria-controls="view-panel"
+                  tabindex={$store.view === 'scene' ? 0 : -1}
                   data-testid="view-scene"
+                  title={t('screen.scheme')}
+                  onclick={() => {
+                    run('view.set', { view: 'scene' });
+                  }}
+                  onkeydown={onViewKey}
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true"
                     ><path
                       d="M4 4 H10 V10 H4 Z M14 4 H20 V10 H14 Z M4 14 H10 V20 H4 Z M14 14 H20 V20 H14 Z"
                     /></svg
                   >
-                  {t('screen.scheme')}
+                  <span class="tab-text">{t('screen.scheme')}</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="bp-btn"
+                  id="view-tab-sequence"
+                  aria-selected={$store.view === 'sequence'}
+                  aria-controls="view-panel"
+                  tabindex={$store.view === 'sequence' ? 0 : -1}
+                  data-testid="view-sequence"
+                  title={t('view.sequence')}
+                  onclick={() => {
+                    run('view.set', { view: 'sequence' });
+                  }}
+                  onkeydown={onViewKey}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true"
+                    ><path
+                      d="M6 3 V21 M18 3 V21 M6 8 H16 M13 5 L16 8 L13 11 M18 15 H8 M11 12 L8 15 L11 18"
+                    /></svg
+                  >
+                  <span class="tab-text">{t('view.sequence')}</span>
                 </button>
               </div>
               <DefenceToggle {player} defenceName={shown.lesson.passport.defence} {run} {t} />
@@ -498,14 +547,19 @@
             <div
               class="scene-body"
               role="tabpanel"
-              id="view-scene"
-              aria-labelledby="view-tab-scene"
+              id="view-panel"
+              aria-labelledby="view-tab-{$store.view}"
             >
-              <div class="scene-fit">
-                {#key shown.lesson}
-                  <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
-                {/key}
-              </div>
+              <!-- M6.2: the scene or the sequence of the same lesson and player. -->
+              {#key shown.lesson}
+                {#if $store.view === 'sequence'}
+                  <Sequence lesson={shown.lesson} {player} clock={app.clock} {run} {t} />
+                {:else}
+                  <div class="scene-fit">
+                    <Scene lesson={shown.lesson} scene={player} clock={app.clock} {t} />
+                  </div>
+                {/if}
+              {/key}
               <ul class="legend" aria-label={t('screen.legend')} data-testid="scene-legend">
                 <li>
                   <span class="swatch path" aria-hidden="true"></span>{t('screen.legend.path')}
@@ -516,6 +570,11 @@
                 <li class="stopped">
                   <span class="swatch stop" aria-hidden="true"></span>{t('screen.legend.stopped')}
                 </li>
+                {#if $store.view === 'sequence'}
+                  <li class="future" data-testid="legend-future">
+                    <span class="swatch future" aria-hidden="true"></span>{t('sequence.future')}
+                  </li>
+                {/if}
               </ul>
             </div>
           </section>
@@ -769,6 +828,23 @@
     gap: var(--space-1);
   }
 
+  /*
+   * M6.2: from 761 to 1439 px the scene panel is too narrow for both tab names and the defence
+   * switch on one line: the tabs show their icons, the names stay for screen readers and in the
+   * tooltip.
+   */
+  @media (min-width: 761px) and (max-width: 1439px) {
+    .views .tab-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
   .scene-body {
     position: relative;
     display: flex;
@@ -822,6 +898,11 @@
 
   .swatch.harm {
     border-top: 3px solid var(--attack);
+  }
+
+  /* M6.2: a step yet to come in the sequence view. */
+  .swatch.future {
+    border-top: 2px dashed var(--muted);
   }
 
   .swatch.stop {

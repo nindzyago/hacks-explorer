@@ -16,6 +16,13 @@ export type Depth = (typeof DEPTHS)[number];
 export const DRAWER_TABS = ['lessons', 'glossary'] as const;
 export type DrawerTab = (typeof DRAWER_TABS)[number];
 
+/**
+ * How the lesson is drawn (M6.2, design M6 §5): the spatial scene or the sequence of messages
+ * between lanes. Both follow the same player.
+ */
+export const VIEWS = ['scene', 'sequence'] as const;
+export type View = (typeof VIEWS)[number];
+
 export interface AppState {
   readonly theme: Theme;
   /** The lesson on the page (M1: one page, `lesson.open` switches it; addresses are M2). */
@@ -45,6 +52,11 @@ export interface AppState {
    * change it. While it is open a glossary term (`glossary`) shows in the panel, not in place.
    */
   readonly drawer: DrawerTab | null;
+  /**
+   * The view of the lesson (M6.2): the scene or the sequence. It belongs to the reader, like the
+   * depth: a change of step, mode, lesson or language keeps it; it is not in the address.
+   */
+  readonly view: View;
 }
 
 export function initialState(): AppState {
@@ -56,5 +68,6 @@ export function initialState(): AppState {
     glossary: null,
     locale: 'ru',
     drawer: null,
+    view: 'scene',
   });
 }

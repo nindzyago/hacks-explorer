@@ -99,6 +99,16 @@ describe('tokens', () => {
     // M1.2d: a stopped message is green, its word on the paper and its label on the plaque.
     ['--scene-message-text', '--scene-message-stopped'],
     ['--scene-message-stopped', '--scene-paper'],
+    // M6.2: the sequence view — names, separators and steps yet to come on its paper, the
+    // separator of the current step on its band, labels in the colour of their kind on the
+    // paper and white on a filled label of the current step.
+    ['--seq-ink', '--seq-paper'],
+    ['--seq-muted', '--seq-paper'],
+    ['--seq-ink', '--seq-band'],
+    ['--scene-message-attack', '--seq-paper'],
+    ['--scene-message-safe', '--seq-paper'],
+    ['--scene-message-legit', '--seq-paper'],
+    ['--scene-message-stopped', '--seq-paper'],
     // M1.3: the «Ход атаки» table — white numbers on a later step (muted), results in the
     // colour of their kind on the panel and on the current row (paper).
     ['--scene-message-text', '--muted'],

@@ -80,6 +80,18 @@
   /* Behind the side panel (M2.1b): the ink, translucent, so the page reads as set aside. */
   --scrim: #17203366;
 
+  /*
+   * The sequence view (M6.2): white paper, lifelines, the band of the current step in a light
+   * blue with a blue edge, steps yet to come in the muted grey. Arrows and labels take the
+   * message colours of the scene. Text on the band is the ink (4.5:1, tokens.test.ts).
+   */
+  --seq-paper: var(--panel);
+  --seq-ink: var(--scene-ink);
+  --seq-muted: var(--muted);
+  --seq-lifeline: var(--zone-line);
+  --seq-band: var(--paper);
+  --seq-band-line: var(--legit);
+
   /* Type */
   --font-sans: 'Onest', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;

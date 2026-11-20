@@ -15,6 +15,7 @@ import { registerLocaleCommands } from './locale';
 import { registerPlayerCommands } from './player';
 import { createRegistry, type CommandRegistry } from './registry';
 import { registerThemeCommands } from './theme';
+import { registerViewCommands } from './view';
 
 export interface AppContext {
   readonly store: Store<AppState>;
@@ -61,6 +62,7 @@ export function createApp(options: AppOptions = {}): AppContext {
   registerDepthCommands(registry, store);
   registerGlossaryCommands(registry, store);
   registerDrawerCommands(registry, store);
+  registerViewCommands(registry, store);
   registerLocaleCommands(registry, store, options.languages ?? ['ru']);
   registerClockCommands(registry, clock, { onManual: options.onManualClock });
   const player = registerPlayerCommands(registry, store, clock, {
