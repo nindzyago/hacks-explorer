@@ -91,7 +91,7 @@ slow functions and a “salt”, for example Argon2 or bcrypt.
 
 ## `xss` XSS
 
-`category` web · `see` injection, output-encoding, csp, session-cookie · `lessons` C1
+`category` web · `see` injection, output-encoding, csp, session-cookie · `lessons` C1, C2, C3
 
 Forms: XSS, cross-site scripting
 
@@ -111,6 +111,16 @@ Replacing special characters with safe forms at the moment data is put into a pa
 start a tag or an attribute. Each place has its own rule: page text, attribute, JavaScript, CSS,
 URL. The primary defence against XSS according to OWASP.
 
+## `sanitizer` HTML sanitizer
+
+`category` web · `see` xss, output-encoding · `lessons` C2
+
+Forms: sanitizer, sanitizers, HTML sanitizer
+
+A filter that parses submitted HTML and keeps only allowed tags and attributes, removing scripts
+and event handlers. It is needed where users may format text and plain encoding would break the
+markup. OWASP recommends the ready-made DOMPurify library rather than a home-made filter.
+
 ## `csp` Content Security Policy
 
 `category` web · `see` xss, output-encoding · `lessons` C1
@@ -121,6 +131,17 @@ A response header with which a site tells the browser where scripts and other re
 loaded from. Without `'unsafe-inline'` in the `script-src` rule the browser does not run scripts
 written right into the page. Defined in a W3C specification; it protects as a second layer if
 encoding was forgotten somewhere.
+
+## `trusted-types` Trusted Types
+
+`category` web · `see` xss, csp, sanitizer · `lessons` C3
+
+Forms: Trusted Types
+
+A browser defence against DOM XSS. The `require-trusted-types-for 'script'` rule in a Content
+Security Policy forbids writing plain strings into dangerous sinks such as `innerHTML`: the data
+first passes through the site's policy, for example a sanitizer. Described in a W3C
+specification.
 
 ## `session-cookie` Session cookie
 
@@ -164,6 +185,36 @@ A cookie attribute that tells the browser whether to attach the cookie to reques
 other sites. `Strict` means never, `Lax` only on a top-level navigation with a safe method, such as following a
 link, `None` always. It
 protects against CSRF as an extra layer but does not replace a CSRF token.
+
+## `same-origin-policy` Same-origin policy
+
+`category` web · `see` cors, clickjacking · `lessons` C6
+
+Forms: same-origin policy
+
+The browser's main security rule: a script from one site does not read another site's data. An
+origin is the scheme, host and port: `https://shop.example` and `https://api.shop.example` are
+different origins.
+
+## `cors` CORS
+
+`category` web · `see` same-origin-policy, session-cookie · `lessons` C6
+
+Forms: CORS, Cross-Origin Resource Sharing
+
+The way a server lets scripts from other sites read its responses, relaxing the same-origin
+policy. The permission is the `Access-Control-Allow-Origin` header. A permission that is too broad
+is weakness CWE-942.
+
+## `clickjacking` Clickjacking
+
+`category` web · `see` same-origin-policy, session-cookie · `lessons` C5
+
+Forms: clickjacking
+
+“Click hijacking”: another site shows the real page in a transparent frame over its own button,
+and the user, without knowing it, presses the real site's button. The weakness class is CWE-1021.
+The defence is a header with a `frame-ancestors` rule or `X-Frame-Options`.
 
 ## `idor` IDOR
 
