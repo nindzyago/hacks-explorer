@@ -4,7 +4,7 @@
 
 ## `cwe` CWE
 
-`category` catalogs · `see` cve, owasp · `lessons` B1
+`category` catalogs · `see` cve, owasp · `lessons` B1, A6
 
 Формы: CWE
 
@@ -33,7 +33,7 @@ Common Vulnerability Scoring System — шкала тяжести уязвимо
 
 ## `owasp` OWASP
 
-`category` catalogs · `see` cwe, injection · `lessons` B1
+`category` catalogs · `see` cwe, injection · `lessons` B1, A6
 
 Формы: OWASP, OWASP Top 10
 
@@ -44,7 +44,7 @@ Open Worldwide Application Security Project — открытое сообщес�
 
 ## `mitre-attack` MITRE ATT&CK
 
-`category` catalogs · `see` phishing, cwe · `lessons` I1
+`category` catalogs · `see` phishing, cwe · `lessons` I1, A8
 
 Формы: MITRE ATT&CK, ATT&CK
 
@@ -87,3 +87,13 @@ Known Exploited Vulnerabilities — каталог CISA с уязвимостя�
 
 Exploit Prediction Scoring System — модель FIRST, которая каждый день оценивает для каждой CVE
 вероятность от 0 до 1, что её начнут использовать в атаках в ближайшие 30 дней.
+
+## `attack-tactic` Тактика ATT&CK
+
+`category` catalogs · `see` mitre-attack · `lessons` A8
+
+Формы: тактика, тактики, тактику, тактикой, тактик, тактикам
+
+Цель шага атаки в MITRE ATT&CK, его «зачем»: разведка, первичный доступ, выполнение,
+закрепление и так далее до воздействия. Техника — «как» этой цели достигают. Тактики
+складываются в цепочку атаки.

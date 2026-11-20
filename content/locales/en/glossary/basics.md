@@ -20,7 +20,7 @@ tricked into giving away a password.
 
 ## `trust-boundary` Trust boundary
 
-`category` basics · `see` injection, attacker · `lessons` B1
+`category` basics · `see` injection, attacker · `lessons` B1, A7
 
 Forms: trust boundary, trust boundaries
 
@@ -106,3 +106,42 @@ Forms: reverse shell, reverse connection
 A post-break-in trick: the captured server itself connects out to the attacker's machine and
 waits for commands. Outbound connections are often checked less strictly than inbound ones, so it
 helps to stop a server from making connections it does not need.
+
+## `cia-triad` Confidentiality, integrity, availability
+
+`category` basics · `see` data-breach, attacker · `lessons` A5
+
+Forms: CIA triad, the CIA triad
+
+The three properties security protects. Confidentiality: only those allowed can see the
+data. Integrity: data is not changed or destroyed without the right to. Availability: data
+and services work when needed. Almost every attack hits at least one of them.
+
+## `attack-surface` Attack surface
+
+`category` basics · `see` trust-boundary, least-privilege · `lessons` A7
+
+Forms: attack surface, attack surfaces
+
+All the points through which an attacker can try to enter a system, affect it or extract
+data from it: servers, pages, ports, accounts. The smaller it is, the fewer places for a
+flaw, so whatever is not needed is removed.
+
+## `least-privilege` Least privilege
+
+`category` basics · `see` attack-surface, authorization · `lessons` A7
+
+Forms: least privilege, principle of least privilege, minimum of rights
+
+The rule that every person and every program gets only the rights it cannot do its job
+without. Then breaking into one account or program gives the attacker little.
+
+## `threat-model` Threat model
+
+`category` basics · `see` trust-boundary, attack-surface · `lessons` A7
+
+Forms: threat model, threat models, threat modeling, threat modelling
+
+An analysis of a system before any attack: a diagram of data flows and trust boundaries,
+then the question "what can go wrong" for each part. It finds weak spots while they are
+cheaper to fix.
