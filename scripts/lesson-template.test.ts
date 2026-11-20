@@ -2,14 +2,18 @@
 // (docs/lesson-template/<lang>.md) passes the content gate without code changes. The test copies
 // the real content into a temporary folder, puts the template into a lesson folder that does not
 // exist yet, fills the placeholders and runs everything the build checks: the lesson checker,
-// the translation check against ru.md, the glossaries, the catalogs and K94.
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+// the translation check against ru.md, the glossaries, the catalogs and K94. CI6: the copy holds
+// B1 alone (the checks are the same next to every other lesson, building all of them costs time
+// in proportion to their number, and the content gate checks them anyway), so a free topic exists
+// in it even when all 75 topics of the catalog have their lesson.
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { checkLesson, formatError } from '../src/core/lesson/check';
 import { ROOT, readContent } from './content-files.mjs';
 import { buildLessonData } from './lesson-data';
+import { lessonIdOf, onlyLessons, writeContent } from './test-content';
 
 const TEMPLATE_DIR = join(ROOT, 'docs', 'lesson-template');
 const LANGUAGES = ['ru', 'en'] as const;
@@ -27,12 +31,13 @@ function fill(text: string, values: Record<string, string>): string {
   return text.replace(PLACEHOLDER, (p) => values[p.slice(2, -2)] ?? p);
 }
 
-/** The first topic of the Russian catalog that has no lesson folder yet. */
+/** The content the new lesson joins: the real content with B1 alone. */
+const base = onlyLessons(readContent(), ['B1']);
+
+/** The first topic of the Russian catalog that has no lesson folder in `base`. */
 function freeTopic(): string {
   const catalog = readFileSync(join(ROOT, 'content', 'locales', 'ru', 'catalog.md'), 'utf8');
-  const taken = new Set(
-    readContent().lessons.map((f) => /^content\/lessons\/([^/]+)\//.exec(f.path)?.[1]),
-  );
+  const taken = new Set(base.lessons.map((f) => lessonIdOf(f.path)));
   const ids = [...catalog.matchAll(/^- `([A-Z][0-9]+)` /gm)].map((m) => m[1] ?? '');
   const free = ids.find((id) => !taken.has(id));
   if (free === undefined) throw new Error('every topic of the catalog already has a lesson');
@@ -88,7 +93,7 @@ describe('the lesson template (M4.1)', () => {
 
   it(`filled and copied into a new lesson folder, it passes the content gate in every site language`, () => {
     const root = join(work, 'project');
-    cpSync(join(ROOT, 'content'), join(root, 'content'), { recursive: true });
+    writeContent(root, base);
     mkdirSync(join(root, 'content', 'lessons', id));
     for (const lang of LANGUAGES) {
       writeFileSync(

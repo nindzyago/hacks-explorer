@@ -5,6 +5,8 @@
 Every topic of the site by section (M2.1, K112). A section is `` ## `B` Name ``, a topic is
 `` - `B1` Name ``. A lesson is ready when its file `content/lessons/<id>/<language>.md` exists.
 The Russian catalog is the base: this file keeps the same sections and topics in the same order.
+The short name of a section, on its button in the lessons column, follows « · »
+(`` ## `B` Web: injections · Injections ``); without it the button shows the full name.
 
 ## `A` Basics
 
@@ -17,7 +19,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `A7` Attack surface and trust boundaries
 - `A8` Stages of an attack: from reconnaissance to the goal
 
-## `B` Web: injections
+## `B` Web: injections · Injections
 
 - `B1` SQL injection
 - `B2` OS command injection
@@ -28,7 +30,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `B7` XXE: XML external entities
 - `B8` NoSQL injection
 
-## `C` Web: the browser
+## `C` Web: the browser · Browser
 
 - `C1` Reflected XSS
 - `C2` Stored XSS
@@ -38,7 +40,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `C6` CORS mistakes
 - `C7` Open redirects
 
-## `D` Web: access and sessions
+## `D` Web: access and sessions · Access
 
 - `D1` Other people's data by changing a number (IDOR)
 - `D2` Privilege escalation
@@ -49,7 +51,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `D7` Mass assignment
 - `D8` SSRF: the server goes where it should not
 
-## `E` Web: infrastructure
+## `E` Web: infrastructure · Infrastructure
 
 - `E1` HTTP request smuggling
 - `E2` Web cache poisoning
@@ -57,7 +59,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `E4` Race conditions: two requests at once
 - `E5` Prototype pollution
 
-## `F` Passwords and sign-in
+## `F` Passwords and sign-in · Passwords
 
 - `F1` Hashes and salt: how passwords are stored
 - `F2` Brute force and credential stuffing
@@ -75,7 +77,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `G6` Evil twin Wi-Fi
 - `G7` BGP hijacking
 
-## `H` Malware and memory
+## `H` Malware and memory · Malware
 
 - `H1` Buffer overflow
 - `H2` Ransomware
@@ -109,7 +111,7 @@ The Russian catalog is the base: this file keeps the same sections and topics in
 - `K6` SolarWinds (2020)
 - `K7` The xz backdoor (CVE-2024-3094)
 
-## `L` Encryption and certificates
+## `L` Encryption and certificates · Encryption
 
 - `L1` Encryption: one key and a key pair
 - `L2` Signatures and certificates

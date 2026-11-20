@@ -101,6 +101,8 @@ test('an unknown address still gets the app page, with no canonical of another p
 });
 
 test('the static page of a lesson boots the app at the place in its address', async ({ page }) => {
+  // UI2: the lesson would play by itself and leave step 2; less motion opens it paused.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const lesson = built('K1', 'en');
   await page.goto('/en/lesson/K1#step-2-defence');
   await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'K1');
@@ -145,9 +147,11 @@ test('sitemap.xml is valid XML with every page in every language and its alterna
   }, xml);
   expect(read.error).toBe(0);
   expect(read.root).toBe('http://www.sitemaps.org/schemas/sitemap/0.9 urlset');
-  // Every built lesson and «About», in Russian and English.
-  const pages = readdirSync(join('dist', 'data', 'lessons')).length + 2;
-  expect(pages).toBeGreaterThanOrEqual(22);
+  // Every lesson in content/lessons and «About», in Russian and English.
+  const lessonCount = readdirSync(join('content', 'lessons'), { withFileTypes: true }).filter((d) =>
+    d.isDirectory(),
+  ).length;
+  const pages = (lessonCount + 1) * 2;
   expect(read.urls).toHaveLength(pages);
   const locs = read.urls.map((u) => u.loc);
   expect(new Set(locs).size).toBe(pages);

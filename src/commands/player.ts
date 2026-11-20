@@ -19,6 +19,7 @@ import {
   setDefence,
   setSpeed,
   SPEEDS,
+  startOnOpen,
   stepCount,
   stepForward,
   withCounts,
@@ -38,6 +39,17 @@ export interface PlayerCommandsOptions {
    * message of the step is on its way. `src/main.ts` starts and stops the real-time driver here.
    */
   readonly onTimeNeeded?: ((needed: boolean) => void) | undefined;
+  /**
+   * UI2: a lesson that opens starts playing by itself — the first lesson of the page and every
+   * change of lesson after it. Off when not given (the tests); `src/main.ts` turns it on except
+   * in the e2e build, and `player.autoplay` changes it.
+   */
+  readonly autoplay?: boolean | undefined;
+  /**
+   * Whether the reader asked the system for less motion (`prefers-reduced-motion: reduce`): then
+   * a lesson opens paused. Asked each time a lesson opens.
+   */
+  readonly reducedMotion?: (() => boolean) | undefined;
 }
 
 export interface PlayerHandle {
@@ -53,7 +65,14 @@ export function registerPlayerCommands(
   clock: Pick<Clock, 'now' | 'subscribe'>,
   options: PlayerCommandsOptions = {},
 ): PlayerHandle {
-  const { onTimeNeeded } = options;
+  const { onTimeNeeded, reducedMotion } = options;
+  let autoplay = options.autoplay ?? false;
+  /**
+   * A lesson opened and has not started yet: it starts once its steps are known. The first lesson
+   * of the page opens with the page. Loading the same lesson again (another language) does not
+   * start it: the reader's pause stays.
+   */
+  let opening = true;
   let needed = needsTime(store.get().player, clock.now());
 
   /** Tells the driver when the need for time changed. */
@@ -69,6 +88,15 @@ export function registerPlayerCommands(
     const player = next(state.player, clock.now());
     if (player !== state.player) store.set(Object.freeze({ ...state, player }));
     check();
+  }
+
+  /** Starts the lesson that just opened, when autoplay is on and motion is welcome. */
+  function startIfOpening(): void {
+    const state = store.get();
+    if (!opening || stepCount(state.player) === 0) return;
+    opening = false;
+    if (!autoplay || reducedMotion?.() === true) return;
+    change(startOnOpen);
   }
 
   // Autoplay: every step of the clock may finish a step of the lesson.
@@ -144,6 +172,14 @@ export function registerPlayerCommands(
     },
   });
   registry.register({
+    id: 'player.autoplay',
+    titleKey: 'command.player.autoplay',
+    params: { on: { kind: 'boolean' } },
+    run: ({ on }) => {
+      autoplay = on;
+    },
+  });
+  registry.register({
     id: 'lesson.open',
     titleKey: 'command.lesson.open',
     params: { id: { kind: 'string', maxLength: 32, pattern: LESSON_ID } },
@@ -161,7 +197,10 @@ export function registerPlayerCommands(
       // closes the side panel and a term open in it.
       const panel = state.drawer === null ? {} : { drawer: null, glossary: null };
       store.set(Object.freeze({ ...state, ...panel, lesson: id, player: Object.freeze(fresh) }));
+      opening = true;
       check();
+      // The open lesson again: its steps are known, it starts at once.
+      startIfOpening();
     },
   });
 
@@ -169,6 +208,7 @@ export function registerPlayerCommands(
     lessonLoaded(id, counts) {
       if (store.get().lesson !== id) return;
       change((player) => withCounts(player, counts));
+      startIfOpening();
     },
     timeNeeded: () => needed,
   };

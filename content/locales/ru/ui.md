@@ -52,8 +52,8 @@
 
 ## Экран урока
 
-- `screen.sections` Раздел
-- `screen.section` Раздел {id}. {title}
+- `screen.sections` Разделы
+- `screen.sectionsAll` Все
 - `screen.search` Поиск уроков
 - `screen.view` Вид
 - `screen.scheme` Схема
@@ -61,9 +61,6 @@
 - `screen.legend.path` обычный путь
 - `screen.legend.harmful` вредное сообщение
 - `screen.legend.stopped` остановлено
-- `screen.lessonsFilter` Какие уроки показать
-- `screen.lessonsReady` Готовые {count}
-- `screen.lessonsAll` Все {count}
 - `screen.lessonSteps` Шаги урока «{title}»
 
 ## Загрузка урока
@@ -229,6 +226,7 @@
 - `command.player.back` Шаг назад
 - `command.player.goto` Перейти к шагу
 - `command.player.speed` Скорость
+- `command.player.autoplay` Пускать урок сам при открытии
 - `command.defence.toggle` Переключить защиту
 - `command.defence.set` Включить или выключить защиту
 - `command.lesson.open` Открыть урок

@@ -1,16 +1,18 @@
 <script lang="ts">
   // The left column of the lesson screen on a wide window (M6.1, design §2): the panel «Уроки»
-  // with the tab «Словарь», always open, not a dialog. The lessons tab is a list of the ready
-  // lessons (the topics still being written at the end, K112); the open lesson is unfolded with
+  // with the tab «Словарь», always open, not a dialog. UI2: the lessons tab starts with a row of
+  // chips — «Все» and one per section, by its short name — and lists the topics grouped by
+  // section under a heading with «готово N из M»; within a section the ready lessons come first,
+  // the topics still being written after them, grey with «скоро». The open lesson is unfolded with
   // its steps — a circle in the colour of the step, the current one outlined; a step runs
-  // `player.goto`, another lesson `lesson.open`. The search and the section chips stand in the top
-  // bar and filter this list. The glossary tab is the glossary of the side panel (M2.1b): while it
-  // shows, a glossary word on the page opens its definition here, not in place.
+  // `player.goto`, another lesson `lesson.open`. The search of the top bar filters this list. The
+  // glossary tab is the glossary of the side panel (M2.1b): while it shows, a glossary word on the
+  // page opens its definition here, not in place.
   import { tick } from 'svelte';
   import type { SiteLesson } from '../core/lesson/site';
   import { stepsInMode } from '../core/scene-layout/message';
   import type { SiteTopicSection } from '../core/topics/site';
-  import { sideList } from '../core/topics/search';
+  import { sideGroups } from '../core/topics/search';
   import type { GlossaryLoader } from '../services/glossary/glossary';
   import type { Translate } from '../services/i18n/i18n';
   import { formatAddress } from '../services/router/address';
@@ -31,7 +33,6 @@
     t,
     run,
     query,
-    section,
     tab = $bindable('lessons'),
   }: {
     sections: readonly SiteTopicSection[];
@@ -51,17 +52,18 @@
     t: Translate;
     run: (id: string, params?: Readonly<Record<string, unknown>>) => void;
     query: string;
-    section: string;
     tab?: 'lessons' | 'glossary';
   } = $props();
   const uid = $props.id();
 
-  /** «Готовые» or «Все»: the chips of the panel. */
-  let all = $state(false);
+  /** The section chosen by its chip; '' is «Все». */
+  let section = $state('');
   let glossaryQuery = $state('');
-  const list = $derived(
-    sideList(sections, { query, section: section === '' ? null : section, all }),
+  const groups = $derived(
+    sideGroups(sections, { query, section: section === '' ? null : section }),
   );
+  /** The section of the open lesson: its chip is framed. */
+  const hereSection = $derived(current.slice(0, 1));
   const base = $derived(home.endsWith('/') ? home.slice(0, -1) : home);
   const steps = $derived(lesson === null ? [] : stepsInMode(lesson.steps, defence));
 
@@ -94,21 +96,36 @@
   }
 
   // The open lesson is scrolled into the column's view when it opens or the list changes; only
-  // the column scrolls, never the page.
+  // the column scrolls, never the page. The chips stay on top of the list (sticky): the rows under
+  // them are not in view. UI2: the open lesson may stand below whole sections now, so where the
+  // column stops depends on the size of its rows; it is measured once the fonts are in (the
+  // screenshots of a reload are the same byte for byte).
   let body = $state<HTMLElement | null>(null);
+  let chips = $state<HTMLElement | null>(null);
   $effect(() => {
     const element = body;
-    if (element === null || tab !== 'lessons' || list.ready.length === 0) return;
+    if (element === null || tab !== 'lessons' || groups.length === 0) return;
     if (current === '' || steps.length === 0) return;
-    void tick().then(() => {
-      const here = element.querySelector<HTMLElement>('li.here');
-      if (here === null) return;
-      const top = here.offsetTop;
-      const bottom = top + here.offsetHeight;
-      if (top < element.scrollTop) element.scrollTop = top;
-      else if (bottom > element.scrollTop + element.clientHeight)
-        element.scrollTop = Math.max(0, bottom - element.clientHeight);
-    });
+    let live = true;
+    void tick()
+      .then(() => {
+        // Lays the column out, so the fonts it needs are asked for before waiting for them.
+        element.getBoundingClientRect();
+        return document.fonts.ready;
+      })
+      .then(() => {
+        const here = element.querySelector<HTMLElement>('li.here');
+        if (!live || here === null) return;
+        const head = chips?.offsetHeight ?? 0;
+        const top = here.offsetTop;
+        const bottom = top + here.offsetHeight;
+        if (top - head < element.scrollTop) element.scrollTop = Math.max(0, top - head);
+        else if (bottom > element.scrollTop + element.clientHeight)
+          element.scrollTop = Math.max(0, bottom - element.clientHeight);
+      });
+    return () => {
+      live = false;
+    };
   });
 
   function paint(s: { readonly kind: string; readonly stopped: boolean }): string {
@@ -176,90 +193,120 @@
     {:else if status === 'error'}
       <p class="note" role="alert">{t('catalog.error')}</p>
     {:else}
-      <div class="chips" role="group" aria-label={t('screen.lessonsFilter')}>
+      <div
+        class="chips"
+        role="group"
+        aria-label={t('screen.sections')}
+        data-testid="side-sections"
+        bind:this={chips}
+      >
         <button
           type="button"
           class="bp-chip"
-          aria-pressed={!all}
-          data-testid="side-ready"
+          aria-pressed={section === ''}
+          data-testid="side-section-all"
           onclick={() => {
-            all = false;
-          }}>{t('screen.lessonsReady', { count: list.readyCount })}</button
+            section = '';
+          }}>{t('screen.sectionsAll')}</button
         >
-        <button
-          type="button"
-          class="bp-chip"
-          aria-pressed={all}
-          data-testid="side-all"
-          onclick={() => {
-            all = true;
-          }}>{t('screen.lessonsAll', { count: list.allCount })}</button
-        >
+        {#each sections as s (s.id)}
+          <button
+            type="button"
+            class="bp-chip"
+            class:own={s.id === hereSection}
+            aria-pressed={section === s.id}
+            title="{s.id}. {s.title}"
+            data-testid="side-section-{s.id}"
+            onclick={() => {
+              section = s.id;
+            }}>{s.short}</button
+          >
+        {/each}
       </div>
-      {#if list.ready.length === 0 && list.soon.length === 0}
+      {#if groups.length === 0}
         <p class="note" data-testid="side-empty">{t('catalog.empty')}</p>
       {:else}
-        <ul class="list" data-testid="side-list">
-          {#each list.ready as topic (topic.id)}
-            {@const here = topic.id === current}
-            <li class:here data-testid="side-lesson" data-topic={topic.id}>
-              <a
-                class="row"
-                href={pathOf(topic.id)}
-                aria-current={here ? 'page' : undefined}
-                data-testid="side-open"
-                onclick={(event) => {
-                  open(event, topic.id);
-                }}
-              >
-                <span class="text">
-                  <span class="title">{topic.title}</span>
-                  <span class="sub"
-                    >{topic.id}{#if topic.note !== null}&nbsp;· {topic.note}{/if}</span
-                  >
-                </span>
-                <span class="mark" aria-hidden="true">{here ? '▾' : '›'}</span>
-              </a>
-              {#if here && steps.length > 0 && lesson?.id === topic.id}
-                <ol
-                  class="steps"
-                  aria-label={t('screen.lessonSteps', { title: lesson.title })}
-                  data-testid="side-steps"
+        <div class="list" data-testid="side-list">
+          {#each groups as g (g.section.id)}
+            <section
+              class="group"
+              aria-labelledby="{uid}-section-{g.section.id}"
+              data-testid="side-group"
+              data-section={g.section.id}
+            >
+              <div class="group-head">
+                <h3 id="{uid}-section-{g.section.id}">
+                  <span class="sid">{g.section.id}</span>
+                  {g.section.title}
+                </h3>
+                <span class="count" data-testid="side-count"
+                  >{t('catalog.ready', { ready: g.readyCount, count: g.count })}</span
                 >
-                  {#each steps as s, i (i)}
-                    {@const n = i + 1}
-                    <li>
-                      <button
-                        type="button"
-                        class="step"
-                        class:future={n > step}
-                        class:now={n === step}
-                        aria-current={n === step ? 'step' : undefined}
-                        data-testid="side-step-{n}"
-                        onclick={() => {
-                          run('player.goto', { step: n });
-                        }}
-                      >
-                        <span class="dot {paint(s)}" aria-hidden="true">{n}</span>
-                        <span class="step-title">{s.title}</span>
-                      </button>
-                    </li>
-                  {/each}
-                </ol>
-              {/if}
-            </li>
-          {/each}
-          {#each list.soon as topic (topic.id)}
-            <li class="soon" data-testid="side-soon" data-topic={topic.id}>
-              <div class="row" title={t('catalog.soonTitle')}>
-                <span class="text">
-                  <span class="title">{topic.title}</span>
-                  <span class="sub">{topic.id} · {t('catalog.soon')}</span>
-                </span>
               </div>
-            </li>
+              <ul>
+                {#each g.ready as topic (topic.id)}
+                  {@const here = topic.id === current}
+                  <li class:here data-testid="side-lesson" data-topic={topic.id}>
+                    <a
+                      class="row"
+                      href={pathOf(topic.id)}
+                      aria-current={here ? 'page' : undefined}
+                      data-testid="side-open"
+                      onclick={(event) => {
+                        open(event, topic.id);
+                      }}
+                    >
+                      <span class="text">
+                        <span class="title">{topic.title}</span>
+                        <span class="sub"
+                          >{topic.id}{#if topic.note !== null}&nbsp;· {topic.note}{/if}</span
+                        >
+                      </span>
+                      <span class="mark" aria-hidden="true">{here ? '▾' : '›'}</span>
+                    </a>
+                    {#if here && steps.length > 0 && lesson?.id === topic.id}
+                      <ol
+                        class="steps"
+                        aria-label={t('screen.lessonSteps', { title: lesson.title })}
+                        data-testid="side-steps"
+                      >
+                        {#each steps as st, i (i)}
+                          {@const n = i + 1}
+                          <li>
+                            <button
+                              type="button"
+                              class="step"
+                              class:future={n > step}
+                              class:now={n === step}
+                              aria-current={n === step ? 'step' : undefined}
+                              data-testid="side-step-{n}"
+                              onclick={() => {
+                                run('player.goto', { step: n });
+                              }}
+                            >
+                              <span class="dot {paint(st)}" aria-hidden="true">{n}</span>
+                              <span class="step-title">{st.title}</span>
+                            </button>
+                          </li>
+                        {/each}
+                      </ol>
+                    {/if}
+                  </li>
+                {/each}
+                {#each g.soon as topic (topic.id)}
+                  <li class="soon" data-testid="side-soon" data-topic={topic.id}>
+                    <div class="row" title={t('catalog.soonTitle')}>
+                      <span class="text">
+                        <span class="title">{topic.title}</span>
+                        <span class="sub">{topic.id} · {t('catalog.soon')}</span>
+                      </span>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </section>
           {/each}
-        </ul>
+        </div>
       {/if}
     {/if}
   </div>
@@ -319,22 +366,64 @@
     color: var(--muted);
   }
 
+  /* UI2: the chips stay at the top of the column while the list scrolls under them. */
   .chips {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     flex-wrap: wrap;
+    align-items: flex-start;
     gap: var(--space-1);
     padding: var(--space-2) var(--space-3);
-    border-bottom: var(--line-width) solid var(--line-faint);
+    border-bottom: var(--line-width) solid var(--line);
+    background: var(--panel);
   }
 
-  .list {
+  .chips .own {
+    border-color: var(--legit);
+    font-weight: 700;
+  }
+
+  .group ul {
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
-  .list > li {
+  .group ul > li {
     border-bottom: var(--line-width) solid var(--line-faint);
+  }
+
+  .group-head {
+    padding: var(--space-3) var(--space-3) var(--space-1);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    border-bottom: var(--line-width) solid var(--line-faint);
+  }
+
+  .group-head h3 {
+    margin: 0;
+    min-width: 0;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--legit);
+    overflow-wrap: anywhere;
+  }
+
+  .sid {
+    margin-right: var(--space-1);
+  }
+
+  .count {
+    flex: none;
+    font-size: var(--text-xs);
+    color: var(--muted);
   }
 
   .row {
@@ -390,7 +479,7 @@
     background: var(--attack-tint);
   }
 
-  .list > li.here {
+  .group ul > li.here {
     border-bottom: var(--frame-width) solid var(--attack);
   }
 

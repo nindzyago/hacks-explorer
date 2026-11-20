@@ -10,6 +10,7 @@ const FILE = {
     {
       id: 'B',
       title: 'Веб: инъекции',
+      short: 'Инъекции',
       topics: [{ id: 'B1', title: 'SQL-инъекция', note: null, ready: true }],
     },
   ],

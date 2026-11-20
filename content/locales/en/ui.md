@@ -52,8 +52,8 @@ in. Keep the same keys and the same `{names}`.
 
 ## Lesson screen
 
-- `screen.sections` Section
-- `screen.section` Section {id}. {title}
+- `screen.sections` Sections
+- `screen.sectionsAll` All
 - `screen.search` Search lessons
 - `screen.view` View
 - `screen.scheme` Diagram
@@ -61,9 +61,6 @@ in. Keep the same keys and the same `{names}`.
 - `screen.legend.path` normal path
 - `screen.legend.harmful` harmful message
 - `screen.legend.stopped` stopped
-- `screen.lessonsFilter` Which lessons to show
-- `screen.lessonsReady` Ready {count}
-- `screen.lessonsAll` All {count}
 - `screen.lessonSteps` Steps of “{title}”
 
 ## Loading a lesson
@@ -229,6 +226,7 @@ in. Keep the same keys and the same `{names}`.
 - `command.player.back` Step back
 - `command.player.goto` Go to a step
 - `command.player.speed` Speed
+- `command.player.autoplay` Play a lesson when it opens
 - `command.defence.toggle` Toggle the defence
 - `command.defence.set` Turn the defence on or off
 - `command.lesson.open` Open a lesson

@@ -256,11 +256,12 @@
     };
   });
   const sections = $derived(catalog.state === 'ready' ? catalog.sections : []);
-  /** The search and the section chips of the top bar filter the lessons column. */
+  /**
+   * The search of the top bar filters the lessons column; the section chips are in the column
+   * itself (UI2).
+   */
   let lessonQuery = $state('');
-  let lessonSection = $state('');
   let sideTab = $state<'lessons' | 'glossary'>('lessons');
-  const lessonSectionId = $derived(shown.state === 'ready' ? shown.lesson.section : '');
   /** A glossary word shows in the column while its glossary tab is open, not in place. */
   const sideGlossary = $derived(showSide && Side !== null && sideTab === 'glossary');
 
@@ -324,30 +325,6 @@
         <p class="tagline">{t('app.tagline')}</p>
       </div>
     </div>
-    <!-- M6.1: the sections A–L filter the lessons column; the section of the open lesson is
-         marked, the chosen one filled. Pressing it again shows every section. -->
-    {#if showSide && sections.length > 0}
-      <div class="sections">
-        <span class="sections-label bp-caps" aria-hidden="true">{t('screen.sections')}</span>
-        <div class="chips" role="group" aria-label={t('screen.sections')} data-testid="sections">
-          {#each sections as s (s.id)}
-            <button
-              type="button"
-              class="bp-chip"
-              class:here={s.id === lessonSectionId}
-              aria-pressed={lessonSection === s.id}
-              aria-label={t('screen.section', { id: s.id, title: s.title })}
-              title={t('screen.section', { id: s.id, title: s.title })}
-              data-testid="section-{s.id}"
-              onclick={() => {
-                lessonSection = lessonSection === s.id ? '' : s.id;
-                sideTab = 'lessons';
-              }}>{s.id}</button
-            >
-          {/each}
-        </div>
-      </div>
-    {/if}
     <!-- CI5: with the search the free space goes to it (up to its width) and then to its left
          margin; without it a spacer pushes the buttons to the right. -->
     {#if showSide}
@@ -466,7 +443,6 @@
               {t}
               {run}
               query={lessonQuery}
-              section={lessonSection}
               bind:tab={sideTab}
             />
           {:else}
@@ -715,33 +691,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--muted);
-  }
-
-  .sections {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .sections-label {
-    font-size: var(--text-xs);
-    font-weight: 700;
-    color: var(--legit);
-  }
-
-  .chips {
-    display: flex;
-    gap: 3px;
-  }
-
-  .chips .bp-chip {
-    padding: 0;
-  }
-
-  /* The section of the open lesson, when no section is chosen: a blue frame. */
-  .chips .here {
-    border-color: var(--legit);
-    font-weight: 700;
   }
 
   .spacer {

@@ -19,12 +19,29 @@ import {
 } from '../src/core/glossary/site';
 import { checkGlossaries } from '../src/core/glossary/check';
 import type { Glossary } from '../src/core/glossary/types';
-import { checkContent } from '../src/core/lesson/check';
 import { MAX_TOPICS_FILE_BYTES, readSiteTopics, topicsFile } from '../src/core/topics/site';
 import { readContent } from './content-files.mjs';
 import { buildLessonData, glossaryDataFiles, lessonData } from './lesson-data';
+import type { Content } from './test-content';
+import { onlyLessons, writeContent } from './test-content';
 
+// CI6: building all lessons takes time in proportion to their number (75 planned). The real
+// content is built once for this file and every test that reads the real data shares it; a test
+// that needs only the mechanism (an error, the dev server, a bundled module) uses `small`, the
+// real content with B1 alone. One `vite build` stays on the real content.
 const real = readContent();
+const small = onlyLessons(real, ['B1']);
+const realBuild = buildLessonData(real);
+if (!realBuild.ok) throw new Error(realBuild.errors.join('\n'));
+const realFiles = realBuild.files;
+
+/**
+ * `vite build` of every real lesson: Vite plus the checker on every lesson file, whose Markdown
+ * parser runs its development build in tests. Measured 1.3 s on 14 lessons (28 files) and 16.7 s
+ * on 75 synthetic lessons (150 files) with other gates running (load average 25 to 70 on 8 cores);
+ * 90 s leaves five times that for 75 lessons on a busier machine.
+ */
+const REAL_VITE_BUILD_MS = 90_000;
 
 function fileText(files: readonly { path: string; text: string }[], path: string): string {
   const found = files.find((f) => f.path === path);
@@ -33,9 +50,7 @@ function fileText(files: readonly { path: string; text: string }[], path: string
 }
 
 describe('buildLessonData on the real content', () => {
-  const result = buildLessonData(real);
-  if (!result.ok) throw new Error(result.errors.join('\n'));
-  const { files } = result;
+  const files = realFiles;
 
   const catalog = readCatalog(JSON.parse(fileText(files, CATALOG_FILE)));
   if (!catalog.ok) throw new Error(catalog.error.message);
@@ -79,8 +94,15 @@ describe('buildLessonData on the real content', () => {
   });
 
   it('names a lesson file by its content', () => {
-    const again = buildLessonData(real);
-    expect(again.ok && again.files.map((f) => f.path)).toEqual(files.map((f) => f.path));
+    // B1 built again, and built among other lessons than the real ones: the same file names.
+    const b1Files = (out: readonly { path: string }[]) =>
+      out.map((f) => f.path).filter((p) => p.startsWith('data/lessons/B1.'));
+    const once = buildLessonData(small);
+    const again = buildLessonData(small);
+    if (!once.ok || !again.ok) throw new Error('the small content does not build');
+    expect(again.files.map((f) => f.path)).toEqual(once.files.map((f) => f.path));
+    expect(b1Files(files)).toHaveLength(2);
+    expect(b1Files(once.files)).toEqual(b1Files(files));
   });
 });
 
@@ -92,28 +114,16 @@ afterAll(() => {
 });
 
 /**
- * A project folder with an index.html, the real lessons, glossaries, interface strings and
- * languages, and the given lesson
- * files over them.
+ * A project folder with an index.html, the content `base` (the small set unless named) and the
+ * given files over it.
  */
-function project(name: string, lessons: Record<string, string>): string {
+function project(name: string, lessons: Record<string, string>, base: Content = small): string {
   const root = join(work, name);
-  const files: Record<string, string> = {};
-  const languages = real.languages === null ? [] : [real.languages];
-  for (const f of [
-    ...real.lessons,
-    ...real.glossaries,
-    ...real.ui,
-    ...languages,
-    ...real.catalogs,
-  ]) {
-    files[f.path] = f.text;
-  }
-  for (const [path, text] of Object.entries({ ...files, ...lessons })) {
+  writeContent(root, base);
+  for (const [path, text] of Object.entries(lessons)) {
     mkdirSync(join(root, path, '..'), { recursive: true });
     writeFileSync(join(root, path), text);
   }
-  writeFileSync(join(root, 'content', 'sources.md'), real.sources.text);
   if (!('index.html' in lessons)) {
     writeFileSync(join(root, 'index.html'), '<!doctype html><title>t</title><p>t</p>');
   }
@@ -122,11 +132,11 @@ function project(name: string, lessons: Record<string, string>): string {
 
 const b1Text = fileText(real.lessons, 'content/lessons/B1/ru.md');
 
-/** The real content with B1 replaced. */
+/** The small content with B1 replaced. */
 function withB1(text: string) {
   return {
-    ...real,
-    lessons: real.lessons.map((f) => (f.path === 'content/lessons/B1/ru.md' ? { ...f, text } : f)),
+    ...small,
+    lessons: small.lessons.map((f) => (f.path === 'content/lessons/B1/ru.md' ? { ...f, text } : f)),
   };
 }
 
@@ -156,31 +166,37 @@ describe('a broken lesson', () => {
 });
 
 describe('vite build', () => {
-  it('emits the catalog, one file per lesson per language and the glossary', async () => {
-    const root = project('good', { 'content/lessons/B1/ru.md': b1Text });
-    const out = await build({
-      root,
-      configFile: false,
-      logLevel: 'silent',
-      build: { write: false },
-      plugins: [lessonData({ contentRoot: root })],
-    });
-    if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
-    const names = out.output.map((o) => o.fileName).filter((n) => n.startsWith('data/'));
-    // The catalog, a file per lesson, the glossary (an index and its chunks) and the topics of
-    // each site language.
-    const chunks = names.filter((n) => /^data\/glossary\/[a-z]+\.[0-9a-f]{8}\.json$/.test(n));
-    // One glossary folder per language (G17): its files become one index and chunks.
-    const glossaryLanguages = new Set(real.glossaries.map((f) => f.path.split('/')[2])).size;
-    expect(chunks.length).toBeGreaterThanOrEqual(glossaryLanguages);
-    expect(names).toHaveLength(
-      real.lessons.length + 1 + glossaryLanguages + chunks.length + real.catalogs.length,
-    );
-    expect(names).toContain('data/topics/ru.json');
-    expect(names).toContain(CATALOG_FILE);
-    expect(names).toContain('data/glossary/ru.json');
-    expect(names.some((n) => /^data\/lessons\/B1\.ru\.[0-9a-f]{8}\.json$/.test(n))).toBe(true);
-  });
+  it(
+    'emits the catalog, one file per lesson per language and the glossary',
+    async () => {
+      const root = project('good', {}, real);
+      const out = await build({
+        root,
+        configFile: false,
+        logLevel: 'silent',
+        build: { write: false },
+        plugins: [lessonData({ contentRoot: root })],
+      });
+      if (Array.isArray(out) || !('output' in out)) throw new Error('expected one build output');
+      const names = out.output.map((o) => o.fileName).filter((n) => n.startsWith('data/'));
+      // The catalog, a file per lesson, the glossary (an index and its chunks) and the topics of
+      // each site language.
+      const chunks = names.filter((n) => /^data\/glossary\/[a-z]+\.[0-9a-f]{8}\.json$/.test(n));
+      // One glossary folder per language (G17): its files become one index and chunks.
+      const glossaryLanguages = new Set(real.glossaries.map((f) => f.path.split('/')[2])).size;
+      expect(chunks.length).toBeGreaterThanOrEqual(glossaryLanguages);
+      expect(names).toHaveLength(
+        real.lessons.length + 1 + glossaryLanguages + chunks.length + real.catalogs.length,
+      );
+      expect(names).toContain('data/topics/ru.json');
+      expect(names).toContain(CATALOG_FILE);
+      expect(names).toContain('data/glossary/ru.json');
+      expect(names.some((n) => /^data\/lessons\/B1\.ru\.[0-9a-f]{8}\.json$/.test(n))).toBe(true);
+      // The same files as buildLessonData writes.
+      expect([...names].sort()).toEqual(realFiles.map((f) => f.path).sort());
+    },
+    REAL_VITE_BUILD_MS,
+  );
 
   it('fails when a lesson file is over 30 KB', () => {
     const big = b1Text.replace(
@@ -263,8 +279,7 @@ function glossarySizes(files: readonly { path: string; text: string }[]) {
 }
 
 describe('the glossary', () => {
-  const result = buildLessonData(real);
-  if (!result.ok) throw new Error(result.errors.join('\n'));
+  const result = realBuild;
   const { index, terms } = readGlossary(result.files, 'ru');
 
   it('is written per language as an index and chunks, each within 30 KB, and reads back', () => {
@@ -303,10 +318,10 @@ describe('the glossary', () => {
   });
 
   const glossaryPath = 'content/locales/ru/glossary/web.md';
-  const realGlossary = fileText(real.glossaries, glossaryPath);
+  const realGlossary = fileText(small.glossaries, glossaryPath);
   const withGlossary = (text: string) => ({
-    ...real,
-    glossaries: real.glossaries.map((f) => (f.path === glossaryPath ? { ...f, text } : f)),
+    ...small,
+    glossaries: small.glossaries.map((f) => (f.path === glossaryPath ? { ...f, text } : f)),
   });
 
   it('fails the build on a hostile glossary: HTML, unknown ids, huge', () => {
@@ -329,7 +344,7 @@ describe('the glossary', () => {
   });
 
   it('fails without a glossary, and on a term a lesson names that does not exist', () => {
-    const none = buildLessonData({ ...real, glossaries: [] });
+    const none = buildLessonData({ ...small, glossaries: [] });
     expect(!none.ok && none.errors).toEqual([
       'content/locales/en/glossary/index.md:1:1: every site language has a glossary (K94): add content/locales/en/glossary/index.md',
       'content/locales/ru/glossary/index.md:1:1: every site language has a glossary (K94): add content/locales/ru/glossary/index.md',
@@ -351,9 +366,9 @@ describe('the glossary', () => {
     ).join('\n');
     // Russian only: an English glossary without the extra terms would be a translation mismatch.
     const out = buildLessonData({
-      ...real,
-      lessons: real.lessons.filter((f) => f.path.endsWith('/ru.md')),
-      glossaries: real.glossaries
+      ...small,
+      lessons: small.lessons.filter((f) => f.path.endsWith('/ru.md')),
+      glossaries: small.glossaries
         .filter((f) => f.path.startsWith('content/locales/ru/'))
         .map((f) => (f.path === glossaryPath ? { ...f, text: `${realGlossary}\n${extra}` } : f)),
       languages: {
@@ -373,12 +388,15 @@ describe('the glossary', () => {
   });
 
   it('keeps every chunk within 30 KB and the index within 60 KB at the cap of terms (CI3, G17)', () => {
-    const checked = checkContent(real.lessons, real.sources);
+    // The real glossaries, with lesson titles from the real build: parsing the lessons again
+    // would add nothing here (their `term:` words are checked by the build above).
     const all = checkGlossaries(real.glossaries, {
-      lessons: checked.lessons,
+      lessons: [],
       lessonPaths: real.lessons.map((f) => f.path),
       siteLanguages: ['ru', 'en'],
     });
+    const catalog = readCatalog(JSON.parse(fileText(realFiles, CATALOG_FILE)));
+    if (!catalog.ok) throw new Error(catalog.error.message);
     expect(all.errors).toEqual([]);
     for (const g of all.glossaries) {
       // As many copies of today's terms as fit under the cap of the checker.
@@ -398,7 +416,9 @@ describe('the glossary', () => {
         ).flat(),
       };
       const titles = new Map(
-        checked.lessons.filter((l) => l.language === g.language).map((l) => [l.id, l.title]),
+        catalog.value.lessons.flatMap((l) =>
+          l.translations.filter((t) => t.language === g.language).map((t) => [l.id, t.title]),
+        ),
       );
       const out = glossaryDataFiles(big, titles);
       expect(out.errors).toEqual([]);
@@ -451,15 +471,14 @@ describe('the glossary', () => {
 // languages are shipped; the interface strings are a bundled module.
 
 describe('site languages (S9)', () => {
-  const russianLessons = real.lessons.filter((f) => f.path.endsWith('/ru.md'));
+  const russianLessons = small.lessons.filter((f) => f.path.endsWith('/ru.md'));
   const languagesFile = (codes: string) => ({
     path: 'content/locales/languages.md',
     text: `# Языки\n\n\`languages\` · \`format\` 1\n\n${codes}`,
   });
 
   it('the real content ships Russian and English, each with its strings (M2.3b)', () => {
-    const result = buildLessonData(real);
-    if (!result.ok) throw new Error(result.errors.join('\n'));
+    const result = realBuild;
     expect(result.locales.languages).toEqual([
       { code: 'ru', name: 'Русский' },
       { code: 'en', name: 'English' },
@@ -476,15 +495,15 @@ describe('site languages (S9)', () => {
   });
 
   it('S9: English on the list without its lessons, a key and the glossary fails and names each', () => {
-    const en = fileText(real.ui, 'content/locales/en/ui.md').replace(
+    const en = fileText(small.ui, 'content/locales/en/ui.md').replace(
       /^- `player\.pause` .*\n/m,
       '',
     );
     const result = buildLessonData({
-      ...real,
+      ...small,
       lessons: russianLessons,
-      glossaries: real.glossaries.filter((f) => !f.path.includes('/en/')),
-      ui: real.ui.map((f) => (f.path === 'content/locales/en/ui.md' ? { ...f, text: en } : f)),
+      glossaries: small.glossaries.filter((f) => !f.path.includes('/en/')),
+      ui: small.ui.map((f) => (f.path === 'content/locales/en/ui.md' ? { ...f, text: en } : f)),
       languages: languagesFile('- `ru` Русский\n- `en` English\n'),
     });
     expect(result.ok).toBe(false);
@@ -503,23 +522,23 @@ describe('site languages (S9)', () => {
 
   it('fails without languages.md or with a broken one', () => {
     for (const languages of [null, languagesFile('- `en` English\n')]) {
-      const result = buildLessonData({ ...real, languages });
+      const result = buildLessonData({ ...small, languages });
       expect(!result.ok && result.errors[0]).toMatch(/^content\/locales\/languages\.md:1:1: /);
     }
   });
 
   it('a lesson in a language not on the site is checked but not shipped', () => {
     const result = buildLessonData({
-      ...real,
+      ...small,
       languages: languagesFile('- `ru` Русский\n'),
     });
     if (!result.ok) throw new Error(result.errors.join('\n'));
     const paths = result.files.map((f) => f.path);
     expect(paths.filter((p) => p.includes('.en.') || p.endsWith('/en.json'))).toEqual([]);
     const broken = buildLessonData({
-      ...real,
+      ...small,
       languages: languagesFile('- `ru` Русский\n'),
-      lessons: real.lessons.map((f) =>
+      lessons: small.lessons.map((f) =>
         f.path.endsWith('/en.md') ? { ...f, text: f.text.replace('`wave` 1', '`wave` 2') } : f,
       ),
     });
@@ -566,8 +585,7 @@ describe('topics of the lessons panel', () => {
   it.each(['ru', 'en'])(
     'ships every topic of the site in %s; the lessons that exist are ready',
     (lang) => {
-      const result = buildLessonData(real);
-      if (!result.ok) throw new Error(result.errors.join('\n'));
+      const result = realBuild;
       const topics = readSiteTopics(JSON.parse(fileText(result.files, topicsFile(lang))), lang);
       if (!topics.ok) throw new Error(topics.error.message);
       const all = topics.value.sections.flatMap((s) => s.topics);
@@ -584,11 +602,11 @@ describe('topics of the lessons panel', () => {
   );
 
   it('a lesson folder that is not in the catalog fails the build and names it', () => {
-    const catalogs = real.catalogs.map((f) => ({
+    const catalogs = small.catalogs.map((f) => ({
       ...f,
       text: f.text.replace(/^- `B1` .*\n/m, ''),
     }));
-    const result = buildLessonData({ ...real, catalogs });
+    const result = buildLessonData({ ...small, catalogs });
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors.join('\n')).toContain(
@@ -598,8 +616,8 @@ describe('topics of the lessons panel', () => {
 
   it('a site language without its catalog fails the build (K94)', () => {
     const result = buildLessonData({
-      ...real,
-      catalogs: real.catalogs.filter((f) => !f.path.includes('/en/')),
+      ...small,
+      catalogs: small.catalogs.filter((f) => !f.path.includes('/en/')),
     });
     expect(!result.ok && result.errors.join('\n')).toContain(
       'content/locales/en/catalog.md:1:1: en is a site language',
@@ -607,11 +625,11 @@ describe('topics of the lessons panel', () => {
   });
 
   it('a broken catalog line fails with its file and line', () => {
-    const catalogs = real.catalogs.map((f) =>
+    const catalogs = small.catalogs.map((f) =>
       f.path.includes('/ru/') ? { ...f, text: f.text.replace('- `B8` ', '- `B88x` ') } : f,
     );
-    const result = buildLessonData({ ...real, catalogs });
-    const ru = fileText(real.catalogs, 'content/locales/ru/catalog.md');
+    const result = buildLessonData({ ...small, catalogs });
+    const ru = fileText(small.catalogs, 'content/locales/ru/catalog.md');
     const line = ru.slice(0, ru.indexOf('- `B8` ')).split('\n').length;
     expect(!result.ok && result.errors.join('\n')).toContain(
       `content/locales/ru/catalog.md:${String(line)}:1: a topic looks like`,

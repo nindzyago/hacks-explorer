@@ -145,7 +145,7 @@ specification.
 
 ## `session-cookie` Session cookie
 
-`category` web · `see` xss, web-server, csrf, samesite · `lessons` C1, C4
+`category` web · `see` xss, web-server, csrf, samesite, session-fixation · `lessons` C1, C4, D3
 
 Forms: session cookie, session cookies
 
@@ -229,13 +229,68 @@ the number shows or changes someone else's data. The closest MITRE class is CWE-
 
 ## `authorization` Authorization
 
-`category` web · `see` idor, web-server · `lessons` D1
+`category` web · `see` idor, web-server, privilege-escalation · `lessons` D1, D2
 
 Forms: authorization, authorisation, permission check, permission checks
 
 Checking what a user is allowed to do: open this record, change it, delete it. Not to be confused
 with logging in (authentication), which answers “who are you”. The server does it itself on every
 request and refuses by default.
+
+## `privilege-escalation` Privilege escalation
+
+`category` web · `see` authorization, idor · `lessons` D2
+
+Forms: privilege escalation, escalation of privilege, elevation of privilege
+
+Gaining rights a user was never given. Vertical: an ordinary user acts as an administrator;
+horizontal: a user reaches the data of another user with the same role. A common cause is an
+internal address with no server-side permission check. In MITRE these are CWE-269 and CWE-862;
+in the OWASP Top 10:2021 it is item A01 Broken Access Control.
+
+## `session-fixation` Session fixation
+
+`category` web · `see` session-cookie, authorization · `lessons` D3
+
+Forms: session fixation
+
+An attack where the attacker imposes a session ID they already know on the victim in advance, for
+example with a link carrying that ID. If the site does not issue a new ID after login, the
+victim's session ends up in the attacker's hands. In the MITRE catalogue it is CWE-384. The
+defence is a new random session ID after login and refusing IDs from the page address.
+
+## `jwt` JWT
+
+`category` web · `see` session-cookie, authorization · `lessons` D4
+
+Forms: JWT, JWTs
+
+JSON Web Token (RFC 7519) — a pass in three parts: header, data and signature, base64url-encoded
+and separated by dots. Anyone can read the data; only the signature protects it from changes, so
+the server must verify it itself, with an algorithm fixed in advance. A failure to verify the
+signature is CWE-347.
+
+## `oauth` OAuth
+
+`category` web · `see` pkce, jwt · `lessons` D5
+
+Forms: OAuth, OAuth 2.0
+
+A protocol (RFC 6749) that lets a site access a user's account on another service without the
+user's password. The login service sends the browser back to a registered return address
+(`redirect_uri`) with a one-time code, and the site exchanges the code for an access token.
+Current security rules are collected in RFC 9700.
+
+## `pkce` PKCE
+
+`category` web · `see` oauth · `lessons` D5
+
+Forms: PKCE
+
+Proof Key for Code Exchange (RFC 7636). At the start of an OAuth login the app makes up a random
+secret and sends only its hash; when exchanging the code for a token it shows the secret itself. A
+code stolen on the way cannot be exchanged without the secret. RFC 9700 requires PKCE from public
+apps and recommends it for the rest.
 
 ## `salt` Salt
 
@@ -276,3 +331,80 @@ Forms: LDAP
 Lightweight Directory Access Protocol, the protocol of directory services where organizations
 keep accounts, groups and other records (RFC 4511). Through JNDI a Java program can fetch an
 object from a directory, and code along with it.
+
+## `command-injection` OS command injection
+
+`category` web · `see` injection, shell, rce, cwe · `lessons` B2
+
+Forms: OS command injection, command injection
+
+Injection into an operating system command: a program glues a command line together from its own
+text and data it received, and hands it to the shell. Characters such as `;`, `&` or `|` in the
+input start a second command, and the server runs it with its own rights. The weakness class is
+CWE-78; in the OWASP Top 10:2021 it belongs to A03 Injection.
+
+## `shell` Shell
+
+`category` web · `see` command-injection · `lessons` B2
+
+Forms: shell, shells, command shell
+
+A program that reads a command line, splits it into parts and starts programs: `sh` or `bash` on
+Linux, `cmd.exe` on Windows. It has a language of its own: `;` separates commands, `|` passes one
+program's output to another, `$( )` puts a command's output into the line. So a line built from
+someone else's input can mean more to the shell than the program's author intended.
+
+## `path-traversal` Path traversal
+
+`category` web · `see` web-server, cwe · `lessons` B3
+
+Forms: path traversal, directory traversal
+
+An attack on a program that builds a file path from a name it received. `../` in a path means
+“the folder above”, and a few such steps lead the path out of the allowed folder to any file the
+program may read. The weakness class is CWE-22; in the OWASP Top 10:2021 it belongs to A01 Broken
+Access Control.
+
+## `web-root` Web root
+
+`category` web · `see` web-server, web-shell · `lessons` B4
+
+Forms: web root, webroot, document root
+
+The folder on the server from which the web server serves files at the site's addresses: the file
+`uploads/a.png` in it opens at `/uploads/a.png`. A server set up for PHP does not send `.php` files
+from this folder as they are, it runs them. That is why visitors' files are kept outside the web
+root.
+
+## `web-shell` Web shell
+
+`category` web · `see` web-root, rce, mitre-attack · `lessons` B4
+
+Forms: web shell, web shells, webshell
+
+A script an attacker has placed on a web server to control the server with ordinary requests: open
+the script's address and the server runs a command and returns the answer. In MITRE ATT&CK it is
+sub-technique T1505.003. It often gets onto a server through an unsafe file upload.
+
+## `deserialization` Deserialization
+
+`category` web · `see` gadget-chain, rce, cwe · `lessons` B5
+
+Forms: deserialization, deserializing, deserialize, deserializes, deserialized
+
+Rebuilding a program object from bytes or text; the opposite is serialization. Languages' built-in
+formats, such as Java Serializable or Python's pickle, also store the class name, so they can
+create an object of any class the program knows. If a visitor sent the data, the visitor chooses
+what gets created. The weakness class is CWE-502.
+
+## `gadget-chain` Gadget chain
+
+`category` web · `see` deserialization, rce · `lessons` B5
+
+Forms: gadget chain, gadget chains, gadget, gadgets
+
+A sequence of objects and calls to their methods that runs by itself during deserialization.
+Gadgets are classes the program and its libraries already have: the attacker brings no code of
+their own, but sends data that lines up those classes in the right order, and the last step may,
+for example, start a command. New chains keep being found, so blocking known classes alone is not
+enough.
