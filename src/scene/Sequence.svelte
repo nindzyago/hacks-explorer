@@ -11,7 +11,6 @@
   import type { SiteLesson } from '../core/lesson/site';
   import { elapsedMs, type PlayerState } from '../core/player/player';
   import { describeScene, describeStep } from '../core/scene-layout/describe';
-  import { layoutScene } from '../core/scene-layout/layout';
   import { currentStep, travelProgress } from '../core/scene-layout/message';
   import {
     LABEL_PAD,
@@ -64,13 +63,6 @@
       },
       t,
     ),
-  );
-  /**
-   * On a laptop the view takes exactly the room of the scene at this width (the rows scroll
-   * inside it), so switching views moves nothing on the page and the one-screen rule holds.
-   */
-  const sizer = $derived(
-    layoutScene({ participants: lesson.participants, zones: lesson.zones, width }).height,
   );
   const current = $derived(currentStep(lesson.steps, player.defence, player.step));
   const caption = $derived(describeStep(lesson.participants, current, t));
@@ -139,7 +131,6 @@
   data-lesson={lesson.id}
   data-defence={player.defence}
 >
-  <svg class="sizer" viewBox="0 0 {round(width)} {round(sizer)}" aria-hidden="true"></svg>
   <div class="area" data-testid="sequence-area" bind:this={area} bind:clientWidth={width}>
     <svg
       viewBox="0 0 {round(layout.width)} {round(layout.height)}"
@@ -150,7 +141,6 @@
     >
       <title id="{uid}-title">{t('sequence.title', { title: lesson.title })}</title>
       <desc id="{uid}-desc">{description}</desc>
-      <rect class="paper" width={round(layout.width)} height={round(layout.height)} />
 
       {#each layout.lanes as lane (lane.id)}
         {@const url = failed.has(lane.id) ? null : (icons.get(lane.id) ?? null)}
@@ -298,54 +288,35 @@
         </g>
       {/each}
     </svg>
-    <ul class="legend" aria-label={t('sequence.legend')} data-testid="sequence-legend">
-      <li class="legit"><span class="swatch" aria-hidden="true"></span>{t('mark.legit')}</li>
-      <li class="attack"><span class="swatch" aria-hidden="true"></span>{t('mark.attack')}</li>
-      <li class="safe"><span class="swatch" aria-hidden="true"></span>{t('mark.safe')}</li>
-      <li class="stopped"><span class="swatch" aria-hidden="true"></span>{t('mark.stopped')}</li>
-      <li class="future"><span class="swatch" aria-hidden="true"></span>{t('sequence.future')}</li>
-    </ul>
   </div>
   <figcaption class="step" data-testid="sequence-step" aria-live="polite">{caption}</figcaption>
 </figure>
 
 <style>
+  /*
+   * M6.1 shell: the view stands on the millimetre grid of the scene panel, with no frame of its
+   * own. On a laptop it fills the panel's body (the one-screen grid gives it its height) and the
+   * rows scroll inside it; on a phone it is as tall as its rows and the page scrolls.
+   */
   .sequence {
     position: relative;
     margin: 0;
     min-width: 0;
-    background: var(--seq-paper);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
+    flex: 1 1 auto;
   }
 
-  /* The room of the scene: the area lies over it and scrolls (a laptop only). */
-  .sizer {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  .area {
-    position: absolute;
-    inset: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
-  }
-
-  /* A phone: the page scrolls, the view is as tall as its rows. */
-  @media (max-width: 760px) {
-    .sizer {
-      display: none;
+  @media (min-width: 761px) {
+    .sequence {
+      min-height: 8rem;
     }
 
     .area {
-      position: static;
-      overflow-y: visible;
-      scrollbar-gutter: auto;
+      position: absolute;
+      inset: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
     }
   }
 
@@ -366,10 +337,6 @@
     clip-path: inset(50%);
     white-space: nowrap;
     border: 0;
-  }
-
-  .paper {
-    fill: var(--seq-paper);
   }
 
   .lifeline {
@@ -541,46 +508,5 @@
     stroke: var(--seq-band-line);
     stroke-width: 1.5;
     stroke-dasharray: 4 4;
-  }
-
-  .legend {
-    margin: 0;
-    padding: var(--space-1) var(--space-3) var(--space-2);
-    list-style: none;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    color: var(--seq-ink);
-  }
-
-  .legend li {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-  }
-
-  .swatch {
-    display: inline-block;
-    width: 1.25rem;
-    height: 0;
-    border-top: 3px solid var(--scene-message-legit);
-  }
-
-  .attack .swatch {
-    border-top-color: var(--scene-message-attack);
-  }
-
-  .safe .swatch {
-    border-top-color: var(--scene-message-safe);
-  }
-
-  .stopped .swatch {
-    border-top-color: var(--scene-message-stopped);
-  }
-
-  .future .swatch {
-    border-top: 2px dashed var(--seq-muted);
   }
 </style>

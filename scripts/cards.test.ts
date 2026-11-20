@@ -141,6 +141,6 @@ describe('readPng and the inputs of a card are hostile-proof', () => {
   it('paints with the design tokens and fails loudly without them', () => {
     const tokens = readFileSync(join(ROOT, 'src/ui/tokens.css'), 'utf8');
     expect(cardPalette(tokens)['scene-paper']).toMatch(/^#[0-9a-f]{6}$/);
-    expect(() => cardPalette(':root {}')).toThrow('--scene-paper');
+    expect(() => cardPalette(':root {}')).toThrow('--card-scene-paper');
   });
 });

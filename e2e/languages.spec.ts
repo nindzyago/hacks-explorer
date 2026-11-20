@@ -123,7 +123,9 @@ test('the RU / EN switch runs locale.set, keeps the defence mode and is remember
   const en = page.getByTestId('language-en');
   await expect(en).toHaveText('EN');
   await expect(en).toHaveAttribute('lang', 'en');
-  expect((await en.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  // M6.1: 44 px wide, 36 px tall with a mouse (44 on a touch screen).
+  expect((await en.boundingBox())?.height).toBeGreaterThanOrEqual(36);
+  expect((await en.boundingBox())?.width).toBeGreaterThanOrEqual(44);
 
   await en.click();
   await expect(page.getByTestId('player-status')).toHaveText('Step 2 of 5');

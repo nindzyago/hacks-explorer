@@ -68,3 +68,37 @@ export function filterTopics(
 export function readyCount(section: SiteTopicSection): { ready: number; count: number } {
   return { ready: section.topics.filter((t) => t.ready).length, count: section.topics.length };
 }
+
+export interface SideFilter extends TopicFilter {
+  /** Show the topics still being written too («Все»), not only the ready lessons («Готовые»). */
+  readonly all: boolean;
+}
+
+export interface SideList {
+  /** Ready lessons that match, in catalog order. */
+  readonly ready: readonly SiteTopic[];
+  /**
+   * Topics still being written that match, after the ready ones (M6, design §2): with «Все», or
+   * whenever the reader searches, so a search finds a topic that is not ready yet.
+   */
+  readonly soon: readonly SiteTopic[];
+  /** The counts on the chips: ready lessons and all topics of the chosen section(s). */
+  readonly readyCount: number;
+  readonly allCount: number;
+}
+
+/** The lessons list of the left panel (M6): ready lessons first, the rest at the end. */
+export function sideList(sections: readonly SiteTopicSection[], filter: SideFilter): SideList {
+  const inSection = sections.filter((s) => filter.section === null || s.id === filter.section);
+  const searching = queryWords(filter.query).length > 0;
+  const found = filterTopics(inSection, { query: filter.query, section: null }).flatMap(
+    (f) => f.topics,
+  );
+  const topics = inSection.flatMap((s) => s.topics);
+  return {
+    ready: found.filter((t) => t.ready),
+    soon: filter.all || searching ? found.filter((t) => !t.ready) : [],
+    readyCount: topics.filter((t) => t.ready).length,
+    allCount: topics.length,
+  };
+}

@@ -274,12 +274,34 @@ test.describe('the sequence view', () => {
     await openApp(page, '/ru/lesson/B1');
     await run(page, 'player.goto', { step: 3 });
     const address = page.url();
-    await expect(page.getByTestId('view-scene')).toHaveAttribute('aria-pressed', 'true');
+    // The tabs sit in the head of the scene panel (M6.1) and control its body.
+    const tabs = page.getByTestId('scene-panel').getByRole('tablist');
+    await expect(tabs.getByRole('tab')).toHaveCount(2);
+    await expect(page.getByTestId('view-scene')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('view-sequence')).toHaveAttribute('aria-selected', 'false');
+    await expect(page.getByTestId('legend-future')).toHaveCount(0);
     await page.getByTestId('view-sequence').click();
     await expect(page.getByTestId('sequence')).toBeVisible();
     await expect(page.getByTestId('scene')).toHaveCount(0);
-    await expect(page.getByTestId('view-sequence')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('view-sequence')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('view-sequence')).toHaveAttribute('tabindex', '0');
+    await expect(page.getByTestId('view-scene')).toHaveAttribute('tabindex', '-1');
+    await expect(page.locator('#view-panel')).toHaveAttribute(
+      'aria-labelledby',
+      'view-tab-sequence',
+    );
+    await expect(page.getByTestId('legend-future')).toBeVisible();
+    await expect(page.getByTestId('sequence')).toHaveCSS('border-top-width', '0px');
     expect(page.url()).toBe(address);
+    // ← and → move between the tabs and take the focus; the player keeps its step.
+    await page.getByTestId('view-sequence').focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(page.getByTestId('scene')).toBeVisible();
+    await expect(page.getByTestId('view-scene')).toBeFocused();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('sequence')).toBeVisible();
+    await expect(page.getByTestId('view-sequence')).toBeFocused();
+    expect(await page.evaluate(() => window.__app?.state.get().player.step)).toBe(3);
     expect(await page.evaluate(() => window.__app?.state.get().player.step)).toBe(3);
     await run(page, 'lesson.open', { id: 'I1' });
     await expect(page.getByTestId('sequence')).toHaveAttribute('data-lesson', 'I1');

@@ -1,39 +1,54 @@
 /*
- * Design tokens (style guide R9, design M1.2 E3). The only file in src/ that may hold literal
- * colours: scripts/structure-check.mjs rejects them everywhere else. Light palette only (K43);
- * a dark theme (M2.6) will redefine these names under :root[data-theme='dark'].
- * Text pairs keep a contrast of at least 4.5:1: src/ui/tokens.test.ts.
+ * Design tokens (style guide R9, design M1.2 E3; M6 blueprint look, K129). The only file in src/
+ * that may hold literal colours: scripts/structure-check.mjs rejects them everywhere else. Light
+ * palette only (K43, K92). Text pairs keep a contrast of at least 4.5:1: src/ui/tokens.test.ts.
  */
 :root {
   color-scheme: light;
 
-  /* Interface palette (reference/style-guide.md) */
-  --paper: #f3f5f7;
+  /*
+   * Interface palette (M6, K129: the blueprint look of variant A). One blueprint blue for frames,
+   * panel titles and buttons; red only for the attacker and the harmful, green for stopped.
+   * --paper is the light blue tint of the current row, a hover and code; the page is white.
+   */
+  --paper: #eef2fc;
   --panel: #ffffff;
-  --ink: #15212c;
-  --muted: #5e6c7a;
-  --line: #c7d0d9;
-  --attack: #d8432b;
-  --defence: #0b8a78;
-  --legit: #2b67d6;
+  --panel-head: #f4f7fd;
+  --ink: #172033;
+  --muted: #5a6782;
+  --line: #c3cdea;
+  --line-faint: #e4e9f6;
+  --attack: #b8321f;
+  --attack-tint: #fff6f4;
+  --attack-line: #f1d2cc;
+  --defence: #0f7b5f;
+  --legit: #1f3fae;
+  --legit-dark: #152c7d;
   --caution: #b97a00;
+  /* The frame of every panel and button: the blueprint blue, 1.5 px. */
+  --frame: var(--legit);
+  --frame-width: 1.5px;
+  /* The millimetre grid behind the scene (24 px) and the legend's dashed line. */
+  --grid-line: #1f3fae12;
+  --grid-step: 24px;
+  --zone-line: #8a9bd0;
 
-  /* Scene (prototype look, K5): paper of the icon sheets, navy ink of the outlines. */
-  --scene-paper: #edf0f3;
-  --scene-ink: #1f2a44;
-  --scene-muted: #5e6c7a;
-  /* Red of the danger zone frame (a line, 3:1 is enough) and of its label (text, 4.5:1). */
+  /* Scene (prototype look, K5; M6: white paper on the grid, the ink of the interface). */
+  --scene-paper: #ffffff;
+  --scene-ink: #172033;
+  --scene-muted: #5a6782;
+  /* Red of the danger zone frame (a line) and of its label (text, 4.5:1). */
   --scene-attack: var(--attack);
-  --scene-attack-text: #b5361f;
+  --scene-attack-text: #b8321f;
   --scene-safe: var(--defence);
   --scene-legit: var(--legit);
   /*
    * Messages (M1.2b): the plaque, its trail, the ring around the receiver and the word above.
-   * Darker than the interface palette so that white 11 px text on a plaque and the word on the
-   * scene paper both keep 4.5:1. Red stays with attack only (E7).
+   * Dark enough that white 11 px text on a plaque and the word on the scene paper both keep
+   * 4.5:1. Red stays with attack only (E7).
    */
   --scene-message-attack: var(--scene-attack-text);
-  --scene-message-safe: #087a6a;
+  --scene-message-safe: #0f7b5f;
   --scene-message-legit: var(--legit);
   /*
    * A message stopped by the defence, where it stops (M1.2d, style guide: green, shield,
@@ -42,7 +57,7 @@
   --scene-message-stopped: var(--scene-message-safe);
   --scene-message-text: #ffffff;
   /* A participant without an icon of its own (unknown icon name). */
-  --scene-placeholder: #dde3e9;
+  --scene-placeholder: #e4e9f6;
 
   /*
    * Lesson code in the explanation panel (M1.4): the harmful part ⟦…⟧ is a <mark> in the dark
@@ -52,8 +67,18 @@
   --code-ink: var(--ink);
   --code-mark: var(--scene-attack-text);
 
+  /*
+   * The social cards (M4.3, scripts/cards.ts) keep the palette they were drawn with: M6.1 left
+   * them as they are, so their colours stay apart from the interface ones.
+   */
+  --card-scene-paper: #edf0f3;
+  --card-scene-ink: #1f2a44;
+  --card-muted: #5e6c7a;
+  --card-attack: #d8432b;
+  --card-defence: #0b8a78;
+
   /* Behind the side panel (M2.1b): the ink, translucent, so the page reads as set aside. */
-  --scrim: #15212c66;
+  --scrim: #17203366;
 
   /*
    * The sequence view (M6.2): white paper, lifelines, the band of the current step in a light
@@ -63,8 +88,8 @@
   --seq-paper: var(--panel);
   --seq-ink: var(--scene-ink);
   --seq-muted: var(--muted);
-  --seq-lifeline: #9aa8c7;
-  --seq-band: #e8eefb;
+  --seq-lifeline: var(--zone-line);
+  --seq-band: var(--paper);
   --seq-band-line: var(--legit);
 
   /* Type */
@@ -76,8 +101,11 @@
   --text-lg: 1.125rem; /* 18 px */
   --text-xl: 1.5rem; /* 24 px */
   --leading: 1.45;
+  /* Capitals of panel titles, buttons and chips (M6): JetBrains Mono with letter spacing. */
+  --caps-spacing: 0.08em;
 
-  /* Shape and space */
+  /* Shape and space. Panels have a 6 px corner, buttons and chips 4 px (M6). */
+  --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
@@ -87,4 +115,22 @@
   --space-4: 1rem;
   --space-6: 1.5rem;
   --line-width: 1px;
+  /*
+   * The height of a button (M6): 36 px with a mouse, 44 px on a touch screen and on a phone
+   * (K102 holds for fingers; WCAG 2.2 2.5.8 asks 24 px). A step circle in the lessons list.
+   */
+  --target: 36px;
+  --chip: 28px;
+  --dot: 22px;
+  /* Columns of the lesson screen (M6, design §2) and the «Ход атаки» row at the bottom. */
+  --col-lessons: 300px;
+  --col-explain: 330px;
+  --row-log: clamp(180px, 30vh, 270px);
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+  :root {
+    --target: 44px;
+    --chip: 44px;
+  }
 }

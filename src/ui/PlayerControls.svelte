@@ -30,13 +30,22 @@
   aria-label={t('player.label')}
 >
   <p class="status" data-testid="player-status">
-    <span
-      >{count > 0
-        ? t('player.status', { step: player.step, count })
-        : t('player.statusUnknown', { step: player.step })}</span
-    >
+    {count > 0
+      ? t('player.status', { step: player.step, count })
+      : t('player.statusUnknown', { step: player.step })}
   </p>
+  <!-- M6.1: speed, back, play, step, restart — in the head of «Ход атаки» (design §2). -->
   <div class="buttons">
+    <button
+      type="button"
+      class="speed"
+      data-testid="player-speed"
+      data-speed={player.speed}
+      aria-label={t('player.speed', { speed: speedText(player.speed), next: speedText(nextSpeed) })}
+      onclick={() => {
+        run('player.speed', { value: nextSpeed });
+      }}>{speedText(player.speed)}</button
+    >
     <button
       type="button"
       class="icon"
@@ -93,63 +102,60 @@
         ><path d="M5 12 A7 7 0 1 0 8 6.3 M8 2.5 V6.5 H4" /></svg
       >
     </button>
-    <button
-      type="button"
-      class="speed"
-      data-testid="player-speed"
-      data-speed={player.speed}
-      aria-label={t('player.speed', { speed: speedText(player.speed), next: speedText(nextSpeed) })}
-      onclick={() => {
-        run('player.speed', { value: nextSpeed });
-      }}>{speedText(player.speed)}</button
-    >
   </div>
 </div>
 
 <style>
+  /* M6.1: blueprint buttons in the head of «Ход атаки»; on a phone a panel under the scene. */
   .controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: var(--space-2) var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    background: var(--panel);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-lg);
   }
 
+  /* The step number is said by the explanation and the table; screen readers still hear it. */
   .status {
-    margin: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1) var(--space-3);
-    align-items: baseline;
-    font-weight: 700;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: var(--space-1);
   }
 
   button {
     box-sizing: border-box;
-    min-width: 44px;
-    min-height: 44px;
+    min-width: var(--target);
+    min-height: var(--target);
     padding: 0 var(--space-3);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--space-1);
-    border: var(--line-width) solid var(--line);
-    border-radius: var(--radius-md);
+    border: var(--frame-width) solid var(--frame);
+    border-radius: var(--radius-xs);
     background: var(--panel);
-    color: var(--ink);
-    font: inherit;
-    font-weight: 500;
+    color: var(--legit);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
     cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--paper);
   }
 
   button.icon {
@@ -158,25 +164,23 @@
 
   button.play {
     min-width: 7rem;
-    background: var(--ink);
-    border-color: var(--ink);
+    background: var(--legit);
     color: var(--panel);
-    font-weight: 700;
   }
 
   button[aria-disabled='true'] {
+    border-color: var(--line);
     color: var(--muted);
     cursor: default;
   }
 
   .speed {
-    font-family: var(--font-mono);
-    min-width: 4rem;
+    min-width: 3.5rem;
   }
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     flex: none;
   }
 
@@ -192,12 +196,30 @@
     fill: currentcolor;
   }
 
-  /* Phone (S10): the five buttons share one row; play takes the room that is left. */
+  /* Phone (S10): the step number in words, then the five buttons in one row. */
   @media (max-width: 760px) {
+    .controls {
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .status {
+      position: static;
+      width: auto;
+      height: auto;
+      margin: 0;
+      overflow: visible;
+      clip-path: none;
+      font-family: var(--font-mono);
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--ink);
+    }
+
     .buttons {
       width: 100%;
       display: grid;
-      grid-template-columns: 44px minmax(0, 1fr) auto 44px auto;
+      grid-template-columns: auto 44px minmax(0, 1fr) auto 44px;
     }
 
     button.play {

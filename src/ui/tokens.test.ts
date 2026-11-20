@@ -59,14 +59,15 @@ describe('tokens', () => {
       legit: colour('--legit'),
       caution: colour('--caution'),
     }).toEqual({
-      paper: '#f3f5f7',
+      // M6 (K129): the blueprint palette of variant A.
+      paper: '#eef2fc',
       panel: '#ffffff',
-      ink: '#15212c',
-      muted: '#5e6c7a',
-      line: '#c7d0d9',
-      attack: '#d8432b',
-      defence: '#0b8a78',
-      legit: '#2b67d6',
+      ink: '#172033',
+      muted: '#5a6782',
+      line: '#c3cdea',
+      attack: '#b8321f',
+      defence: '#0f7b5f',
+      legit: '#1f3fae',
       caution: '#b97a00',
     });
   });
@@ -126,6 +127,20 @@ describe('tokens', () => {
     ['--code-ink', '--code-paper'],
     ['--code-mark', '--code-paper'],
     ['--code-mark', '--panel'],
+    // M6 (K129): blue titles and buttons on the panel head and the tint, white on the filled
+    // blue, red and green buttons, the open lesson on its red tint, the steps of the left list.
+    ['--legit', '--panel-head'],
+    ['--ink', '--panel-head'],
+    ['--muted', '--panel-head'],
+    ['--panel', '--legit'],
+    ['--panel', '--attack'],
+    ['--panel', '--defence'],
+    ['--ink', '--attack-tint'],
+    ['--muted', '--attack-tint'],
+    ['--attack', '--attack-tint'],
+    ['--attack', '--panel'],
+    ['--defence', '--panel'],
+    ['--legit', '--attack-tint'],
   ];
 
   it('paint a stopped message in the defence green, never in red (M1.2d)', () => {
@@ -140,9 +155,10 @@ describe('tokens', () => {
   it('measures contrast the WCAG way', () => {
     expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 5);
     expect(contrast('#777777', '#ffffff')).toBeCloseTo(4.48, 2);
-    // The red of the style guide is too light for small text on the scene paper: hence
-    // --scene-attack-text.
-    expect(contrast(colour('--scene-attack'), colour('--scene-paper'))).toBeLessThan(4.5);
+    // M6: the blueprint red is dark enough for small text, so the zone frame and its label share
+    // it; the soft line of a chip is a line, not text.
+    expect(contrast(colour('--scene-attack'), colour('--scene-paper'))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(colour('--line'), colour('--panel'))).toBeLessThan(4.5);
   });
 
   it('give the smallest text 11 px', () => {
