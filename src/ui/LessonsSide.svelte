@@ -122,6 +122,16 @@
         if (top - head < element.scrollTop) element.scrollTop = Math.max(0, top - head);
         else if (bottom > element.scrollTop + element.clientHeight)
           element.scrollTop = Math.max(0, bottom - element.clientHeight);
+        // A row cut by the bottom edge of the chips would be a link with a sliver of a target
+        // (axe target-size, WCAG 2.5.8): the column goes on until that row is wholly under them.
+        const edge = element.getBoundingClientRect().top + head;
+        for (const row of element.querySelectorAll<HTMLElement>('a.row')) {
+          const r = row.getBoundingClientRect();
+          if (r.top < edge && r.bottom > edge) {
+            element.scrollTop += r.bottom - edge;
+            break;
+          }
+        }
       });
     return () => {
       live = false;

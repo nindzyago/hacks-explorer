@@ -111,6 +111,10 @@ CC BY-SA 4.0, с оговоркой G10 про иконки. Устаревшу�
 | `public/cards/D3.ru.png` | карточка урока D3, ru | `npm run cards` из текста урока, иконок (user, attacker, server) и шрифтов сайта |
 | `public/cards/D4.ru.png` | карточка урока D4, ru | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
 | `public/cards/D5.ru.png` | карточка урока D5, ru | `npm run cards` из текста урока, иконок (user, attacker, server) и шрифтов сайта |
+| `public/cards/D6.ru.png` | карточка урока D6, ru | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/D7.ru.png` | карточка урока D7, ru | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/D8.ru.png` | карточка урока D8, ru | `npm run cards` из текста урока, иконок (server, attacker, db) и шрифтов сайта |
+| `public/cards/E1.ru.png` | карточка урока E1, ru | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/F1.ru.png` | карточка урока F1, ru | `npm run cards` из текста урока, иконок (user, server, db) и шрифтов сайта |
 | `public/cards/G1.ru.png` | карточка урока G1, ru | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/H2.ru.png` | карточка урока H2, ru | `npm run cards` из текста урока, иконок (attacker, workstation, server) и шрифтов сайта |
@@ -134,6 +138,10 @@ CC BY-SA 4.0, с оговоркой G10 про иконки. Устаревшу�
 | `public/cards/D3.en.png` | карточка урока D3, en | `npm run cards` из текста урока, иконок (user, attacker, server) и шрифтов сайта |
 | `public/cards/D4.en.png` | карточка урока D4, en | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
 | `public/cards/D5.en.png` | карточка урока D5, en | `npm run cards` из текста урока, иконок (user, attacker, server) и шрифтов сайта |
+| `public/cards/D6.en.png` | карточка урока D6, en | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/D7.en.png` | карточка урока D7, en | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/D8.en.png` | карточка урока D8, en | `npm run cards` из текста урока, иконок (server, attacker, db) и шрифтов сайта |
+| `public/cards/E1.en.png` | карточка урока E1, en | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/F1.en.png` | карточка урока F1, en | `npm run cards` из текста урока, иконок (user, server, db) и шрифтов сайта |
 | `public/cards/G1.en.png` | карточка урока G1, en | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/H2.en.png` | карточка урока H2, en | `npm run cards` из текста урока, иконок (attacker, workstation, server) и шрифтов сайта |
