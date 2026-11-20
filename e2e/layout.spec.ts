@@ -75,6 +75,33 @@ test.describe('the lessons column at 1280 and wider', () => {
         expect(explain.x).toBeGreaterThanOrEqual(scene.x + scene.width);
       });
 
+      // CI5: on Linux the same fonts draw the brand 17 px wider than on macOS, the RU / EN switch
+      // wrapped to a second row of the top bar and hid under the lessons column. The bar keeps
+      // one row with room to spare (here 40 px of wider letters), and grows rather than overlaps.
+      for (const lang of LANGS) {
+        test(`${lang}: the top bar is one row even with wider letters; nothing covers it`, async ({
+          page,
+        }) => {
+          await openApp(page, `/${lang}/lesson/B1`);
+          await sceneReady(page);
+          // Through the CSSOM: the site's CSP forbids inline style tags.
+          await page.evaluate(() => {
+            const brand = document.querySelector('[data-testid="topbar"] > :first-child');
+            if (brand instanceof HTMLElement) brand.style.marginRight = '40px';
+          });
+          const [bar, side] = await Promise.all([box(page, 'topbar'), box(page, 'lessons-panel')]);
+          for (const id of ['sections', 'lesson-search', 'nav-about', 'languages']) {
+            const b = await box(page, id);
+            expect(b.y, id).toBeGreaterThanOrEqual(bar.y - 0.5);
+            expect(b.y + b.height, id).toBeLessThanOrEqual(bar.y + bar.height + 0.5);
+          }
+          expect(bar.y + bar.height).toBeLessThan(side.y);
+          // Clickable: no other element takes the pointer.
+          const other = lang === 'ru' ? 'en' : 'ru';
+          await page.getByTestId(`language-${other}`).click({ trial: true, timeout: 2000 });
+        });
+      }
+
       test('a step of the open lesson goes to that step; another lesson opens', async ({
         page,
       }) => {

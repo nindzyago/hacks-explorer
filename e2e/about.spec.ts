@@ -53,6 +53,19 @@ async function sideways(page: Page): Promise<string[]> {
 }
 
 /** The ids of the ready topics of a language, from the data the site itself loads. */
+/**
+ * The top bar is one row: it is no taller than its tallest item (CI5: it used to be squeezed to
+ * 36 px with its 46 px brand spilling out, so a height limit of 45 px passed with a hidden row).
+ */
+async function topBarRows(page: Page): Promise<{ bar: number; tallest: number }> {
+  return page.evaluate(() => {
+    const bar = document.querySelector('[data-testid="topbar"]');
+    if (bar === null) return { bar: 0, tallest: -1 };
+    const items = Array.from(bar.children).map((e) => e.getBoundingClientRect().height);
+    return { bar: bar.getBoundingClientRect().height, tallest: Math.max(...items) };
+  });
+}
+
 async function readyTopics(page: Page, lang: string): Promise<string[]> {
   return page.evaluate(async (l) => {
     const response = await fetch(`/data/topics/${l}.json`);
@@ -234,13 +247,13 @@ for (const screen of SCREENS) {
         expect(await sideways(page), 'about').toEqual([]);
         await keep(page, testInfo, `about-${lang}-${screen.name}`);
         if (screen.width >= 1024) {
-          // A laptop: the top bar of the lesson stays one row of 44 px with the new link.
-          await openApp(page, `/${lang}/lesson/I1`);
-          const bar = await page.getByTestId('topbar').boundingBox();
-          expect(bar?.height ?? 0).toBeLessThanOrEqual(45);
-          await openApp(page, `/${lang}/lesson/B1`);
-          const barB1 = await page.getByTestId('topbar').boundingBox();
-          expect(barB1?.height ?? 0).toBeLessThanOrEqual(45);
+          // A laptop: the top bar of the lesson stays one row with the new link.
+          for (const topic of ['I1', 'B1']) {
+            await openApp(page, `/${lang}/lesson/${topic}`);
+            const rows = await topBarRows(page);
+            expect(rows.tallest, topic).toBeGreaterThan(0);
+            expect(rows.bar, topic).toBeLessThanOrEqual(rows.tallest + 0.5);
+          }
         } else {
           await openApp(page, `/${lang}/lesson/I1`);
         }
