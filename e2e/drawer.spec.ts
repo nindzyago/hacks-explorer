@@ -41,10 +41,13 @@ const topics = (page: Page) =>
  * Ready lessons in a language, counted from the source folders, not from the built data under
  * test: every folder in content/lessons that holds `<language>.md` is one ready lesson.
  */
-function readyCount(language: string): number {
+function readyCount(language: string, section = ''): number {
   const folder = fileURLToPath(new URL('../content/lessons', import.meta.url));
   return readdirSync(folder, { withFileTypes: true }).filter(
-    (entry) => entry.isDirectory() && existsSync(join(folder, entry.name, `${language}.md`)),
+    (entry) =>
+      entry.isDirectory() &&
+      entry.name.startsWith(section) &&
+      existsSync(join(folder, entry.name, `${language}.md`)),
   ).length;
 }
 
@@ -91,7 +94,9 @@ test.describe('S7: the lessons panel', () => {
       `Готово уроков: ${String(readyCount('ru'))} из 75`,
     );
     const b = page.locator('[data-testid="catalog-group"][data-section="B"]');
-    await expect(b.getByTestId('catalog-count')).toHaveText('готово 1 из 8');
+    await expect(b.getByTestId('catalog-count')).toHaveText(
+      `готово ${String(readyCount('ru', 'B'))} из 8`,
+    );
     // B1 is a link to its address; B8 is not focusable and says «скоро»; I1 carries «открыть».
     await expect(page.locator('[data-topic="I1"] a')).toContainText('открыть');
     const b1 = page.locator('[data-topic="B1"] a');
@@ -496,7 +501,7 @@ test.describe('in English (M2.3, K105)', () => {
     );
     await expect(
       page.locator('[data-testid="catalog-group"][data-section="B"] [data-testid="catalog-count"]'),
-    ).toHaveText('1 of 8 ready');
+    ).toHaveText(`${String(readyCount('en', 'B'))} of 8 ready`);
     await page.getByTestId('catalog-search').fill('sql');
     expect(await topics(page)).toEqual(['B1', 'B8']);
     await expect(page.locator('[data-topic="B8"]')).toContainText('soon');

@@ -78,6 +78,8 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1195', 'Supply Chain Compromise'],
   ['T1210', 'Exploitation of Remote Services'],
   ['T1486', 'Data Encrypted for Impact'],
+  ['T1505', 'Server Software Component'],
+  ['T1505.003', 'Server Software Component: Web Shell'],
   ['T1557', 'Adversary-in-the-Middle'],
   ['T1566', 'Phishing'],
   ['T1566.001', 'Phishing: Spearphishing Attachment'],
