@@ -227,7 +227,8 @@ describe('npm run dev', () => {
       const origin = server.resolvedUrls?.local[0] ?? '';
       const catalog = readCatalog(await (await fetch(`${origin}${CATALOG_FILE}`)).json());
       if (!catalog.ok) throw new Error(catalog.error.message);
-      const hash = catalog.value.lessons[0]?.translations[0]?.hash ?? '';
+      const b1 = catalog.value.lessons.find((l) => l.id === 'B1');
+      const hash = b1?.translations.find((t) => t.language === 'ru')?.hash ?? '';
       const response = await fetch(`${origin}${lessonFile('B1', 'ru', hash)}`);
       expect(response.headers.get('content-type')).toContain('application/json');
       const lesson = readSiteLesson(await response.json(), { id: 'B1', language: 'ru' });
