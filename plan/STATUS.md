@@ -2,8 +2,8 @@
 
 > Updated: 2026-11-19 by Claude (craftspec orchestrate)
 
-**Current milestone:** M6 — чертёжный интерфейс, вариант A
-**Next task:** M6.1 оболочка, M6.2 «Последовательность»
+**Current milestone:** M5 — остальные 65 уроков; перед ними UI2 (автопроигрывание, категории) и G17
+**Next task:** UI2, G17, затем волна M5.1
 **Blockers (need a human):** нет. Сайт: https://hacks.antipic.com · черновик: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -17,7 +17,7 @@
 | M3 | Первый выпуск: 10 уроков (K120) | done 2026-11-19 (браузерные тесты на все уроки — G18) | 10 / 10 |
 | M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | done 2026-11-19, Release v0.1.1 | 7 / 7 |
 | M6 | Чертёжный интерфейс, вариант A (K129) | done 2026-11-20 | 2 / 2 |
-| M5 | Остальные уроки (65) | not started | 0 / 17 |
+| M5 | Остальные 65 уроков, волнами (K132) | in progress | 0 / 4 волн |
 
 ## Designs
 
