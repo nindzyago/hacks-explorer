@@ -237,7 +237,8 @@ test.describe('S6: the keyboard', () => {
     await freshB1(page);
     const ids = ['player-back', 'player-play', 'player-next', 'player-restart', 'player-speed'];
     const seen = new Set<string>();
-    for (let i = 0; i < 20 && seen.size < ids.length; i += 1) {
+    // M6.1: on a wide screen the section chips, the search and the lessons column come first.
+    for (let i = 0; i < 60 && seen.size < ids.length; i += 1) {
       await page.keyboard.press('Tab');
       const info = await page.evaluate(() => {
         const el = document.activeElement;
@@ -402,10 +403,14 @@ for (const viewport of [
       if (viewport.name === 'desktop') {
         // K7: scene on the left, explanation on the right, controls and table across the bottom.
         expect(explain.x).toBeGreaterThanOrEqual(scene.x + scene.width);
-        expect(Math.abs(explain.y - scene.y)).toBeLessThan(2);
+        // M6.1: side by side in one row (the scene is centred in its panel, under its head).
+        expect(explain.y).toBeLessThan(scene.y + scene.height);
         expect(controls.y).toBeGreaterThanOrEqual(Math.max(scene.y + scene.height, explain.y));
-        expect(log.y).toBeGreaterThan(controls.y);
-        expect(log.width).toBeGreaterThan(viewport.width * 0.9);
+        // M6.1: the player stands in the head of «Ход атаки», which runs under the scene and the
+        // explanation (the lessons column takes the left of a 1280 px screen).
+        expect(controls.y).toBeLessThan(log.y + 80);
+        expect(Math.abs(log.x - scene.x)).toBeLessThan(2);
+        expect(Math.abs(log.x + log.width - explain.x - explain.width)).toBeLessThan(2);
       } else {
         // S10: scene, controls, explanation, table, one column.
         expect(controls.y).toBeGreaterThanOrEqual(scene.y + scene.height);
@@ -434,9 +439,12 @@ for (const viewport of [
           }),
         );
       expect(buttons.length).toBe(10);
+      // M6.1: 44 px on a phone; with a mouse a blueprint button is 36 px, a step number 28 px
+      // (WCAG 2.2 2.5.8 asks 24).
+      const least = viewport.name === 'desktop' ? 28 : 44;
       for (const b of buttons) {
-        expect(b.w, b.id ?? '').toBeGreaterThanOrEqual(44);
-        expect(b.h, b.id ?? '').toBeGreaterThanOrEqual(44);
+        expect(b.w, b.id ?? '').toBeGreaterThanOrEqual(least);
+        expect(b.h, b.id ?? '').toBeGreaterThanOrEqual(least);
         expect(b.fits, b.id ?? '').toBe(true);
       }
 
