@@ -4,6 +4,10 @@
 // the support fixture reports as a page problem or the page shows as broken.
 import { expect, sceneReady, test } from '../support';
 
+// UI2: a lesson plays by itself when it opens; these tests count steps by hand, so they ask for
+// less motion, which opens the lesson paused (e2e/production/autoplay.spec.ts tests the play).
+test.use({ reducedMotion: 'reduce' });
+
 test('a deep link loads the lesson at its step and mode, and survives a reload', async ({
   page,
 }) => {

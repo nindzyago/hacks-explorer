@@ -43,6 +43,13 @@ const app = createApp({
     else live.driver?.stop();
   },
   languages,
+  // UI2: a lesson that opens starts playing by itself, except in the e2e build, whose tests set
+  // the clock by hand (K17, K68) and turn it on with `player.autoplay` when they test it. A reader
+  // who asked the system for less motion gets the lesson paused; the Play button still plays.
+  autoplay: import.meta.env.MODE !== 'e2e',
+  reducedMotion: () =>
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches,
 });
 const driver = createRealTimeDriver(app.clock);
 live.driver = driver;

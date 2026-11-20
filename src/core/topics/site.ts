@@ -31,6 +31,8 @@ export interface SiteTopic {
 export interface SiteTopicSection {
   readonly id: string;
   readonly title: string;
+  /** The name on the section's chip in the lessons column (UI2): its short name, else the title. */
+  readonly short: string;
   readonly topics: readonly SiteTopic[];
 }
 
@@ -48,6 +50,7 @@ export function toSiteTopics(file: CatalogFile, ready: ReadonlySet<string>): Sit
     sections: file.sections.map((s) => ({
       id: s.id,
       title: s.title,
+      short: s.short ?? s.title,
       topics: s.topics.map((t) => ({
         id: t.id,
         title: t.title,
@@ -78,7 +81,7 @@ function section(input: unknown, path: string): SiteTopicSection {
   topics.forEach((t, i) => {
     if (!t.id.startsWith(id)) fail(`${path}.topics[${String(i)}].id`, `a topic of section ${id}`);
   });
-  return { id, title: str(o, 'title', path), topics };
+  return { id, title: str(o, 'title', path), short: str(o, 'short', path), topics };
 }
 
 function topics(input: unknown, language: string): SiteTopics {

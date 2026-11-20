@@ -101,6 +101,8 @@ test('an unknown address still gets the app page, with no canonical of another p
 });
 
 test('the static page of a lesson boots the app at the place in its address', async ({ page }) => {
+  // UI2: the lesson would play by itself and leave step 2; less motion opens it paused.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   const lesson = built('K1', 'en');
   await page.goto('/en/lesson/K1#step-2-defence');
   await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'K1');

@@ -368,3 +368,121 @@ describe('the real-time driver follows the player (K17)', () => {
     expect(manual).toBe(1);
   });
 });
+
+// UI2: a lesson that opens starts playing by itself from its current step — the first lesson of
+// the page, and every change of lesson after it (the panel, the address, Back and Forward). The
+// e2e build and the tests turn it off; `prefers-reduced-motion: reduce` keeps the lesson paused.
+describe('autoplay of a lesson that opens (UI2)', () => {
+  it('is off unless asked for: the lesson loads paused', () => {
+    expect(player(loaded()).playing).toBe(false);
+  });
+
+  it('the first lesson of the page plays from step 1 once its steps are known', () => {
+    const app = createApp({ autoplay: true });
+    app.clock.set(40);
+    expect(player(app).playing).toBe(false);
+    app.lessonLoaded('I1', I1);
+    expect(player(app)).toMatchObject({ step: 1, playing: true, startedMs: 40 });
+    app.clock.tick(stepDurationMs(1));
+    expect(player(app)).toMatchObject({ step: 2, playing: true });
+  });
+
+  it('a deep-linked step plays from that step, in its mode, from the moment it loads', () => {
+    const app = createApp({ autoplay: true });
+    app.registry.run('lesson.open', { id: 'B1' });
+    app.registry.run('defence.set', { on: true });
+    app.registry.run('player.goto', { step: 3 });
+    app.clock.set(5000);
+    app.lessonLoaded('B1', { without: 5, with: 6 });
+    expect(player(app)).toMatchObject({ step: 3, defence: true, playing: true, startedMs: 5000 });
+  });
+
+  it('every change of lesson plays again, even after a pause', () => {
+    const app = createApp({ autoplay: true });
+    app.lessonLoaded('I1', I1);
+    app.registry.run('player.pause');
+    app.registry.run('lesson.open', { id: 'B1' });
+    expect(player(app).playing).toBe(false);
+    app.lessonLoaded('B1', { without: 5, with: 5 });
+    expect(player(app)).toMatchObject({ step: 1, playing: true });
+    // The open lesson opened again: its steps are known, it plays at once.
+    app.registry.run('player.goto', { step: 4 });
+    app.registry.run('lesson.open', { id: 'B1' });
+    expect(player(app)).toMatchObject({ step: 1, playing: true });
+  });
+
+  it('loading the same lesson again (another language) keeps the pause of the reader', () => {
+    const app = createApp({ autoplay: true });
+    app.lessonLoaded('I1', I1);
+    app.registry.run('player.pause');
+    app.lessonLoaded('I1', I1);
+    expect(player(app).playing).toBe(false);
+  });
+
+  it('a step or the defence mode chosen by hand stops it, as before', () => {
+    const app = createApp({ autoplay: true });
+    app.lessonLoaded('I1', I1);
+    app.registry.run('player.step');
+    expect(player(app)).toMatchObject({ step: 2, playing: false });
+    app.registry.run('player.play');
+    app.registry.run('defence.toggle');
+    expect(player(app)).toMatchObject({ defence: true, playing: false });
+  });
+
+  it('plays to the end of the lesson and stops there', () => {
+    const app = createApp({ autoplay: true });
+    app.clock.set(0);
+    app.lessonLoaded('I1', I1);
+    app.clock.tick(4 * stepDurationMs(1));
+    expect(player(app)).toMatchObject({ step: 5, playing: true });
+    app.clock.tick(TRAVEL_MS);
+    expect(player(app)).toMatchObject({ step: 5, playing: false });
+  });
+
+  it('not with reduced motion: the lesson stays paused, Play still plays', () => {
+    let reduced = true;
+    const app = createApp({ autoplay: true, reducedMotion: () => reduced });
+    app.lessonLoaded('I1', I1);
+    expect(player(app).playing).toBe(false);
+    app.registry.run('player.play');
+    expect(player(app).playing).toBe(true);
+    // Asked when a lesson opens, not once: the reader may change the setting.
+    reduced = false;
+    app.registry.run('lesson.open', { id: 'B1' });
+    app.lessonLoaded('B1', { without: 5, with: 5 });
+    expect(player(app).playing).toBe(true);
+  });
+
+  it('player.autoplay turns it on and off (the control channel of the e2e build)', () => {
+    const app = createApp();
+    expect(app.registry.run('player.autoplay', { on: true })).toEqual({ ok: true });
+    app.registry.run('lesson.open', { id: 'B1' });
+    app.lessonLoaded('B1', { without: 5, with: 5 });
+    expect(player(app).playing).toBe(true);
+    app.registry.run('player.autoplay', { on: false });
+    app.registry.run('lesson.open', { id: 'C1' });
+    app.lessonLoaded('C1', { without: 5, with: 5 });
+    expect(player(app).playing).toBe(false);
+    expect(app.registry.run('player.autoplay', { on: 'yes' })).toMatchObject({
+      ok: false,
+      error: { code: 'invalid-params' },
+    });
+  });
+
+  it('a lesson that never loads does not play and asks for no time', () => {
+    const asked: boolean[] = [];
+    const app = createApp({ autoplay: true, onTimeNeeded: (n) => asked.push(n) });
+    app.registry.run('lesson.open', { id: 'Z999' });
+    expect(player(app).playing).toBe(false);
+    expect(asked).toEqual([]);
+  });
+
+  it('asks the real-time driver for time when it starts', () => {
+    const asked: boolean[] = [];
+    const app = createApp({ autoplay: true, onTimeNeeded: (n) => asked.push(n) });
+    app.lessonLoaded('I1', I1);
+    expect(asked).toEqual([true]);
+    app.clock.tick(TRAVEL_MS);
+    expect(asked).toEqual([true]);
+  });
+});

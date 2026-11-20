@@ -216,6 +216,10 @@ test.describe('S6: the keyboard', () => {
 
   test('from a focused button the keys still work and its focus ring stays', async ({ page }) => {
     await freshB1(page);
+    // UI2: the first stop of Tab is now the search of the top bar (the section chips moved into
+    // the lessons column), and a search field keeps its keys; the first button after it is taken.
+    await page.keyboard.press('Tab');
+    await expect(page.getByTestId('lesson-search')).toBeFocused();
     await page.keyboard.press('Tab');
     const focused = page.locator(':focus');
     await expect(focused).toHaveCount(1);
@@ -464,3 +468,25 @@ for (const viewport of [
     });
   });
 }
+
+// UI2: the e2e build opens lessons paused so the clock stays in the hands of the tests; with
+// `player.autoplay` a lesson that opens plays by the player clock, step by step, deterministically.
+test('player.autoplay: a lesson that opens plays from its step by the player clock', async ({
+  page,
+}) => {
+  await openApp(page, '/ru/lesson/B1');
+  await expect(page.getByTestId('player-status')).toHaveText('Шаг 1 из 5');
+  expect(await player(page)).toMatchObject({ step: 1, playing: false });
+  await run(page, 'clock.set', { ms: 0 });
+  await run(page, 'player.autoplay', { on: true });
+  await run(page, 'lesson.open', { id: 'C1' });
+  await expect(page.getByTestId('player-play')).toHaveAttribute('data-playing', 'true');
+  expect(await player(page)).toMatchObject({ step: 1, playing: true, startedMs: 0 });
+  await run(page, 'clock.tick', { ms: STEP_MS });
+  expect(await player(page)).toMatchObject({ step: 2, playing: true });
+  await run(page, 'player.autoplay', { on: false });
+  await run(page, 'lesson.open', { id: 'B1' });
+  await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', 'B1');
+  await expect(page.getByTestId('player-status')).toHaveText('Шаг 1 из 5');
+  expect(await player(page)).toMatchObject({ step: 1, playing: false });
+});

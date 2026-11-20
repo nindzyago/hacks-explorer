@@ -69,36 +69,35 @@ export function readyCount(section: SiteTopicSection): { ready: number; count: n
   return { ready: section.topics.filter((t) => t.ready).length, count: section.topics.length };
 }
 
-export interface SideFilter extends TopicFilter {
-  /** Show the topics still being written too («Все»), not only the ready lessons («Готовые»). */
-  readonly all: boolean;
-}
-
-export interface SideList {
-  /** Ready lessons that match, in catalog order. */
+export interface SideGroup {
+  readonly section: SiteTopicSection;
+  /** Ready lessons of the section that match, in catalog order. */
   readonly ready: readonly SiteTopic[];
-  /**
-   * Topics still being written that match, after the ready ones (M6, design §2): with «Все», or
-   * whenever the reader searches, so a search finds a topic that is not ready yet.
-   */
+  /** Topics still being written that match, after the ready ones, in catalog order. */
   readonly soon: readonly SiteTopic[];
-  /** The counts on the chips: ready lessons and all topics of the chosen section(s). */
+  /** «готово N из M» of the whole section, whatever the search. */
   readonly readyCount: number;
-  readonly allCount: number;
+  readonly count: number;
 }
 
-/** The lessons list of the left panel (M6): ready lessons first, the rest at the end. */
-export function sideList(sections: readonly SiteTopicSection[], filter: SideFilter): SideList {
-  const inSection = sections.filter((s) => filter.section === null || s.id === filter.section);
-  const searching = queryWords(filter.query).length > 0;
-  const found = filterTopics(inSection, { query: filter.query, section: null }).flatMap(
-    (f) => f.topics,
-  );
-  const topics = inSection.flatMap((s) => s.topics);
-  return {
-    ready: found.filter((t) => t.ready),
-    soon: filter.all || searching ? found.filter((t) => !t.ready) : [],
-    readyCount: topics.filter((t) => t.ready).length,
-    allCount: topics.length,
-  };
+/**
+ * The lessons column (UI2): the topics grouped by section, A to L. Within a section the ready
+ * lessons come first and the topics still being written after them, each in catalog order; a
+ * section chip keeps one section, a search keeps the matching topics, and a section with nothing
+ * left is left out.
+ */
+export function sideGroups(
+  sections: readonly SiteTopicSection[],
+  filter: TopicFilter,
+): readonly SideGroup[] {
+  return filterTopics(sections, filter).map(({ section, topics }) => {
+    const counts = readyCount(section);
+    return {
+      section,
+      ready: topics.filter((t) => t.ready),
+      soon: topics.filter((t) => !t.ready),
+      readyCount: counts.ready,
+      count: counts.count,
+    };
+  });
 }
