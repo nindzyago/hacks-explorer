@@ -147,9 +147,11 @@ test('sitemap.xml is valid XML with every page in every language and its alterna
   }, xml);
   expect(read.error).toBe(0);
   expect(read.root).toBe('http://www.sitemaps.org/schemas/sitemap/0.9 urlset');
-  // Every shipped lesson and «About», in Russian and English.
-  const pages =
-    readdirSync(join('dist', 'data', 'lessons')).filter((n) => n.endsWith('.json')).length + 2;
+  // Every lesson in content/lessons and «About», in Russian and English.
+  const lessonCount = readdirSync(join('content', 'lessons'), { withFileTypes: true }).filter((d) =>
+    d.isDirectory(),
+  ).length;
+  const pages = (lessonCount + 1) * 2;
   expect(read.urls).toHaveLength(pages);
   const locs = read.urls.map((u) => u.loc);
   expect(new Set(locs).size).toBe(pages);
