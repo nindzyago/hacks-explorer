@@ -7,8 +7,9 @@
 //     the glossary as an index `data/glossary/<lang>.json` plus chunks of definitions
 //     `data/glossary/<lang>.<hash>.json` (CI3), and `data/topics/<lang>.json` (M2.1b: every topic of the site,
 //     ready or not, for the lessons panel) per site language;
-//   - `vite` (dev): serves the same files from memory, built afresh on each request; a broken
-//     lesson answers 500 with the messages, the dev server keeps running.
+//   - `vite` (dev): serves the same files from memory, read afresh on each request and built
+//     again when a file changed (CI6); a broken lesson answers 500 with the messages, the dev
+//     server keeps running.
 // The site fetches these files (src/services/catalog) and never parses Markdown (K31).
 // The interface strings of the site languages are a module, `virtual:site-locales` (K105): a few
 // KB, needed before the first paint, so they are bundled rather than fetched.
@@ -268,7 +269,16 @@ export interface LessonDataOptions {
 
 export function lessonData(options: LessonDataOptions = {}): Plugin {
   const read = () => readContent(options.contentRoot);
-  const build = (): LessonDataResult => buildLessonData(read());
+  // The dev server asks for the data on every request (a page load is several), and building
+  // all lessons takes time in proportion to their number (CI6, K135): the files are read each
+  // time, and built again only when one of them changed.
+  let last: { readonly key: string; readonly result: LessonDataResult } | null = null;
+  const build = (): LessonDataResult => {
+    const content = read();
+    const key = JSON.stringify(content);
+    if (last?.key !== key) last = { key, result: buildLessonData(content) };
+    return last.result;
+  };
   let built: readonly DataFile[] = [];
   let locales: SiteLocalesData | null = null;
   let command: 'build' | 'serve' = 'build';
