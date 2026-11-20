@@ -2,8 +2,8 @@
 
 > Updated: 2026-11-19 by Claude (craftspec orchestrate)
 
-**Current milestone:** выпуск 0.1 на https://hacks.antipic.com (M3, M4 готовы); ждёт приёмки владельца
-**Next task:** приёмка 0.1 владельцем; решения до открытия репозитория (G10 лицензия иконок, контакт CoC/SECURITY, ветка `release` в Cloudflare); затем M5
+**Current milestone:** M6 — чертёжный интерфейс, вариант A
+**Next task:** M6.1 оболочка, M6.2 «Последовательность»
 **Blockers (need a human):** нет. Сайт: https://hacks.antipic.com · черновик: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -16,6 +16,7 @@
 | M2 | Оболочка: панель уроков, языки, глубина, телефон | done, принят владельцем 2026-11-19 | 10 / 10 |
 | M3 | Первый выпуск: 10 уроков (K120) | done 2026-11-19 (браузерные тесты на все уроки — G18) | 10 / 10 |
 | M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | done 2026-11-19, Release v0.1.1 | 7 / 7 |
+| M6 | Чертёжный интерфейс, вариант A (K129) | in progress | 0 / 2 |
 | M5 | Остальные уроки (65) | not started | 0 / 17 |
 
 ## Designs
@@ -25,6 +26,7 @@
 | M1.1 Формат урока в Markdown | r2 | built 2026-11-18 (M1.1a–c) | https://claude.ai/artifact/Pert7Z6UKR1yd73v9vQukp · `plan/designs/M1.1.md` | 1a0a99f69726… |
 | M1.2 Сцена | r2 | built 2026-11-18 (M1.2a–d) | https://claude.ai/artifact/2TTAMfjL1v9Y3CLMrKXc7Q · `plan/designs/M1.2.md` | 744c2b1b8b61… |
 | M2.1 Один экран и панель уроков | r1 | built 2026-11-19 (M2.1a–b) | https://claude.ai/artifact/EVskVTmiKxSKJuqEGP2xJq · `plan/designs/M2.1.md` | 3d8120473027… |
+| M6 Чертёжный интерфейс | r1 | approved 2026-11-20 r1 (чат) | https://claude.ai/artifact/T1rQpowFaTSwEMWwMiHq4M · `plan/designs/M6.md` | — |
 | M2.3 Языки | r2 | built 2026-11-19 (M2.3a–b) | https://claude.ai/artifact/47Hamqgnwd7Wfwi2WMowd4 · `plan/designs/M2.3.md` | 30c72746110c… |
 
 
