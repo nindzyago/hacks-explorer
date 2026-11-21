@@ -408,3 +408,64 @@ Gadgets are classes the program and its libraries already have: the attacker bri
 their own, but sends data that lines up those classes in the right order, and the last step may,
 for example, start a command. New chains keep being found, so blocking known classes alone is not
 enough.
+
+## `web-cache` Web cache
+
+`category` web · `see` cache-key, web-server · `lessons` E2
+
+Forms: web cache, web caches, shared cache, shared caches
+
+An intermediate server that remembers a site's responses and hands them to the next visitors
+itself, without asking the site's server. A shared cache sits in front of the site or in a content
+delivery network and serves one copy to many people, so a spoiled copy reaches many people too.
+
+## `cache-key` Cache key
+
+`category` web · `see` web-cache · `lessons` E2
+
+Forms: cache key, cache keys
+
+What a cache uses to recognise that it has seen a request before and has a stored response for it.
+Under RFC 9111 that is at least the request method and target URI; request headers are added to
+the key through the `Vary` response header. Parts of the request that change the response but stay
+out of the key open the way to cache poisoning.
+
+## `host-header` Host header
+
+`category` web · `see` web-server, domain · `lessons` E3
+
+Forms: Host header, Host headers
+
+The HTTP request line with the site name and port, for example `Host: shop.example`. It tells one
+server which of its sites to show. The client writes it, so it must not be trusted when building
+links: the site address for links comes from settings.
+
+## `race-condition` Race condition
+
+`category` web · `see` database · `lessons` E4
+
+Forms: race condition, race conditions
+
+A bug where the result depends on which of several parallel operations gets there first. A common
+kind sits between a check and an action (TOCTOU, CWE-367): while one operation has checked a
+condition, another manages to change it. The general class is CWE-362.
+
+## `prototype` Prototype
+
+`category` web · `see` prototype-pollution · `lessons` E5
+
+Forms: prototype, prototypes
+
+In JavaScript, an object another object inherits properties from: if the object itself lacks a
+field, the language looks in its prototype, then in the prototype's prototype. Almost all ordinary
+objects share the prototype `Object.prototype`.
+
+## `prototype-pollution` Prototype pollution
+
+`category` web · `see` prototype, privilege-escalation · `lessons` E5
+
+Forms: prototype pollution
+
+An attack on JavaScript programs: visitor data with a key like `__proto__` writes a property into
+the shared prototype, and it shows up on every object in the program. The weakness class is
+CWE-1321.
