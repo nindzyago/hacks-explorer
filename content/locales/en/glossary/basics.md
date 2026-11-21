@@ -41,7 +41,7 @@ That is why passwords are stored so that a leaked copy gives away little.
 
 ## `logging` Log
 
-`category` basics · `see` jndi, rce · `lessons` K1
+`category` basics · `see` jndi, rce · `lessons` K1, G5
 
 Forms: log, logs, logging, logging library
 
@@ -119,7 +119,7 @@ and services work when needed. Almost every attack hits at least one of them.
 
 ## `attack-surface` Attack surface
 
-`category` basics · `see` trust-boundary, least-privilege · `lessons` A7
+`category` basics · `see` trust-boundary, least-privilege · `lessons` A7, G5
 
 Forms: attack surface, attack surfaces
 

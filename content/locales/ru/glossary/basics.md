@@ -40,7 +40,7 @@
 
 ## `logging` Журнал
 
-`category` basics · `see` jndi, rce · `lessons` K1
+`category` basics · `see` jndi, rce · `lessons` K1, G5
 
 Формы: журнал, журнала, журналу, журнале, журналом, журналы, журналов, журналах, журналам
 
@@ -117,7 +117,7 @@
 
 ## `attack-surface` Поверхность атаки
 
-`category` basics · `see` trust-boundary, least-privilege · `lessons` A7
+`category` basics · `see` trust-boundary, least-privilege · `lessons` A7, G5
 
 Формы: поверхность атаки, поверхности атаки, поверхностью атаки
 

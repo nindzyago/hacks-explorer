@@ -4,7 +4,7 @@
 
 ## `mitm` Man in the middle
 
-`category` network · `see` arp, tls, attacker · `lessons` G1
+`category` network · `see` arp, tls, attacker · `lessons` G1, G2, G3
 
 Forms: man in the middle, man-in-the-middle, MITM, adversary in the middle, adversary-in-the-middle
 
@@ -34,7 +34,7 @@ does not check who answers, so a fake reply can pass the attacker off as the rou
 
 ## `tls` TLS
 
-`category` network · `see` certificate, hsts, mitm · `lessons` G1
+`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3
 
 Forms: TLS, HTTPS
 
@@ -54,7 +54,7 @@ by someone it trusts. A certificate says whose site it is, not that the site is 
 
 ## `hsts` HSTS
 
-`category` network · `see` tls, certificate · `lessons` G1
+`category` network · `see` tls, certificate · `lessons` G1, G3
 
 Forms: HSTS, Strict-Transport-Security
 
@@ -73,7 +73,7 @@ server, so an infection of one machine does not spread through the whole company
 
 ## `dos` Denial of service
 
-`category` network · `see` cia-triad · `lessons` A5
+`category` network · `see` cia-triad · `lessons` A5, G4
 
 Forms: denial of service, denial-of-service, DoS, DDoS
 
@@ -101,3 +101,153 @@ A service inside a cloud that tells a virtual machine what machine it is and han
 keys for the cloud. It is reachable only from the machine itself, at a special address. Through
 SSRF the attacker makes the server ask it and takes the keys; in MITRE ATT&CK this is
 sub-technique T1552.005.
+
+## `dns` DNS
+
+`category` network · `see` dns-resolver, dns-poisoning, domain · `lessons` G2
+
+Forms: DNS, DNS server, DNS servers, DNS query, DNS queries, DNS question, DNS answer, DNS answers
+
+The Domain Name System, the internet's naming system: given a site's name, such as bank.example,
+it returns the site's numeric address. Questions and answers usually travel in a single UDP packet
+each. DNS on its own does not sign answers; DNSSEC adds signatures.
+
+## `dns-resolver` Resolver
+
+`category` network · `see` dns, dns-poisoning · `lessons` G2
+
+Forms: resolver, resolvers
+
+A DNS server that looks up addresses on behalf of clients: it asks other servers and keeps the
+answers in its cache for as long as each answer says. A resolver is usually run by an ISP or a
+company, and thousands of devices use it at once.
+
+## `dns-poisoning` DNS poisoning
+
+`category` network · `see` dns-resolver, dnssec, mitm · `lessons` G2
+
+Forms: DNS poisoning, DNS cache poisoning, cache poisoning, poisoned cache
+
+An attack in which a resolver accepts a forged answer and remembers a wrong address for a site.
+All its clients land on the attacker's server. MITRE CAPEC calls it CAPEC-142 "DNS Cache
+Poisoning". Random query IDs and ports (RFC 5452) and DNSSEC protect against it.
+
+## `dnssec` DNSSEC
+
+`category` network · `see` dns, dns-poisoning · `lessons` G2
+
+Forms: DNSSEC
+
+DNS Security Extensions (RFC 4033): digital signatures on DNS answers. The resolver checks that
+the data came from the zone's owner and was not changed. DNSSEC gives no encryption: it protects
+the authenticity of the answer, not the secrecy of the question.
+
+## `ssl-stripping` SSL stripping
+
+`category` network · `see` hsts, downgrade-attack, mitm · `lessons` G3
+
+Forms: SSL stripping, stripping
+
+An attack by a man in the middle who talks HTTPS to the site but plain HTTP to the victim, and
+changes `https` to `http` in the pages. The encryption is not broken but removed from the stretch
+to the victim. HSTS with the preload list protects against it.
+
+## `downgrade-attack` Downgrade attack
+
+`category` network · `see` ssl-stripping, tls · `lessons` G3
+
+Forms: downgrade attack, downgrade attacks, downgrade, lower the version
+
+An attack in which a man in the middle makes the two sides agree on an older, weaker version of a
+protocol. In MITRE ATT&CK it is technique T1689 "Downgrade Attack". Banning old versions protects
+against it: RFC 7568 bans SSL 3.0, and RFC 8996 bans TLS 1.0 and 1.1.
+
+## `tcp-handshake` TCP handshake
+
+`category` network · `see` syn-flood, port · `lessons` G4, G5
+
+Forms: TCP handshake, three-way handshake, SYN-ACK, SYN-ACKs
+
+The three messages that open a TCP connection (RFC 9293): SYN "I want to connect", SYN-ACK
+"agreed", ACK "confirmed". Until the last one arrives, the connection is half-open and takes a
+place in the server's queue.
+
+## `syn-flood` SYN flood
+
+`category` network · `see` tcp-handshake, syn-cookies, dos · `lessons` G4
+
+Forms: SYN flood, SYN floods
+
+A denial-of-service attack: a stream of SYNs from forged addresses fills the queue of half-open
+connections, and the server stops accepting real clients (RFC 4987). MITRE ATT&CK describes it in
+sub-technique T1499.001 "OS Exhaustion Flood".
+
+## `syn-cookies` SYN cookies
+
+`category` network · `see` syn-flood, tcp-handshake · `lessons` G4
+
+Forms: SYN cookies, SYN cookie
+
+A defence against SYN floods: the server remembers nothing when a SYN arrives and hides what it
+needs in the sequence number of its SYN-ACK reply. It sets aside memory only when the client
+returns the right number in its ACK (RFC 4987).
+
+## `amplification` Amplification
+
+`category` network · `see` ip-spoofing, dos · `lessons` G4
+
+Forms: amplification, reflection, reflection attack, reflection attacks, reflected flood
+
+A reflected denial-of-service attack: the attacker sends servers short questions carrying the
+victim's address instead of his own, and the big answers fly to the victim. According to CISA, DNS
+amplifies traffic 28–54 times and NTP about 557 times. In MITRE ATT&CK it is sub-technique
+T1498.002.
+
+## `ip-spoofing` Source address spoofing
+
+`category` network · `see` amplification, syn-flood · `lessons` G4
+
+Forms: forged address, forged addresses, spoofed address, spoofed addresses, address spoofing, IP spoofing
+
+A packet that carries someone else's address instead of the real sender's. SYN floods and
+reflection attacks rely on it. An ISP can drop such packets where they enter its network: this is
+filtering under RFC 2827 (BCP 38).
+
+## `port` Port
+
+`category` network · `see` port-scan, firewall · `lessons` G5
+
+Forms: port, ports
+
+A number from 0 to 65,535 that a computer uses to tell its network services apart: the address
+points to the machine, the port to a program on it. Under RFC 6335, ports 0–1023 are called System
+Ports; by tradition, well-known services live there.
+
+## `port-scan` Port scanning
+
+`category` network · `see` port, firewall, banner · `lessons` G5
+
+Forms: port scanning, port scan, port scans, scanning, scan
+
+Reconnaissance: the attacker knocks on a server's ports in turn and builds a map of open services
+from the answers. MITRE CAPEC calls it CAPEC-300 "Port Scanning"; in MITRE ATT&CK it falls under
+techniques T1595 "Active Scanning" and T1046 "Network Service Discovery".
+
+## `firewall` Firewall
+
+`category` network · `see` port, port-scan, network-segmentation · `lessons` G5
+
+Forms: firewall, firewalls
+
+A device or program that decides which network traffic to let through and which to drop. The
+reliable rule is deny by default: let through only what is expressly permitted (NIST SP 800-41).
+
+## `banner` Banner
+
+`category` network · `see` port-scan, vulnerability · `lessons` G5
+
+Forms: banner, banners
+
+The greeting a network service sends when someone connects. It often contains the program's name
+and version, and from the version an attacker looks up known vulnerabilities. That is why it is
+better to remove the version from the banner.
