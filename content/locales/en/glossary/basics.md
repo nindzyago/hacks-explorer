@@ -145,3 +145,42 @@ Forms: threat model, threat models, threat modeling, threat modelling
 An analysis of a system before any attack: a diagram of data flows and trust boundaries,
 then the question "what can go wrong" for each part. It finds weak spots while they are
 cheaper to fix.
+
+## `buffer-overflow` Buffer overflow
+
+`category` basics · `see` stack-canary, aslr, dep, rce · `lessons` H1
+
+Forms: buffer overflow, buffer overflows, overflow, overflows
+
+A bug where a program writes data past the end of the memory slot set aside for it and damages
+the data next to it. On the stack this overwrites the return address and makes the program run
+foreign code (CWE-121). Languages that check bounds by themselves are protected from it.
+
+## `stack-canary` Stack canary
+
+`category` basics · `see` buffer-overflow · `lessons` H1
+
+Forms: stack canary, stack canaries, canary, canaries
+
+A random value the compiler places on the stack before the return address. Before returning,
+the function checks it: if the value is damaged, there was an overflow, and the program stops.
+It does not catch every overflow.
+
+## `aslr` ASLR
+
+`category` basics · `see` buffer-overflow, dep · `lessons` H1
+
+Forms: ASLR
+
+Address Space Layout Randomization: on every run the system places the program and its
+libraries at random addresses, so the attacker struggles to guess where to send the processor.
+It can be bypassed if the program leaks its addresses.
+
+## `dep` DEP
+
+`category` basics · `see` buffer-overflow, aslr · `lessons` H1
+
+Forms: DEP
+
+Data Execution Prevention: memory for data is marked non-executable, and the processor refuses
+to run code from it, so code sent along with the data will not run by itself.
