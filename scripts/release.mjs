@@ -8,6 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkGateShards } from './e2e-shards.mjs';
 
 export const TAG = /^v(\d+)\.(\d+)\.(\d+)$/;
 
@@ -62,6 +63,7 @@ export function checkReleaseWorkflow(text) {
     problems.push('job gate must install with npm ci and run npm run gate');
   }
   if (/contents:\s*write/.test(gate)) problems.push('job gate must not write');
+  problems.push(...checkGateShards(gate));
   if (!/^ {4}needs:\s*gate\s*$/m.test(release)) problems.push('job release must need gate');
   if (!/\bgh release create\b[^\n]*--verify-tag/.test(release)) {
     problems.push('job release must create the GitHub Release of the existing tag');

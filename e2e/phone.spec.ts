@@ -61,9 +61,10 @@ async function textSizes(page: Page): Promise<{ text: string; size: number }[]> 
 
 // M1.2d: the narrow Android phones too (360 px is very common), with every label and address
 // whole: no «…» anywhere on the scene, the message's label included.
+// CI7: every step of every lesson at the two ends, 390 and 360; 375 lies between them and
+// gets the checks of the scene as it opens (scene.spec.ts) and the step-3 screenshots below.
 for (const phone of [
   { width: 390, height: 844 },
-  { width: 375, height: 812 },
   { width: 360, height: 800 },
 ] as const) {
   test.describe(`S10 at ${String(phone.width)}×${String(phone.height)}`, () => {

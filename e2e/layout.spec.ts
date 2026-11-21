@@ -248,97 +248,101 @@ test.describe('at 1024 the lessons are behind «☰ Уроки»', () => {
 });
 
 // One screen (design §2) on every lesson in both languages: the page does not scroll, the panels
-// stand where the design puts them.
-for (const viewport of [
+// stand where the design puts them; a phone has one column. CI7: one test per lesson and
+// language, each with its own timeout, run in parallel; the page is loaded once and resized
+// through the five sizes (the layout is CSS and follows the window) instead of ten loads.
+const DESKTOPS = [
   { width: 1024, height: 768 },
   { width: 1280, height: 720 },
   { width: 1440, height: 900 },
-] as const) {
-  test.describe(`the screen at ${String(viewport.width)}×${String(viewport.height)}`, () => {
-    test.use({ viewport });
-
-    for (const lang of LANGS) {
-      test(`${lang}: every lesson is one screen in three columns`, async ({ page }) => {
-        for (const lesson of LESSONS) {
-          await openApp(page, `/${lang}/lesson/${lesson}`);
-          await run(page, 'player.goto', { step: 3 });
-          await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS);
-          const where = `${lang} ${lesson}`;
-          const m = await page.evaluate(() => ({
-            height: document.documentElement.scrollHeight,
-            width: document.documentElement.scrollWidth,
-          }));
-          expect(m.height, where).toBeLessThanOrEqual(viewport.height);
-          expect(m.width, where).toBeLessThanOrEqual(viewport.width);
-          const [top, scene, explain, log] = await Promise.all([
-            box(page, 'topbar'),
-            box(page, 'scene-panel'),
-            box(page, 'explain'),
-            box(page, 'log'),
-          ]);
-          expect(scene.y, where).toBeGreaterThanOrEqual(top.y + top.height);
-          expect(explain.x, where).toBeGreaterThanOrEqual(scene.x + scene.width);
-          expect(log.y, where).toBeGreaterThanOrEqual(scene.y + scene.height);
-          // «Ход атаки» runs under the scene and the explanation.
-          expect(Math.abs(log.x - scene.x), where).toBeLessThan(2);
-          expect(Math.abs(log.x + log.width - (explain.x + explain.width)), where).toBeLessThan(2);
-          expect(log.y + log.height, where).toBeLessThanOrEqual(viewport.height);
-          // The player stands in the head of «Ход атаки».
-          const player = await box(page, 'player');
-          expect(player.y, where).toBeGreaterThanOrEqual(log.y);
-          expect(player.y + player.height, where).toBeLessThanOrEqual(log.y + 80);
-          // The defence switch stands in the head of the scene panel.
-          const toggle = await box(page, 'defence-toggle');
-          expect(toggle.y, where).toBeGreaterThanOrEqual(scene.y);
-          expect(toggle.y + toggle.height, where).toBeLessThanOrEqual(scene.y + 80);
-          await expect(page.getByTestId('lessons-panel')).toHaveCount(
-            viewport.width >= 1280 ? 1 : 0,
-          );
-        }
-      });
-    }
-  });
-}
-
-for (const phone of [
+] as const;
+const PHONES = [
   { width: 390, height: 844 },
   { width: 360, height: 800 },
-] as const) {
-  test.describe(`a phone at ${String(phone.width)}×${String(phone.height)}`, () => {
-    test.use({ viewport: phone });
+] as const;
 
+async function threeColumns(page: Page, viewport: (typeof DESKTOPS)[number], where: string) {
+  const m = await page.evaluate(() => ({
+    height: document.documentElement.scrollHeight,
+    width: document.documentElement.scrollWidth,
+  }));
+  expect(m.height, where).toBeLessThanOrEqual(viewport.height);
+  expect(m.width, where).toBeLessThanOrEqual(viewport.width);
+  const [top, scene, explain, log] = await Promise.all([
+    box(page, 'topbar'),
+    box(page, 'scene-panel'),
+    box(page, 'explain'),
+    box(page, 'log'),
+  ]);
+  expect(scene.y, where).toBeGreaterThanOrEqual(top.y + top.height);
+  expect(explain.x, where).toBeGreaterThanOrEqual(scene.x + scene.width);
+  expect(log.y, where).toBeGreaterThanOrEqual(scene.y + scene.height);
+  // «Ход атаки» runs under the scene and the explanation.
+  expect(Math.abs(log.x - scene.x), where).toBeLessThan(2);
+  expect(Math.abs(log.x + log.width - (explain.x + explain.width)), where).toBeLessThan(2);
+  expect(log.y + log.height, where).toBeLessThanOrEqual(viewport.height);
+  // The player stands in the head of «Ход атаки».
+  const player = await box(page, 'player');
+  expect(player.y, where).toBeGreaterThanOrEqual(log.y);
+  expect(player.y + player.height, where).toBeLessThanOrEqual(log.y + 80);
+  // The defence switch stands in the head of the scene panel.
+  const toggle = await box(page, 'defence-toggle');
+  expect(toggle.y, where).toBeGreaterThanOrEqual(scene.y);
+  expect(toggle.y + toggle.height, where).toBeLessThanOrEqual(scene.y + 80);
+}
+
+async function oneColumn(page: Page, phone: (typeof PHONES)[number], where: string) {
+  const [top, scene, player, explain, log] = await Promise.all([
+    box(page, 'topbar'),
+    box(page, 'scene-panel'),
+    box(page, 'player'),
+    box(page, 'explain'),
+    box(page, 'log'),
+  ]);
+  expect(scene.y, where).toBeGreaterThanOrEqual(top.y + top.height);
+  expect(player.y, where).toBeGreaterThanOrEqual(scene.y + scene.height);
+  expect(explain.y, where).toBeGreaterThanOrEqual(player.y + player.height);
+  expect(log.y, where).toBeGreaterThanOrEqual(explain.y + explain.height);
+  for (const b of [scene, explain, log]) {
+    expect(b.width, where).toBeGreaterThan(phone.width * 0.85);
+  }
+  const sideways = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(sideways, where).toBeLessThanOrEqual(0);
+}
+
+test.describe('every lesson: one screen in three columns on a laptop, one column on a phone', () => {
+  for (const lesson of LESSONS) {
     for (const lang of LANGS) {
-      test(`${lang}: every lesson is one column — scene, player, explanation, log`, async ({
+      test(`${lang} ${lesson}: three columns at 1024, 1280 and 1440; one column at 390 and 360`, async ({
         page,
       }) => {
-        for (const lesson of LESSONS) {
-          await openApp(page, `/${lang}/lesson/${lesson}`);
-          const where = `${lang} ${lesson}`;
-          const [top, scene, player, explain, log] = await Promise.all([
-            box(page, 'topbar'),
-            box(page, 'scene-panel'),
-            box(page, 'player'),
-            box(page, 'explain'),
-            box(page, 'log'),
-          ]);
-          expect(scene.y, where).toBeGreaterThanOrEqual(top.y + top.height);
-          expect(player.y, where).toBeGreaterThanOrEqual(scene.y + scene.height);
-          expect(explain.y, where).toBeGreaterThanOrEqual(player.y + player.height);
-          expect(log.y, where).toBeGreaterThanOrEqual(explain.y + explain.height);
-          for (const b of [scene, explain, log]) {
-            expect(b.width, where).toBeGreaterThan(phone.width * 0.85);
-          }
-          const sideways = await page.evaluate(
-            () => document.documentElement.scrollWidth - window.innerWidth,
+        await page.setViewportSize(DESKTOPS[0]);
+        await openApp(page, `/${lang}/lesson/${lesson}`);
+        await run(page, 'player.goto', { step: 3 });
+        await page.evaluate((ms) => window.__app?.clock.tick(ms), TRAVEL_MS);
+        for (const viewport of DESKTOPS) {
+          await page.setViewportSize(viewport);
+          const where = `${lang} ${lesson} at ${String(viewport.width)}`;
+          await expect(page.getByTestId('lessons-panel'), where).toHaveCount(
+            viewport.width >= 1280 ? 1 : 0,
           );
-          expect(sideways, where).toBeLessThanOrEqual(0);
-          await expect(page.getByTestId('lessons-panel')).toHaveCount(0);
-          await expect(page.getByTestId('open-lessons')).toBeVisible();
+          await threeColumns(page, viewport, where);
+        }
+        // On a phone the lesson is checked as it opens, on its first step.
+        await run(page, 'player.goto', { step: 1 });
+        for (const phone of PHONES) {
+          await page.setViewportSize(phone);
+          const where = `${lang} ${lesson} at ${String(phone.width)}`;
+          await expect(page.getByTestId('lessons-panel'), where).toHaveCount(0);
+          await expect(page.getByTestId('open-lessons'), where).toBeVisible();
+          await oneColumn(page, phone, where);
         }
       });
     }
-  });
-}
+  }
+});
 
 // Screenshots for a look against the mock-up (M61_SHOTS): B1, K1 and «О проекте».
 for (const size of [
