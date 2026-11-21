@@ -82,23 +82,23 @@ opened under another name, I'll build links from that one” — and **trusts** 
 #### Step by step
 
 A header like this is usually set by a proxy in front of the server, to say which site name the
-visitor typed. The news.example server takes the domain for its script address from it. The
-server cannot tell whether its own proxy set the header or a visitor sent it.
+visitor typed. The news.example server takes the domain for its script address from it. From
+the header alone the server cannot tell whether its own proxy set it or a visitor sent it.
 
 #### Deeper
 
 According to MDN, `X-Forwarded-Host` is a de facto standard that is not part of any specification;
 the standard replacement is the `Forwarded` header from RFC 7239. RFC 7239 itself warns that any
-node on the path, the client included, may change such a header, so it cannot be relied upon.
+node on the path, the client included, may change such a header, so it cannot be relied upon
+(section 8.1).
 
 ### `reflect` A response with the attacker's script lands in the cache
 
 `server → cache` · `attack` · `without-defence`
 Message: news page · Result: stored in the cache for 5 minutes
 
-```html
+```text
 Cache-Control: max-age=300
-
 <script src="https://⟦evil.example⟧/app.js"></script>
 ```
 
@@ -186,8 +186,9 @@ visitor sends, the links point to news.example. This is where the attack stops.
 
 #### Step by step
 
-The site address is written once in the configuration. The server uses `X-Forwarded-Host` only if
-its own proxy set it and the value is on the list of allowed names; otherwise it drops it.
+The site address is written once in the configuration. The server takes `X-Forwarded-Host` only
+from its own proxy, which overwrites whatever the visitor sent, and only if the value is on the
+list of allowed names; otherwise it ignores it.
 
 #### Deeper
 

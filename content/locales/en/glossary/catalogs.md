@@ -4,7 +4,7 @@
 
 ## `cwe` CWE
 
-`category` catalogs · `see` cve, owasp · `lessons` B1
+`category` catalogs · `see` cve, owasp · `lessons` B1, A6
 
 Forms: CWE
 
@@ -34,7 +34,7 @@ availability.
 
 ## `owasp` OWASP
 
-`category` catalogs · `see` cwe, injection · `lessons` B1
+`category` catalogs · `see` cwe, injection · `lessons` B1, A6
 
 Forms: OWASP, OWASP Top 10
 
@@ -44,7 +44,7 @@ edition, which the lessons refer to, injection is A03. A new edition came out in
 
 ## `mitre-attack` MITRE ATT&CK
 
-`category` catalogs · `see` phishing, cwe · `lessons` I1
+`category` catalogs · `see` phishing, cwe · `lessons` I1, A8
 
 Forms: MITRE ATT&CK, ATT&CK
 
@@ -88,3 +88,13 @@ Forms: EPSS
 
 Exploit Prediction Scoring System, a FIRST model that every day gives each CVE a probability from
 0 to 1 that it will be exploited in attacks within the next 30 days.
+
+## `attack-tactic` ATT&CK tactic
+
+`category` catalogs · `see` mitre-attack · `lessons` A8
+
+Forms: tactic, tactics
+
+The goal of an attack step in MITRE ATT&CK, its "why": reconnaissance, initial access,
+execution, persistence and so on up to impact. A technique is "how" the goal is reached.
+Tactics line up into an attack chain.

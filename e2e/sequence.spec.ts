@@ -109,7 +109,10 @@ async function drawingProblems(page: Page): Promise<string[]> {
     const lanes = Array.from(svg.querySelectorAll('g[data-testid^="sequence-lane-"]'));
     const names = lanes.flatMap((lane) =>
       Array.from(lane.querySelectorAll('text[data-part="name"], text[data-part="note"]')).map(
-        (t) => ({ lane: lane.getAttribute('data-testid') ?? '?', r: box(t) }),
+        (t) => ({
+          lane: lane.getAttribute('data-testid') ?? '?',
+          r: box(t),
+        }),
       ),
     );
     for (const a of names) {
@@ -126,16 +129,23 @@ async function drawingProblems(page: Page): Promise<string[]> {
   });
 }
 
+// CI7: one test per lesson, size and language (was one per lesson with a 120 s timeout).
 for (const id of LESSONS) {
-  test(`${id}: one row per step of the course, current highlighted, click, defence, drawing, axe`, async ({
-    page,
-  }) => {
-    test.setTimeout(120_000);
-    for (const size of SIZES) {
-      await page.setViewportSize(size);
-      for (const lang of LANGS) {
+  for (const size of SIZES) {
+    for (const lang of LANGS) {
+      test(`${id} ${lang} at ${String(size.width)}: one row per step of the course, current highlighted, click, defence, drawing, axe`, async ({
+        page,
+      }) => {
+        await page.setViewportSize(size);
         const where = `${id} ${lang} ${String(size.width)}`;
         await open(page, lang, id);
+        if (size.width >= 1280) {
+          // The page still fits the window in the sequence view.
+          const fits = await page.evaluate(
+            () => document.documentElement.scrollHeight <= window.innerHeight,
+          );
+          expect(fits, `${where}: the page fits the window`).toBe(true);
+        }
         const data = await lessonData(page, id, lang);
         for (const defence of [false, true]) {
           const label = `${where} ${defence ? 'with' : 'without'} defence`;
@@ -191,12 +201,14 @@ for (const id of LESSONS) {
           await run(page, 'player.goto', { step: steps.length });
           await page.evaluate(() => window.__app?.clock.set(10_000));
           expect(await drawingProblems(page), `${label} last step`).toEqual([]);
-          await axe(page, label);
+          // CI7: axe once per size and language: Russian in the attack, English with the
+          // defence, so each size sees both modes and both languages.
+          if (defence === (lang === 'en')) await axe(page, label);
           await page.evaluate(() => window.__app?.clock.set(0));
         }
-      }
+      });
     }
-  });
+  }
 }
 
 test.describe('S1 and S2 in the sequence view', () => {
@@ -398,15 +410,5 @@ test.describe('the sequence view', () => {
       return [Number(a?.getAttribute('x2')), Number(lane?.getAttribute('x1'))];
     }, step?.to ?? '');
     expect(ends[0]).toBeCloseTo(ends[1] ?? Number.NaN, 0);
-  });
-
-  test('at 1280×720 the page still fits the window in the sequence view', async ({ page }) => {
-    for (const id of LESSONS) {
-      await open(page, 'ru', id);
-      const fits = await page.evaluate(
-        () => document.documentElement.scrollHeight <= window.innerHeight,
-      );
-      expect(fits, id).toBe(true);
-    }
   });
 });

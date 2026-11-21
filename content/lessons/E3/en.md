@@ -78,8 +78,8 @@ https://⟦evil.example⟧/reset?token=Q7xK2m
 #### Simple
 
 The shop creates a secret **reset link** for Anna. It takes the site address for the link from
-the Host header — and the result is a link **to the attacker's site**. The email goes to Anna, a
-real one, from the shop.
+the Host header — and the result is a link **to the attacker's site**. The email that reaches
+Anna is genuine and comes from the shop itself.
 
 #### Step by step
 
@@ -90,8 +90,8 @@ front of it is wrong.
 #### Deeper
 
 This is a genuine email from the shop with its own sender address: nothing needs to be forged, the
-shop put someone else's link in it by itself. MITRE has no separate entry for this mistake; the
-closest class is a weak password recovery mechanism, CWE-640.
+shop put someone else's link in it by itself. We found no CWE entry dedicated to this mistake;
+the closest class is a weak password recovery mechanism, CWE-640.
 
 ### `click` Anna clicks the link
 

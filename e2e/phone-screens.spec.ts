@@ -2,7 +2,7 @@
 // 360, 375 and 390 px wide, and on a phone held sideways, in Russian and English, no screen and
 // no state scrolls sideways and nothing sticks out past the right or left edge: every lesson
 // (G18; B1 and I1 before) at the first, middle and last step, in both modes, at every depth, while playing; a glossary
-// definition; the lessons panel (both tabs, a found list, a section, a long query with no result,
+// definition (CI7, K136: every lesson at 360 px and sideways; 375 and 390 by S10); the lessons panel (both tabs, a found list, a section, a long query with no result,
 // a glossary entry); the «no such page» and the load-error pages. A self-test shows the check
 // catches a deliberately broken layout. Screenshots go to PHONE_SHOTS when it names a folder.
 import { copyFileSync, mkdirSync } from 'node:fs';
@@ -24,6 +24,8 @@ const PHONES = [
   { name: '390', width: 390, height: 844 },
   { name: 'landscape', width: 844, height: 390 },
 ] as const;
+/** The phones every lesson is checked at here (CI7). */
+const LESSON_PHONES: ReadonlySet<string> = new Set(['360', 'landscape']);
 
 /** Keeps a screenshot (the whole page, or the window for a panel) when PHONE_SHOTS names a folder. */
 async function keep(page: Page, testInfo: TestInfo, name: string, full = true): Promise<void> {
@@ -125,8 +127,10 @@ for (const phone of PHONES) {
       const at = `${lang} ${phone.name}`;
       const shot = (what: string) => `${what}-${lang}-${phone.name}`;
 
-      // G18: each lesson its own test, its first, middle and last step from its data.
-      for (const lesson of LESSONS) {
+      // G18: each lesson its own test, its first, middle and last step from its data. CI7: at
+      // the narrowest phone (360) and sideways; at 375 and 390 every step and depth of every
+      // lesson is checked for sideways scroll, small and cut text by phone.spec.ts (S10).
+      for (const lesson of LESSON_PHONES.has(phone.name) ? LESSONS : []) {
         test(`${lang} ${lesson}: every mode and depth, first, middle and last step, playing`, async ({
           page,
         }, testInfo) => {

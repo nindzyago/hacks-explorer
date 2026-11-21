@@ -70,3 +70,34 @@ Forms: network segmentation, segmentation
 
 Splitting a network into parts with rules on who may talk to whom. Work computers do not see every
 server, so an infection of one machine does not spread through the whole company.
+
+## `dos` Denial of service
+
+`category` network · `see` cia-triad · `lessons` A5
+
+Forms: denial of service, denial-of-service, DoS, DDoS
+
+An attack on availability: a service is overloaded or broken so that legitimate users
+cannot use it. When the requests come from thousands of addresses at once, it is a
+distributed attack, DDoS.
+
+## `reverse-proxy` Reverse proxy
+
+`category` network · `see` web-server, request-smuggling · `lessons` E1
+
+Forms: reverse proxy, reverse proxies, proxy, proxies
+
+A program in front of a site's servers: it takes requests from the internet and forwards them to
+the servers, often over shared persistent connections. Load balancers and CDNs work this way. The
+proxy and the server must agree on request boundaries, or request smuggling becomes possible.
+
+## `cloud-metadata` Cloud metadata service
+
+`category` network · `see` ssrf, trust-boundary · `lessons` D8
+
+Forms: metadata service, cloud metadata service, cloud metadata
+
+A service inside a cloud that tells a virtual machine what machine it is and hands it temporary
+keys for the cloud. It is reachable only from the machine itself, at a special address. Through
+SSRF the attacker makes the server ask it and takes the keys; in MITRE ATT&CK this is
+sub-technique T1552.005.

@@ -2,6 +2,7 @@
 // `wrangler.jsonc`, `public/_headers`, `index.html`, `.github/workflows/gate.yml`.
 // Every `check…` function takes the file text and returns a list of problems; none of them
 // throws, whatever it is given. Run by `scripts/deploy-config.test.mjs` as part of `npm run gate`.
+import { checkGateShards } from './e2e-shards.mjs';
 
 const REQUIRED_HEADERS = [
   'content-security-policy',
@@ -271,6 +272,7 @@ export function checkCi(text) {
   }
   if (!/\bnpm ci\b/.test(yaml)) problems.push('must install with npm ci');
   if (!/\bnpm run gate\b/.test(yaml)) problems.push('must run npm run gate');
+  problems.push(...checkGateShards(yaml));
   if (/\bsecrets\s*[.[]/.test(yaml)) problems.push('must not use secrets');
   // Every permissions block, at any level, may only read.
   const lines = yaml.split('\n');

@@ -163,8 +163,9 @@ code.
 #### Deeper
 
 CWE-362 recommends atomic operations and synchronization primitives. In a database that means a
-conditional `UPDATE`, a transaction that locks the row, or a `UNIQUE` constraint on the pair “code —
-order” that won't let a second discount be written.
+conditional `UPDATE`, a transaction that locks the row, or a `UNIQUE` constraint on the code in
+the table of redemptions (or on “code — user” for a once-per-user code), which won't let a second
+discount be written.
 
 ### `second` The second handler gets zero rows
 
@@ -184,9 +185,10 @@ is no longer free. It adds no discount. This is where the attack stops.
 
 #### Step by step
 
-Common relational databases run two `UPDATE`s of the same row one after the other: the second
-waits until the first has finished and already sees `used = true`. The condition is false, the row
-doesn't change.
+In common relational databases two `UPDATE`s of the same row run one after the other: the second
+waits until the first transaction commits, then re-checks its condition against the new row and
+sees `used = true` (at stricter isolation levels it gets an error instead, which also adds no
+discount). The condition is false, the row doesn't change.
 
 #### Deeper
 
@@ -217,19 +219,23 @@ simultaneous requests arrive, the code works exactly once.
 
 Against accidental repeats, when a browser or the network sent a request again, an idempotency key
 helps: the server remembers the key and answers a repeat with the earlier result. RFC 9110,
-section 9.2.2: `POST` is not idempotent, a repeat may take effect a second time, so the protection
-belongs on the server.
+section 9.2.2: `POST` is not among the idempotent methods, so a client should not repeat it
+automatically. A repeat can still happen, and only the server can make sure it doesn't count
+twice.
 
 ## How to defend
 
 - **Check and action as one operation.** A conditional `UPDATE … WHERE used = false` with a check of
-  the number of changed rows, a transaction that locks the row, or a `UNIQUE` constraint in the
-  database.
+  the number of changed rows, a transaction that locks the row, or a `UNIQUE` constraint on the
+  code in the table of redemptions (or on “code — user” for a once-per-user code), which won't let
+  a second discount be written.
 - **Guard the shared resource where it is shared.** A lock in one process's memory won't help if
   there are several servers. Protect the data where it lives.
 - **Limits on the server.** How many times a code or bonus can be used, or money withdrawn, is
   decided by the server, not by a button that greys out after a click.
-- **Idempotency key.** For operations with money, a repeat of the same request returns the earlier
-  result instead of running again.
+- **Idempotency key.** For operations with money, a repeat with the same key returns the earlier
+  result instead of running again. It protects against accidental repeats, not against an
+  attacker, who just sends each request with a new key; the key itself must be saved atomically,
+  for example under a `UNIQUE` constraint.
 - **Test concurrency.** Send dozens of identical requests at once to a test copy and check that the
   one-time action happened once.

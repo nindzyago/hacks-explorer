@@ -409,6 +409,118 @@ their own, but sends data that lines up those classes in the right order, and th
 for example, start a command. New chains keep being found, so blocking known classes alone is not
 enough.
 
+## `template-engine` Template engine
+
+`category` web · `see` ssti, web-server · `lessons` B6
+
+Forms: template engine, template engines
+
+A program that builds text from a blank and data: a site page, an email, a document. In the blank
+(the template) special brackets mark the places for data and expressions that the engine
+evaluates while building. Well-known template engines are Jinja2, Twig, FreeMarker and Velocity.
+
+## `ssti` SSTI
+
+`category` web · `see` template-engine, injection, rce, cwe · `lessons` B6
+
+Forms: SSTI, template injection, server-side template injection
+
+Server-side template injection. A visitor's input ends up in the template itself rather than in
+its data, and the template engine evaluates it as an expression. It often leads to running
+commands on the server. The weakness class is CWE-1336.
+
+## `xml-entity` XML entity
+
+`category` web · `see` xxe · `lessons` B7
+
+Forms: XML entity, XML entities, external entity, external entities
+
+A named substitution in an XML document: it is declared at the start of the document, in the DTD,
+and the text writes `&name;`, which the parser replaces with the entity's content. An external
+entity takes its content from the address written after the word `SYSTEM`: a file or the network.
+
+## `xxe` XXE
+
+`category` web · `see` xml-entity, cwe · `lessons` B7
+
+Forms: XXE
+
+XML External Entity, an attack through external XML entities. The document sent declares an
+entity that points to a file on the server or an internal address, and the parser, if allowed,
+reads it and puts it into the document. The weakness class is CWE-611; in OWASP Top 10:2021 it
+belongs to A05 Security Misconfiguration.
+
+## `nosql-injection` NoSQL injection
+
+`category` web · `see` query-operator, injection, database, cwe · `lessons` B8
+
+Forms: NoSQL injection, NoSQL injections
+
+Injection into a query to a database that does not use SQL, for example a document database such
+as MongoDB. Queries there are often built as an object from fields, and if a visitor sends an
+object with an operator instead of a string, the condition of the query changes. The weakness
+class is CWE-943.
+
+## `query-operator` Query operator
+
+`category` web · `see` nosql-injection, query · `lessons` B8
+
+Forms: query operator, query operators
+
+A keyword in a database query that sets a condition instead of an exact value. In MongoDB
+operators start with `$`: `{"$ne": ""}` means “not equal to the empty string”, `$where` is a
+check written in JavaScript.
+
+## `open-redirect` Open redirect
+
+`category` web · `see` phishing, oauth, cwe · `lessons` C7
+
+Forms: open redirect, open redirects, open redirector, open redirectors
+
+An address on a site that sends the browser wherever a link parameter says, without checking
+where. The link looks like a link to a trusted site but leads to someone else's. The weakness
+class is CWE-601.
+
+## `mass-assignment` Mass assignment
+
+`category` web · `see` allowlist, authorization, privilege-escalation · `lessons` D7
+
+Forms: mass assignment
+
+A flaw in which the server copies every field of a request into an object without picking the
+allowed ones. A visitor adds a field that is not in the form, such as an admin flag, and the
+server saves it. Other names are autobinding and object injection; the weakness class is CWE-915.
+
+## `allowlist` Allowlist
+
+`category` web · `see` mass-assignment, ssrf · `lessons` B4, D7, D8
+
+Forms: allowlist, allowlists, allow list, allow lists
+
+A list of what is allowed: fields, addresses, file extensions. Everything else is forbidden by
+default. More reliable than a blocklist: a new dangerous value is easy to forget on a blocklist,
+while an allowlist simply does not let it through.
+
+## `ssrf` SSRF
+
+`category` web · `see` cloud-metadata, allowlist, trust-boundary · `lessons` D8
+
+Forms: SSRF, server-side request forgery
+
+Server-Side Request Forgery: the attacker makes the server send a request to an address of his
+choosing, for example into an internal network that cannot be reached from the internet. The
+weakness class is CWE-918; in the OWASP Top 10:2021 it is item A10:2021.
+
+## `request-smuggling` HTTP request smuggling
+
+`category` web · `see` reverse-proxy, web-server · `lessons` E1
+
+Forms: HTTP request smuggling, request smuggling, smuggling
+
+A proxy and a server disagree on where one request ends, and the attacker hides a second request
+inside the first. The server glues the hidden request to the next one, which belongs to someone
+else. The weakness class is CWE-444.
+
 ## `web-cache` Web cache
 
 `category` web · `see` cache-key, web-server · `lessons` E2
@@ -436,8 +548,8 @@ out of the key open the way to cache poisoning.
 
 Forms: Host header, Host headers
 
-The HTTP request line with the site name and port, for example `Host: shop.example`. It tells one
-server which of its sites to show. The client writes it, so it must not be trusted when building
+The HTTP request header with the site name and, optionally, the port, for example
+`Host: shop.example`. It tells one server which of its sites to show. The client writes it, so it must not be trusted when building
 links: the site address for links comes from settings.
 
 ## `race-condition` Race condition
