@@ -17,7 +17,8 @@
 - [MITRE CWE-89: SQL Injection](https://cwe.mitre.org/data/definitions/89.html)
 - [MITRE CWE-74: Injection](https://cwe.mitre.org/data/definitions/74.html)
 - [MITRE CWE-707: Improper Neutralization](https://cwe.mitre.org/data/definitions/707.html)
-- [MITRE CWE-564: SQL Injection: Hibernate](https://cwe.mitre.org/data/definitions/564.html)
+- [MITRE CWE-564: Use of Hibernate with HQL/SQL Query String Containing External Input](https://cwe.mitre.org/data/definitions/564.html)
+- [MITRE CWE-943: Improper Neutralization of Special Elements in Data Query Logic](https://cwe.mitre.org/data/definitions/943.html)
 - [MITRE: 2025 CWE Top 25 Most Dangerous Software Weaknesses](https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html)
 - [OWASP Top 10:2021, A03 Injection](https://owasp.org/Top10/2021/A03_2021-Injection/)
 - [OWASP Top 10:2025](https://owasp.org/Top10/2025/)
@@ -60,9 +61,9 @@ how to prevent it and changes the rule for all the code.
 
 #### Deeper
 
-A CWE page lists ways to detect and prevent the class. For CWE-89 the main one is the
-parameterized query: data goes to the database separately from the query text. The OWASP SQL
-injection cheat sheet puts it first among the primary defenses.
+A CWE page lists ways to detect and prevent the class. For CWE-89 one of them is
+parameterization: data goes to the database separately from the query text. The OWASP SQL
+injection cheat sheet puts parameterized queries first among the primary defenses.
 
 ### `fix-forum` The same rule in the forum
 
@@ -134,7 +135,7 @@ number: "shop version 1.2, search, SQL injection".
 #### Deeper
 
 A CVE is a specific flaw in a specific product and versions. A CWE is the type of flaw, its
-cause. A CVE record names its CWE: that shows which class it grew from.
+cause. A CVE record usually names its CWE: that shows which class it grew from.
 
 ### `shop-blocked` Parameter in the shop
 

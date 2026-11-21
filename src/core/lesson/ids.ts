@@ -86,6 +86,7 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1210', 'Exploitation of Remote Services'],
   ['T1486', 'Data Encrypted for Impact'],
   ['T1499', 'Endpoint Denial of Service'],
+  ['T1499.003', 'Endpoint Denial of Service: Application Exhaustion Flood'],
   ['T1505', 'Server Software Component'],
   ['T1505.003', 'Server Software Component: Web Shell'],
   ['T1539', 'Steal Web Session Cookie'],

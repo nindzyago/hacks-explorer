@@ -17,7 +17,8 @@
 - [MITRE CWE-89: SQL Injection](https://cwe.mitre.org/data/definitions/89.html)
 - [MITRE CWE-74: Injection](https://cwe.mitre.org/data/definitions/74.html)
 - [MITRE CWE-707: Improper Neutralization](https://cwe.mitre.org/data/definitions/707.html)
-- [MITRE CWE-564: SQL Injection: Hibernate](https://cwe.mitre.org/data/definitions/564.html)
+- [MITRE CWE-564: Use of Hibernate with HQL/SQL Query String Containing External Input](https://cwe.mitre.org/data/definitions/564.html)
+- [MITRE CWE-943: Improper Neutralization of Special Elements in Data Query Logic](https://cwe.mitre.org/data/definitions/943.html)
 - [MITRE: 2025 CWE Top 25 Most Dangerous Software Weaknesses](https://cwe.mitre.org/top25/archive/2025/2025_cwe_top25.html)
 - [OWASP Top 10:2021, A03 Injection](https://owasp.org/Top10/2021/A03_2021-Injection/)
 - [OWASP Top 10:2025](https://owasp.org/Top10/2025/)
@@ -60,9 +61,9 @@ SELECT * FROM goods WHERE name LIKE ?
 
 #### Глубже
 
-На странице CWE у класса есть способы обнаружения и предотвращения. Для CWE-89 главный —
-параметризованный запрос: данные идут в базу отдельно от текста запроса. Шпаргалка OWASP по
-SQL-инъекциям называет его первым среди основных защит.
+На странице CWE у класса есть способы обнаружения и предотвращения. Для CWE-89 среди них —
+параметризация: данные идут в базу отдельно от текста запроса. Шпаргалка OWASP по
+SQL-инъекциям называет параметризованные запросы первыми среди основных защит.
 
 ### `fix-forum` То же правило на форуме
 
@@ -133,7 +134,7 @@ q=⟦' OR '1'='1⟧
 #### Глубже
 
 CVE — конкретная ошибка в конкретном продукте и версиях. CWE — тип ошибки, её причина.
-Запись CVE указывает свой CWE: так видно, из какого класса она выросла.
+Запись CVE обычно указывает свой CWE: так видно, из какого класса она выросла.
 
 ### `shop-blocked` Параметр в магазине
 

@@ -6,7 +6,7 @@
 
 - `cwe` 862, 770
 - `owasp` A01:2021
-- `attack` T1565.001, T1499
+- `attack` T1565.001, T1499.003
 - `severity` high
 - `impact` Someone else's test results read, changed, and the service down
 - `defence` Each of the three properties gets its own protection
@@ -27,7 +27,7 @@
 - [MITRE CWE-862: Missing Authorization](https://cwe.mitre.org/data/definitions/862.html)
 - [MITRE CWE-770: Allocation of Resources Without Limits or Throttling](https://cwe.mitre.org/data/definitions/770.html)
 - [MITRE ATT&CK T1565.001: Stored Data Manipulation](https://attack.mitre.org/techniques/T1565/001/)
-- [MITRE ATT&CK T1499: Endpoint Denial of Service](https://attack.mitre.org/techniques/T1499/)
+- [MITRE ATT&CK T1499.003: Application Exhaustion Flood](https://attack.mitre.org/techniques/T1499/003/)
 
 ## Participants
 
@@ -66,7 +66,7 @@ different protection is needed.
 
 #### Deeper
 
-NIST's definitions, taken from US law (44 U.S.C. § 3542): confidentiality is preserving
+NIST's definitions, taken from US law (44 U.S.C. § 3552, formerly § 3542): confidentiality is preserving
 authorized restrictions on access to and disclosure of information; integrity is guarding
 against improper modification or destruction of information, including non-repudiation and
 authenticity; availability is timely and reliable access to and use of information.
@@ -183,7 +183,7 @@ GET /results/search?q=⟦*⟧   ×10,000 per second
 #### Simple
 
 The third hit is not at the data but at the **service**. The attacker sends thousands of heavy
-search requests. The server spends all its strength on them.
+search requests. The server spends all its resources on them.
 
 #### Step by step
 
@@ -192,8 +192,9 @@ many requests it accepts from one address, and the queue grows.
 
 #### Deeper
 
-The class of flaw is CWE-770: resources handed out without limits. In ATT&CK this is T1499,
-endpoint denial of service: against a server or an application. NIST defines denial of service
+The class of flaw is CWE-770: resources handed out without limits. In ATT&CK this is T1499.003,
+an application exhaustion flood: a kind of endpoint denial of service, aimed at the heavy parts of
+an application. NIST defines denial of service
 as preventing authorized access to resources or delaying time-critical operations.
 
 ### `down` The site does not answer

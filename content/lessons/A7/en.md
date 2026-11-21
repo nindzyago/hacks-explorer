@@ -109,9 +109,10 @@ the attacker it is just another door, only unlocked.
 
 #### Deeper
 
-The class of flaw is CWE-306, missing authentication for a critical function. In the OWASP Top
-10:2021 it is A05, security misconfiguration, which includes unnecessary ports, services, pages
-and accounts.
+The class of flaw is CWE-306, missing authentication for critical functionality. In the OWASP
+Top 10:2021 this CWE belongs to A07, identification and authentication failures. The forgotten
+server itself is A05, security misconfiguration, which includes unnecessary ports, services,
+pages and accounts.
 
 ### `test-closed` Test closed from outside
 
