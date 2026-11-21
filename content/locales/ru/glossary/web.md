@@ -90,7 +90,7 @@ Structured Query Language — язык запросов к реляционны�
 
 ## `xss` XSS
 
-`category` web · `see` injection, output-encoding, csp, session-cookie · `lessons` C1
+`category` web · `see` injection, output-encoding, csp, session-cookie · `lessons` C1, C2, C3
 
 Формы: XSS, межсайтовый скриптинг, межсайтового скриптинга, межсайтовым скриптингом
 
@@ -110,6 +110,17 @@ CWE-79; в OWASP Top 10:2021 входит в пункт A03 Injection.
 атрибут из них уже не начнётся. Правило своё для каждого места: текст страницы, атрибут,
 JavaScript, CSS, адрес. Главная защита от XSS по рекомендациям OWASP.
 
+## `sanitizer` Санитайзер HTML
+
+`category` web · `see` xss, output-encoding · `lessons` C2
+
+Формы: санитайзер, санитайзера, санитайзеру, санитайзером, санитайзере, санитайзеры, санитайзеров
+
+Фильтр, который разбирает присланный HTML и оставляет только разрешённые теги и атрибуты, а
+скрипты и обработчики событий удаляет. Нужен там, где пользователю разрешено оформление и простое
+экранирование сломало бы разметку. OWASP советует готовую библиотеку DOMPurify, а не самодельный
+фильтр.
+
 ## `csp` Content Security Policy
 
 `category` web · `see` xss, output-encoding · `lessons` C1
@@ -120,6 +131,16 @@ JavaScript, CSS, адрес. Главная защита от XSS по реко�
 загружать скрипты и другие ресурсы. Без `'unsafe-inline'` в правиле `script-src` браузер не
 выполняет скрипты, вписанные прямо в страницу. Описана в спецификации W3C; защищает вторым слоем,
 если экранирование где-то забыли.
+
+## `trusted-types` Trusted Types
+
+`category` web · `see` xss, csp, sanitizer · `lessons` C3
+
+Формы: Trusted Types
+
+Защита браузера от DOM XSS. Правило `require-trusted-types-for 'script'` в Content Security Policy
+запрещает записывать простые строки в опасные приёмники вроде `innerHTML`: данные сначала
+проходят через политику сайта, например санитайзер. Описана в спецификации W3C.
 
 ## `session-cookie` Cookie сессии
 
@@ -161,6 +182,36 @@ JavaScript, CSS, адрес. Главная защита от XSS по реко�
 — никогда, `Lax` — только при переходе на страницу безопасным методом, например по ссылке, `None` —
 всегда. Защищает от CSRF как
 дополнительный слой, но не заменяет CSRF-токен.
+
+## `same-origin-policy` Правило одного происхождения
+
+`category` web · `see` cors, clickjacking · `lessons` C6
+
+Формы: правило одного происхождения, правила одного происхождения, правилу одного происхождения, правилом одного происхождения, правиле одного происхождения, same-origin policy
+
+Главное правило безопасности браузера (*same-origin policy*): скрипт одного происхождения не
+читает ответы другого. Происхождение (*origin*) — это схема, имя и порт: `https://shop.example` и
+`https://api.shop.example` — разные происхождения, хотя это один сайт.
+
+## `cors` CORS
+
+`category` web · `see` same-origin-policy, session-cookie · `lessons` C6
+
+Формы: CORS
+
+Cross-Origin Resource Sharing — способ, которым сервер разрешает скриптам других сайтов читать
+свои ответы, ослабляя правило одного происхождения. Разрешение — заголовок
+`Access-Control-Allow-Origin`. Слишком широкое разрешение — ошибка CWE-942.
+
+## `clickjacking` Clickjacking
+
+`category` web · `see` same-origin-policy, session-cookie · `lessons` C5
+
+Формы: clickjacking, кликджекинг, кликджекинга, кликджекингу, кликджекингом
+
+«Угон клика»: чужой сайт показывает настоящую страницу в прозрачной рамке поверх своей кнопки, и
+пользователь, сам того не зная, нажимает кнопку настоящего сайта. Класс ошибки — CWE-1021. Защита
+— заголовок с правилом `frame-ancestors` или `X-Frame-Options`.
 
 ## `idor` IDOR
 
