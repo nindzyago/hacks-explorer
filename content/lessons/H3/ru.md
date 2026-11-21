@@ -21,22 +21,22 @@
 
 ## Участники
 
-- `log` **Журнал** — тревоги шлюза · `term:logging`
-- `pc` **Компьютер** — сотрудник, 192.0.2.24 · `icon:workstation` · `term:trojan`
-- `gw` **Шлюз** — выход в интернет · `icon:router` · `term:egress-filtering`
-- `c2` **Сервер хакера** — updates-cdn.example · `icon:attacker` · `term:c2`
+- `log` **Журнал** — тревоги · `term:logging`
+- `pc` **Компьютер** — 192.0.2.24 · `icon:workstation` · `term:trojan`
+- `gw` **Шлюз** — фильтр · `icon:router` · `term:egress-filtering`
+- `c2` **Сервер хакера** — C2 · `icon:attacker` · `term:c2`
 
 ## Зоны
 
 - `office` Сеть офиса: `log`, `pc`, `gw`
-- `evil` Сеть атакующего: `c2` · `danger`
+- `evil` Интернет: `c2` · `danger`
 
 ## Шаги
 
 ### `trojan` Бесплатная программа
 
 `c2 → pc` · `attack`
-Сообщение: «бесплатный конвертер PDF» · Итог: установлен вместе с трояном
+Сообщение: конвертер PDF · Итог: установлен вместе с трояном
 
 ```text
 pdf-converter-free.exe
@@ -131,7 +131,7 @@ TA0011 «Command and Control». Обычные веб-протоколы для 
 ### `exfil` Документы уходят
 
 `pc → c2` · `attack` · `without-defence`
-Сообщение: архив в запросе POST · Итог: документы у атакующего
+Сообщение: архив через POST · Итог: документы у атакующего
 
 #### Просто
 

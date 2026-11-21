@@ -25,20 +25,18 @@
 - `user` **Customer** — 192.0.2.24
 - `isp` **Provider** — AS64500 · `icon:router` · `term:autonomous-system`
 - `attacker` **Rogue network** — AS64511 · `term:attacker`
-- `bank` **Bank** — AS64496, 198.51.100.0/24 · `icon:server`
+- `bank` **Bank** — AS64496 · `icon:server`
 
 ## Zones
 
-- `home` Provider network: `user`, `isp`
-- `evil` Attacker's network: `attacker` · `danger`
-- `owner` Bank network: `bank`
+- `evil` Fake: `attacker` · `danger`
 
 ## Steps
 
 ### `announce` "These addresses are mine"
 
 `bank → isp` · `legit`
-Message: 198.51.100.0/24 at AS64496 · Result: route stored
+Message: /24 at AS64496 · Result: route stored
 
 ```text
 BGP UPDATE
@@ -68,7 +66,7 @@ announces: RFC 4272 names this as one of the protocol's fundamental weaknesses.
 ### `hijack` "No, they're mine, and more precisely"
 
 `attacker → isp` · `attack` · `without-defence`
-Message: 198.51.100.0/25 at AS64511 · Result: accepted, it is more specific
+Message: /25 at AS64511 · Result: accepted, it is more specific
 
 ```text
 BGP UPDATE
@@ -95,7 +93,7 @@ network announces someone else's addresses because of a misconfiguration rather 
 ### `rov` RPKI check
 
 `attacker → isp` · `attack` · `with-defence` · `stopped`
-Message: 198.51.100.0/25 at AS64511 · Result: RPKI: Invalid, announcement dropped
+Message: /25 at AS64511 · Result: RPKI: Invalid, announcement dropped
 
 ```text
 bank's ROA:    198.51.100.0/24, max length 24, AS64496 only
@@ -126,7 +124,7 @@ number, and the check will let it through.
 ### `request` The customer's packet
 
 `user → isp` · `legit`
-Message: packet to 198.51.100.10 · Result: looking up a route
+Message: packet to the bank · Result: looking up a route
 
 ```text
 to:  198.51.100.10  (bank.example)
@@ -171,7 +169,7 @@ configured nothing and did nothing wrong.
 ### `blackhole` Read or dropped
 
 `attacker → attacker` · `attack` · `without-defence`
-Message: the bank's traffic at the rogue network · Result: intercepted
+Message: the bank's traffic · Result: intercepted
 
 #### Simple
 

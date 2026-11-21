@@ -20,14 +20,14 @@
 
 ## Participants
 
-- `attacker` **Attacker** — 203.0.113.66 · `term:attacker`
 - `user` **Visitor** — 192.0.2.24
-- `server` **Server** — a program in C · `term:vulnerability`
-- `stack` **Stack** — the function's memory · `icon:document` · `term:buffer-overflow`
+- `attacker` **Attacker** — 203.0.113.66 · `term:attacker`
+- `server` **Server** — C code · `term:vulnerability`
+- `stack` **Stack** — memory · `icon:document` · `term:buffer-overflow`
 
 ## Zones
 
-- `internet` Internet: `attacker`, `user`
+- `internet` Internet: `user`, `attacker`
 - `host` Server 198.51.100.10: `server`, `stack`
 
 ## Steps
@@ -59,7 +59,7 @@ how many bytes to write, and where, is up to the programmer.
 ### `frame` A place in memory
 
 `server → stack` · `legit`
-Message: name into a 64-byte buffer · Result: it fits
+Message: into buffer · Result: it fits
 
 ```text
 [ buffer name: 64 bytes ][ housekeeping ][ return address ]
@@ -108,7 +108,7 @@ program.
 ### `smash` Writing past the edge
 
 `server → stack` · `attack` · `without-defence`
-Message: 300 bytes into a 64-byte slot · Result: return address overwritten
+Message: 300 bytes into 64 · Result: return address overwritten
 
 ```c
 char name[64];
@@ -135,7 +135,7 @@ function.
 ### `jump` Returning to the wrong place
 
 `stack → server` · `attack` · `without-defence`
-Message: the attacker's return address · Result: the CPU runs foreign code
+Message: a foreign address · Result: the CPU runs foreign code
 
 #### Simple
 

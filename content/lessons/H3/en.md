@@ -21,22 +21,22 @@
 
 ## Participants
 
-- `log` **Log** — gateway alerts · `term:logging`
-- `pc` **Computer** — employee, 192.0.2.24 · `icon:workstation` · `term:trojan`
-- `gw` **Gateway** — way out to the internet · `icon:router` · `term:egress-filtering`
-- `c2` **Hacker's server** — updates-cdn.example · `icon:attacker` · `term:c2`
+- `log` **Log** — alerts · `term:logging`
+- `pc` **Computer** — 192.0.2.24 · `icon:workstation` · `term:trojan`
+- `gw` **Gateway** — filter · `icon:router` · `term:egress-filtering`
+- `c2` **Hacker's server** — C2 · `icon:attacker` · `term:c2`
 
 ## Zones
 
 - `office` Office network: `log`, `pc`, `gw`
-- `evil` Attacker's network: `c2` · `danger`
+- `evil` Internet: `c2` · `danger`
 
 ## Steps
 
 ### `trojan` A free program
 
 `c2 → pc` · `attack`
-Message: "free PDF converter" · Result: installed along with a trojan
+Message: PDF converter · Result: installed along with a trojan
 
 ```text
 pdf-converter-free.exe
@@ -132,7 +132,7 @@ trojan picks them up on its next call.
 ### `exfil` The documents leave
 
 `pc → c2` · `attack` · `without-defence`
-Message: an archive in a POST request · Result: the attacker has the documents
+Message: archive via POST · Result: the attacker has the documents
 
 #### Simple
 
