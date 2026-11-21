@@ -433,7 +433,7 @@ commands on the server. The weakness class is CWE-1336.
 
 `category` web · `see` xxe · `lessons` B7
 
-Forms: XML entity, XML entities, external entity, external entities, DTD
+Forms: XML entity, XML entities, external entity, external entities
 
 A named substitution in an XML document: it is declared at the start of the document, in the DTD,
 and the text writes `&name;`, which the parser replaces with the entity's content. An external
@@ -468,8 +468,8 @@ class is CWE-943.
 Forms: query operator, query operators
 
 A keyword in a database query that sets a condition instead of an exact value. In MongoDB
-operators start with `$`: `{"$ne": ""}` means “not equal to the empty string”, `$gt` means
-“greater than”, `$where` is a check written in JavaScript.
+operators start with `$`: `{"$ne": ""}` means “not equal to the empty string”, `$where` is a
+check written in JavaScript.
 
 ## `open-redirect` Open redirect
 

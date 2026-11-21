@@ -253,7 +253,7 @@ to miss.
 - **A sandbox.** Choose a template engine with a sandbox or restricted mode and turn it on,
   especially if visitors can write their own templates.
 - **Less power in the template.** Do not give the template objects and functions it does not need:
-  the less expressions can reach, the longer the path to anything dangerous.
+  the less expressions can reach, the fewer paths lead to anything dangerous.
 - **Input checks.** A name is letters, spaces and hyphens. Input that does not look like a name is
   worth rejecting, but this is an extra layer, not a replacement for the first two.
 - **Fewer rights.** The site runs with minimal rights on the system, so a command from a template,

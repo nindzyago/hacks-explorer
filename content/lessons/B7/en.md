@@ -202,5 +202,3 @@ and XSLT style sheets: they can load external resources too.
   that parses XML, including schemas, XInclude and XSLT.
 - **Updates.** Keep XML libraries current: newer versions often switch the dangerous parts off by
   default.
-- **A simpler format where possible.** Where XML is not required, plain data is easier to pass as
-  JSON.

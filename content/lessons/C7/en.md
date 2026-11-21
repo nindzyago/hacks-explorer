@@ -161,7 +161,7 @@ page may ask for the SMS code as well; the “Phishing” lesson covers that.
 #### Deeper
 
 CWE-601 mentions other consequences too: a redirect to a page that immediately downloads a malicious
-file. And OWASP notes that an unchecked redirect inside a site can lead past an access check to
+file. And OWASP notes that an unchecked forward inside a site can lead past an access check to
 functions the visitor is not allowed to use.
 
 ### `allow` Checking the address
@@ -181,8 +181,9 @@ not on it, and the bank will not send anyone there. The attack stops here.
 
 #### Step by step
 
-The bank parses the address into parts and compares the scheme, host name and port with the list.
-Only what is on the list passes. Everything else is refused.
+The bank parses the address and checks: is it a path on its own site, and is it on the list? A
+foreign address has its own scheme and host, and nothing like that is on the list, so it is
+refused.
 
 #### Deeper
 

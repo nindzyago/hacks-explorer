@@ -56,8 +56,8 @@ database for a user whose login and password both match.
 #### Deeper
 
 The database here is a document database, like MongoDB: instead of tables and the SQL language it
-holds JSON-like documents, and queries are written as objects too. There are many such databases;
-they are called NoSQL.
+holds JSON-like documents, and queries are written as objects too. This is one kind of NoSQL
+database, the name for databases that do not use SQL.
 
 ### `swap` A password that is a condition
 
@@ -80,8 +80,8 @@ JSON without errors: the format is valid.
 
 #### Deeper
 
-Words starting with `$` are MongoDB query operators: `$ne` means “not equal”, `$gt` “greater
-than”, `$regex` “matches a pattern”. Ordinary data does not need them, but in a query they change
+Words starting with `$` are MongoDB query operators. `$ne` means “not equal”, and `$where` runs a
+JavaScript check inside the database. Ordinary data does not need them, but in a query they change
 its meaning.
 
 ### `find` A query with a condition
@@ -156,9 +156,9 @@ settings, delete data.
 
 #### Deeper
 
-It is the counterpart of the classic SQL injection `' OR 1=1 --`, only without quotes or comments:
-the query contains none of the “dangerous” characters filters usually look for. What was swapped is
-the data type, not the text.
+It is the counterpart of the classic SQL injection `' OR 1=1 --`, but nothing has to be closed
+with a quote or hidden behind a comment: the query contains none of the characters filters usually
+look for. What was swapped is the data type, not the text.
 
 ### `type` A type check
 
