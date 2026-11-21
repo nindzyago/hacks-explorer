@@ -181,8 +181,8 @@ For `anna` the server answers with **the same phrase** and in about **the same t
 
 #### Step by step
 
-When the login does not exist, the server still computes a hash, of a dummy value prepared in
-advance. Both branches follow the same path and take the same time.
+When the login does not exist, the server still hashes the submitted password and compares it
+with a dummy hash prepared in advance. Both branches follow the same path and take the same time.
 
 #### Deeper
 
@@ -202,19 +202,22 @@ try 11: ⟦login=olga⟧ → too many attempts, please wait
 #### Simple
 
 The attacker tries to **run through** logins even faster. The server notices the stream of failed
-logins and starts **slowing them down**.
+logins from one client and starts **slowing them down**.
 
 #### Step by step
 
-After a few failures the server answers "please wait" and does not check logins at all. Running
-through thousands of names now takes weeks.
+The server counts failed logins overall and per client, not just per account. Past the limit it
+answers "please wait" and does not check logins at all. Running through thousands of names now
+takes weeks.
 
 #### Deeper
 
 OWASP Top 10:2021, in item A07, advises limiting or increasingly delaying failed login attempts
 without locking out the real owners, and logging all failures. The Authentication Cheat Sheet
-adds that the lockout counter belongs to the account, not to the attacker's address. Against
-trying many logins from many addresses, server-wide limits help as well.
+explains that protection against password guessing also works against enumeration: it stops the
+attacker from checking logins at scale, and where a generic answer is impossible a CAPTCHA helps.
+A lockout counter on a single account does not help here, since each login is tried only once, so
+the server also needs overall limits on failed logins.
 
 ## How to defend
 
@@ -224,7 +227,7 @@ trying many logins from many addresses, server-wide limits help as well.
   so the answer does not come noticeably faster.
 - **Password recovery and sign-up.** "If that address is registered, we have sent an email"; at
   sign-up, an email to the given address instead of "login taken" on screen.
-- **Limits on attempts.** A growing pause or a temporary lock after failures, overall limits on the
+- **Limits on attempts.** A growing pause for a client after failures, server-wide limits on the
   number of logins, and every failure written to the log.
-- **Login that is stronger than the username.** Even if the list of logins leaks, long passwords
+- **More than a login.** Even if the list of logins leaks, long passwords
   and a second factor leave guessing pointless.

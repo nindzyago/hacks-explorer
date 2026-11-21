@@ -201,8 +201,8 @@ nowhere for a tail to stay.
 
 RFC 9112 allows a server to reject a request that has both `Content-Length` and
 `Transfer-Encoding` (section 6.1), and in any case requires closing the connection after
-answering it. Most reliable is when the proxy and the server are the same strict implementation,
-or HTTP/2 runs between them: there the length comes from protocol frames, and
+answering it. It helps when the proxy and the server parse requests with the same strict
+implementation, or when HTTP/2 runs between them: there the length comes from protocol frames, and
 `Transfer-Encoding` is forbidden (RFC 9113, section 8.2.2).
 
 ### `refuse` A 400 answer
@@ -265,7 +265,7 @@ One link that reads the request boundary differently from its neighbour is enoug
 - **HTTP/2 all the way to the server.** The length comes from protocol frames, not headers;
   `Transfer-Encoding` is forbidden in HTTP/2.
 - **Strict HTTP/2 → HTTP/1.1 translation.** The proxy checks `content-length` against the frames
-  and lets no line breaks into header fields.
+  (RFC 9113, section 8.1.1) and lets no line breaks into header fields (section 8.2.1).
 - **The same reading along the whole chain.** The proxy and the server are up to date and set up
   according to RFC 9112; the same parsing implementation is better still.
 - **No shared connections if in doubt.** A separate connection per request costs more, but a tail
