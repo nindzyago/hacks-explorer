@@ -71,6 +71,16 @@ Forms: network segmentation, segmentation
 Splitting a network into parts with rules on who may talk to whom. Work computers do not see every
 server, so an infection of one machine does not spread through the whole company.
 
+## `dos` Denial of service
+
+`category` network · `see` cia-triad · `lessons` A5
+
+Forms: denial of service, denial-of-service, DoS, DDoS
+
+An attack on availability: a service is overloaded or broken so that legitimate users
+cannot use it. When the requests come from thousands of addresses at once, it is a
+distributed attack, DDoS.
+
 ## `reverse-proxy` Reverse proxy
 
 `category` network · `see` web-server, request-smuggling · `lessons` E1
