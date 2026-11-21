@@ -140,6 +140,12 @@ describe('the release workflow guard', () => {
     ],
     ['deploys from GitHub', 'run: npm ci', 'run: npm ci && npx wrangler deploy'],
     ['shell injection', 'echo "::error::$TAG is not vX.Y.Z"', 'echo "${{ inputs.tag }}"'],
+    // CI7: the gate runs in parts; every part runs and each knows the count.
+    ['a part left out', 'shard: [1, 2, 3, 4, 5]', 'shard: [1, 2, 3]'],
+    ['parts out of order', 'shard: [1, 2, 3, 4, 5]', 'shard: [1, 1, 3, 4]'],
+    ['a wrong count', 'E2E_SHARD: ${{ matrix.shard }}/5', 'E2E_SHARD: ${{ matrix.shard }}/4'],
+    ['no part number', 'E2E_SHARD: ${{ matrix.shard }}/5', 'E2E_SHARD: 1/4'],
+    ['not in parts', '      matrix:\n        shard: [1, 2, 3, 4, 5]\n', ''],
   ])('catches: %s', (_name, from, to) => {
     expect(broken(from, to).length).toBeGreaterThan(0);
   });

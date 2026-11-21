@@ -54,10 +54,16 @@ const CI = [
   '  cancel-in-progress: true',
   'jobs:',
   '  gate:',
+  '    strategy:',
+  '      matrix:',
+  '        shard: [1, 2, 3, 4, 5]',
   '    steps:',
   '      - uses: actions/checkout@v7',
   '      - run: npm ci',
-  '      - run: npm run gate',
+  '      - name: Gate',
+  '        env:',
+  '          E2E_SHARD: ${{ matrix.shard }}/5',
+  '        run: npm run gate',
 ].join('\n');
 
 describe('the repository as committed', () => {
@@ -215,6 +221,16 @@ describe('checkCi', () => {
     [CI.replace('npm run gate', 'npm test'), 'npm run gate'],
     [CI.replace('npm ci', 'npm install'), 'npm ci'],
     [`${CI}\n        env:\n          T: \${{ secrets.CLOUDFLARE_API_TOKEN }}`, 'secrets'],
+    // CI7: the browser tests in parts, every part run, each told the count.
+    [CI.replace('shard: [1, 2, 3, 4, 5]', 'shard: [1, 2, 4]'), 'shard'],
+    [CI.replace('shard: [1, 2, 3, 4, 5]', 'shard: [1]'), 'parts'],
+    [
+      CI.replace('E2E_SHARD: ${{ matrix.shard }}/5', 'E2E_SHARD: ${{ matrix.shard }}/3'),
+      'E2E_SHARD',
+    ],
+    [CI.replace('        env:\n          E2E_SHARD: ${{ matrix.shard }}/5\n', ''), 'E2E_SHARD'],
+    [CI.replace('        run: npm run gate', '        run: npm run e2e'), 'npm run gate'],
+    [CI.replace('    strategy:\n', '    with:\n'), 'strategy'],
     ['', 'pull_request'],
   ])('rejects a workflow that drifts (%#)', (text, word) => {
     expect(checkCi(text).join('\n')).toContain(word);

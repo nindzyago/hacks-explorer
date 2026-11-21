@@ -63,9 +63,9 @@ M4.7.
 
 1. Открыть черновой адрес: страница «Hacks Explorer»; адрес вида `/ru/lesson/B1` открывает ту же
    страницу, а не 404.
-2. Завести ветку в этом же репозитории, открыть pull request: проверка `gate` зелёная, проверка
-   «Workers Builds: hacks-explorer» зелёная, адрес предпросмотра (составить по правилу выше)
-   открывается в браузере, в том числе по адресу вида `/ru/lesson/B1`.
+2. Завести ветку в этом же репозитории, открыть pull request: проверки `gate (1)` … `gate (5)`
+   зелёные, проверка «Workers Builds: hacks-explorer» зелёная, адрес предпросмотра (составить по
+   правилу выше) открывается в браузере, в том числе по адресу вида `/ru/lesson/B1`.
 3. В инструментах разработчика → Network → документ: в ответе есть `content-security-policy`,
    `x-content-type-options: nosniff`, `x-robots-tag: noindex`; в консоли нет ошибок CSP.
 4. Журнал сборок: Worker → **Deployments** → внизу **View build history**.
@@ -119,7 +119,7 @@ M4.7.
 
 | Событие | Что происходит |
 |---|---|
-| push тега `vX.Y.Z` | GitHub Actions: gate на коммите тега → GitHub Release с описанием из раздела `## X.Y.Z` файла `CHANGELOG.md` (нет раздела — описание сочиняет GitHub из коммитов) → ветка `release` переставляется на тег. Cloudflare видит push в `release` и выкладывает его на основной адрес |
+| push тега `vX.Y.Z` | GitHub Actions: gate на коммите тега (пять параллельных заданий, у каждого своя пятая часть браузерных тестов, K136) → GitHub Release с описанием из раздела `## X.Y.Z` файла `CHANGELOG.md` (нет раздела — описание сочиняет GitHub из коммитов) → ветка `release` переставляется на тег. Cloudflare видит push в `release` и выкладывает его на основной адрес |
 | gate на теге красный | Release не создаётся, `release` не двигается, сайт остаётся прежним. Тег остаётся: исправить и выпустить следующий (`v0.1.1`) |
 | Run workflow с тегом (откат) | `release` переставляется на указанный тег без gate (он прошёл его при выпуске) и без новых Release; Cloudflare выкладывает |
 | push в `main` | как раньше собирается, но теперь это предпросмотр: `https://main-hacks-explorer.mike-antipiev.workers.dev` |
@@ -147,8 +147,8 @@ M4.7.
    дождаться зелёного `gate` на `main`.
 2. `git tag -a v0.1.0 -m "Hacks Explorer 0.1.0"` на этом коммите `main`, затем
    `git push origin v0.1.0`.
-3. GitHub → **Actions** → **release**: задания `gate` и `release` зелёные; **Releases** → `v0.1.0`
-   с описанием из CHANGELOG. Cloudflare → Worker → **Deployments**: новая сборка ветки `release`.
+3. GitHub → **Actions** → **release**: задания `gate (1)` … `gate (5)` и `release` зелёные;
+   **Releases** → `v0.1.0` с описанием из CHANGELOG. Cloudflare → Worker → **Deployments**: новая сборка ветки `release`.
 
 ### Как откатить
 

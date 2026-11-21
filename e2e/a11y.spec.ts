@@ -1,8 +1,9 @@
 // M2.7 acceptance (oracle D S6 S11, plus axe-core): accessibility of every screen and state.
 //   - axe-core with the WCAG 2.0, 2.1 and 2.2 A and AA rules finds nothing on ru and en: every lesson (G18)
-//     at the first, a middle and the last step, with and without the defence, at every depth;
-//     the side panel on both tabs; a glossary definition open; the «no such page» page; the
-//     explanation panel scrolled to its sources at phone widths;
+//     at the first, a middle and the last step, with and without the defence, at every depth
+//     (CI7: the states listed at the test, K136); the side panel on both tabs; a glossary
+//     definition open; the «no such page» page; the explanation panel scrolled to its sources at
+//     phone widths;
 //   - the scene's term buttons are in the accessibility tree with names (not hidden inside an
 //     image), and the scene says the current step in a polite live region that changes once per
 //     step, not on every frame of the clock;
@@ -58,6 +59,12 @@ const LOCALES = ['ru', 'en'] as const;
 // G18: every lesson in content/lessons.
 const LESSONS = ALL_LESSONS;
 
+// CI7: axe runs at the states that differ for it, not at every combination. Per lesson and
+// language: each mode at its first step at rest, its middle step on the way (the message and its
+// plaque over the scene) and its last step at rest; the depths «steps» and «deep» at step 2
+// («simple» is the depth of the mode checks). Every step, every depth and every width get the
+// layout checks (phone, phone-screens, one-screen, scene); axe sees the DOM, which does not
+// change with the moment of the clock beyond «on the way» and «at rest».
 test.describe('axe finds no WCAG A/AA violations', () => {
   for (const locale of LOCALES) {
     for (const id of LESSONS) {
@@ -69,22 +76,25 @@ test.describe('axe finds no WCAG A/AA violations', () => {
           await run(page, 'defence.set', { on: defence });
           const c = await counts(page);
           const last = defence ? c.with : c.without;
-          for (const step of [...new Set([1, Math.ceil(last / 2), last])]) {
-            await run(page, 'player.goto', { step });
-            // Halfway on the way and at rest.
-            await page.evaluate(() => window.__app?.clock.set(450));
-            await axe(page, `${locale} ${id} step ${String(step)} on the way`);
-            await page.evaluate(() => window.__app?.clock.set(5000));
-            await axe(page, `${locale} ${id} step ${String(step)} at rest`);
+          const middle = Math.ceil(last / 2);
+          const states: [number, number, string][] = [
+            [1, 5000, 'at rest'],
+            [middle, 450, 'on the way'],
+            [last, 5000, 'at rest'],
+          ];
+          for (const [step, ms, moment] of states) {
             await page.evaluate(() => window.__app?.clock.set(0));
+            await run(page, 'player.goto', { step });
+            await page.evaluate((t) => window.__app?.clock.set(t), ms);
+            await axe(page, `${locale} ${id} step ${String(step)} ${moment}`);
           }
         });
       }
 
-      test(`${locale} ${id}: every depth`, async ({ page }) => {
+      test(`${locale} ${id}: the depths «steps» and «deep»`, async ({ page }) => {
         await lesson(page, `/${locale}/lesson/${id}`);
         await run(page, 'player.goto', { step: 2 });
-        for (const depth of ['simple', 'steps', 'deep']) {
+        for (const depth of ['steps', 'deep']) {
           await run(page, 'depth.set', { depth });
           await expect(page.getByTestId(`depth-${depth}`)).toHaveAttribute('aria-selected', 'true');
           await axe(page, `${locale} ${id} depth ${depth}`);
@@ -138,27 +148,30 @@ async function sceneTree(page: Page): Promise<{ role: string; name: string }[]> 
   return out;
 }
 
+// CI7: one page per lesson and language, resized from 360 to 390 px; axe at 360 px, the
+// narrowest (its target-size rule is the one that depends on the width), the link heights at both.
 test.describe('the sources at phone widths', () => {
-  for (const width of [360, 390]) {
-    for (const locale of LOCALES) {
-      for (const id of LESSONS) {
-        test(`${locale} ${id} at ${String(width)} px: axe, links at least 24 px tall`, async ({
-          page,
-        }) => {
+  for (const locale of LOCALES) {
+    for (const id of LESSONS) {
+      test(`${locale} ${id} at 360 and 390 px: axe, links at least 24 px tall`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: 360, height: 800 });
+        await lesson(page, `/${locale}/lesson/${id}`);
+        await run(page, 'depth.set', { depth: 'deep' });
+        for (const width of [360, 390]) {
           await page.setViewportSize({ width, height: 800 });
-          await lesson(page, `/${locale}/lesson/${id}`);
-          await run(page, 'depth.set', { depth: 'deep' });
           const links = page.locator('a[data-testid^="source-link-"]');
           expect(await links.count()).toBeGreaterThan(0);
           await links.last().scrollIntoViewIfNeeded();
           for (const box of await links.evaluateAll((els) =>
             els.map((el) => el.getBoundingClientRect().height),
           )) {
-            expect(box).toBeGreaterThanOrEqual(24);
+            expect(box, `${locale} ${id} ${String(width)} px`).toBeGreaterThanOrEqual(24);
           }
-          await axe(page, `${locale} ${id} ${String(width)} px`);
-        });
-      }
+          if (width === 360) await axe(page, `${locale} ${id} ${String(width)} px`);
+        }
+      });
     }
   }
 });

@@ -28,6 +28,11 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # CI7: the browser tests in 5 parts, each its own runner (scripts/e2e-shards.mjs).
+    strategy:
+      fail-fast: true
+      matrix:
+        shard: [1, 2, 3, 4, 5]
     steps:
       - name: Check the tag
         run: |
@@ -45,6 +50,8 @@ jobs:
       - run: npm ci
       - run: ./node_modules/.bin/playwright install --with-deps chromium
       - name: Gate
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/5
         run: npm run gate
 
   release:

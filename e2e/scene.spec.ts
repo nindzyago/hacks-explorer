@@ -9,7 +9,7 @@ import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Page, Route } from '@playwright/test';
 import { stepsInMode } from '../src/core/scene-layout/message';
-import { LANGS, LESSONS, lessonData, switchLesson } from './lessons';
+import { LANGS, LESSONS, lessonData } from './lessons';
 import { layoutProblems, messageProblems, sceneBoxes } from './scene-boxes';
 import { expect, openApp, sceneReady, test } from './support';
 
@@ -38,7 +38,9 @@ test('the B1 scene is on the page with its participants and zones', async ({ pag
   await expect(scene.getByTestId('zone-site')).toContainText('Сайт shop.example');
   await expect(scene.getByTestId('participant-server')).toContainText('Веб-сервер');
   // M2.7: a labelled group, not an image, so its term buttons stay reachable.
-  const group = scene.getByRole('group', { name: 'Схема урока «SQL-инъекция»' });
+  const group = scene.getByRole('group', {
+    name: 'Схема урока «SQL-инъекция»',
+  });
   await expect(group).toBeVisible();
   await expect(group).toHaveAccessibleDescription(/^Участники слева направо: Атакующий/);
   await expect(scene.getByTestId('scene-description')).toHaveText(
@@ -71,42 +73,34 @@ test('icons and fonts come from this site', async ({ page }) => {
 // CI1: the layout core estimates text at the fonts' own advances (JetBrains Mono 0.6 em a
 // character). Chromium on Linux hints text and rounds each advance to whole pixels (7 px for
 // 6.6 at 11 px), so names and notes came wider than laid out and touched the receiver ring;
-// the scene draws its text unhinted on every system.
-test('the scene draws its text at the advances the layout counts on, on every system', async ({
-  page,
-}) => {
-  await openApp(page);
-  for (const lesson of LESSONS) {
-    await switchLesson(page, lesson);
-    await sceneReady(page);
-    const off = await page.evaluate(() => {
-      const out: string[] = [];
-      const texts = document.querySelectorAll(
-        '[data-testid="scene"] [data-part="note"], [data-testid="scene"] [data-part="label"]',
-      );
-      for (const text of texts) {
-        if (!(text instanceof SVGTextElement)) continue;
-        const spans = Array.from(text.querySelectorAll(':scope > tspan'));
-        for (const line of spans.length > 0 ? spans : [text]) {
-          // A line drawn narrower to fit has its width given; the others have their own.
-          if (!(line instanceof SVGTextContentElement) || line.hasAttribute('textLength')) continue;
-          const style = getComputedStyle(line);
-          const size = Number.parseFloat(style.fontSize);
-          const spacing = Number.parseFloat(style.letterSpacing) || 0;
-          const n = Array.from(line.textContent).length;
-          const expected = n * (0.6 * size + spacing);
-          const real = line.getComputedTextLength();
-          if (Math.abs(real - expected) > 0.1) {
-            out.push(`${line.textContent}: ${real.toFixed(2)} px, not ${expected.toFixed(2)}`);
-          }
+// the scene draws its text unhinted on every system. CI7: checked in each lesson's own test at
+// 1280×720 below (ru and en), not in one test that walks every lesson.
+async function advanceProblems(page: Page): Promise<{ out: string[]; count: number }> {
+  return page.evaluate(() => {
+    const out: string[] = [];
+    const texts = document.querySelectorAll(
+      '[data-testid="scene"] [data-part="note"], [data-testid="scene"] [data-part="label"]',
+    );
+    for (const text of texts) {
+      if (!(text instanceof SVGTextElement)) continue;
+      const spans = Array.from(text.querySelectorAll(':scope > tspan'));
+      for (const line of spans.length > 0 ? spans : [text]) {
+        // A line drawn narrower to fit has its width given; the others have their own.
+        if (!(line instanceof SVGTextContentElement) || line.hasAttribute('textLength')) continue;
+        const style = getComputedStyle(line);
+        const size = Number.parseFloat(style.fontSize);
+        const spacing = Number.parseFloat(style.letterSpacing) || 0;
+        const n = Array.from(line.textContent).length;
+        const expected = n * (0.6 * size + spacing);
+        const real = line.getComputedTextLength();
+        if (Math.abs(real - expected) > 0.1) {
+          out.push(`${line.textContent}: ${real.toFixed(2)} px, not ${expected.toFixed(2)}`);
         }
       }
-      return { out, count: texts.length };
-    });
-    expect(off.count, lesson).toBeGreaterThanOrEqual(4);
-    expect(off.out, lesson).toEqual([]);
-  }
-});
+    }
+    return { out, count: texts.length };
+  });
+}
 
 for (const viewport of VIEWPORTS) {
   test.describe(`at ${String(viewport.width)}×${String(viewport.height)}`, () => {
@@ -123,6 +117,11 @@ for (const viewport of VIEWPORTS) {
           await sceneReady(page);
           const data = await lessonData(page, id, lang);
           const where = `${id} ${lang}`;
+          if (viewport.name === 'desktop') {
+            const off = await advanceProblems(page);
+            expect(off.count, `${where}: texts at their advances`).toBeGreaterThanOrEqual(4);
+            expect(off.out, `${where}: texts at their advances`).toEqual([]);
+          }
           const { scene, boxes } = await sceneBoxes(page);
           // Icon, name and note of each participant; frame and label of each zone.
           expect(boxes.length, where).toBeGreaterThanOrEqual(
@@ -152,69 +151,73 @@ for (const viewport of VIEWPORTS) {
         }
       });
 
-      test(`${id}, ru and en: the message at rest covers nothing, every step, both modes (M1.2c)`, async ({
-        page,
-      }) => {
-        for (const lang of LANGS) {
-          await openApp(page, `/${lang}/lesson/${id}`);
-          await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', id);
-          await sceneReady(page);
-          const data = await lessonData(page, id, lang);
-          const seen: string[] = [];
-          let expected = 0;
-          for (const on of [false, true]) {
-            await page.evaluate((v) => window.__app?.commands.run('defence.set', { on: v }), on);
-            const steps = stepsInMode(data.steps, on);
-            const count = Number(
-              /(?:из|of) (\d+)/.exec(
-                (await page.getByTestId('scene-step').textContent()) ?? '',
-              )?.[1],
-            );
-            expect(count, `${id} ${lang}`).toBe(steps.length);
-            expected += steps.length * 2;
-            for (let step = 1; step <= count; step += 1) {
-              await page.evaluate((n) => {
-                window.__app?.clock.set(0);
-                window.__app?.commands.run('player.goto', { step: n });
-              }, step);
-              for (const [ms, progress] of [
-                [0, '0'],
-                [900, '1'],
-              ] as const) {
-                await page.evaluate((t) => window.__app?.clock.set(t), ms);
-                const message = page.getByTestId('message');
-                // A step from a participant to itself is there at once.
-                const still =
-                  (await message.getAttribute('data-from')) ===
-                  (await message.getAttribute('data-to'));
-                await expect(message).toHaveAttribute('data-progress', still ? '1' : progress);
-                const { scene, boxes, message: m } = await sceneBoxes(page);
-                if (m === null) throw new Error('no message');
-                const where = `${id} ${lang} ${on ? 'defence' : 'attack'} step ${String(step)} at ${progress}`;
-                seen.push(
-                  `${on ? 'defence' : 'attack'} ${String(await message.getAttribute('data-step'))}`,
-                );
-                expect(layoutProblems(scene, boxes), where).toEqual([]);
-                expect(messageProblems(scene, boxes, m), where).toEqual([]);
-                // Text of the message is not below 11 px either.
-                expect(m.word.fontSize, where).toBeGreaterThanOrEqual(11);
-                // M1.2d: and no plaque text is cut.
-                const label = page.getByTestId('message-label');
-                if ((await label.count()) > 0) {
-                  expect(await label.textContent(), where).not.toContain('…');
+      // CI7: every step at 1280, 390 and 360; at 375, between the two phones, the scene is
+      // checked as it opens (the test above), not on every step.
+      if (viewport.name !== 'phone-375') {
+        test(`${id}, ru and en: the message at rest covers nothing, every step, both modes (M1.2c)`, async ({
+          page,
+        }) => {
+          for (const lang of LANGS) {
+            await openApp(page, `/${lang}/lesson/${id}`);
+            await expect(page.getByTestId('scene')).toHaveAttribute('data-lesson', id);
+            await sceneReady(page);
+            const data = await lessonData(page, id, lang);
+            const seen: string[] = [];
+            let expected = 0;
+            for (const on of [false, true]) {
+              await page.evaluate((v) => window.__app?.commands.run('defence.set', { on: v }), on);
+              const steps = stepsInMode(data.steps, on);
+              const count = Number(
+                /(?:из|of) (\d+)/.exec(
+                  (await page.getByTestId('scene-step').textContent()) ?? '',
+                )?.[1],
+              );
+              expect(count, `${id} ${lang}`).toBe(steps.length);
+              expected += steps.length * 2;
+              for (let step = 1; step <= count; step += 1) {
+                await page.evaluate((n) => {
+                  window.__app?.clock.set(0);
+                  window.__app?.commands.run('player.goto', { step: n });
+                }, step);
+                for (const [ms, progress] of [
+                  [0, '0'],
+                  [900, '1'],
+                ] as const) {
+                  await page.evaluate((t) => window.__app?.clock.set(t), ms);
+                  const message = page.getByTestId('message');
+                  // A step from a participant to itself is there at once.
+                  const still =
+                    (await message.getAttribute('data-from')) ===
+                    (await message.getAttribute('data-to'));
+                  await expect(message).toHaveAttribute('data-progress', still ? '1' : progress);
+                  const { scene, boxes, message: m } = await sceneBoxes(page);
+                  if (m === null) throw new Error('no message');
+                  const where = `${id} ${lang} ${on ? 'defence' : 'attack'} step ${String(step)} at ${progress}`;
+                  seen.push(
+                    `${on ? 'defence' : 'attack'} ${String(await message.getAttribute('data-step'))}`,
+                  );
+                  expect(layoutProblems(scene, boxes), where).toEqual([]);
+                  expect(messageProblems(scene, boxes, m), where).toEqual([]);
+                  // Text of the message is not below 11 px either.
+                  expect(m.word.fontSize, where).toBeGreaterThanOrEqual(11);
+                  // M1.2d: and no plaque text is cut.
+                  const label = page.getByTestId('message-label');
+                  if ((await label.count()) > 0) {
+                    expect(await label.textContent(), where).not.toContain('…');
+                  }
                 }
               }
             }
-          }
-          // Every step of the lesson in both modes, at both ends.
-          expect(seen, `${id} ${lang}`).toHaveLength(expected);
-          for (const on of [false, true]) {
-            for (const s of stepsInMode(data.steps, on)) {
-              expect(seen, `${id} ${lang}`).toContain(`${on ? 'defence' : 'attack'} ${s.id}`);
+            // Every step of the lesson in both modes, at both ends.
+            expect(seen, `${id} ${lang}`).toHaveLength(expected);
+            for (const on of [false, true]) {
+              for (const s of stepsInMode(data.steps, on)) {
+                expect(seen, `${id} ${lang}`).toContain(`${on ? 'defence' : 'attack'} ${s.id}`);
+              }
             }
           }
-        }
-      });
+        });
+      }
     }
 
     test('the message check sees a hidden ring, a hidden word and a plaque on a frame (M1.2c)', async ({
@@ -447,7 +450,10 @@ for (const viewport of VIEWPORTS) {
 
       const path = testInfo.outputPath(`scene-b1-${viewport.name}.png`);
       await page.screenshot({ ...SHOT, path });
-      await testInfo.attach(`scene-b1-${viewport.name}`, { path, contentType: 'image/png' });
+      await testInfo.attach(`scene-b1-${viewport.name}`, {
+        path,
+        contentType: 'image/png',
+      });
       // A copy that survives the next run, for a human look (SCENE_SHOTS=folder).
       const keep = process.env['SCENE_SHOTS'];
       if (keep !== undefined && keep !== '') {
@@ -487,7 +493,11 @@ test('an icon name the site does not know gets a placeholder, not a broken image
 
 test('broken lesson data is a message with a way out, not an empty page', async ({ page }) => {
   await page.route('**/data/catalog.json', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: '{"format": 1, "les' }),
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: '{"format": 1, "les',
+    }),
   );
   await page.goto('/ru/lesson/B1');
   const error = page.getByTestId('lesson-error');
@@ -545,7 +555,11 @@ test('an unknown lesson is a Russian message, not an empty page (M1.2b)', async 
 test('an icon that fails to download gets the placeholder too (M1.2b)', async ({ page }) => {
   const icon = await iconPath(page, 'attacker');
   await page.route(`**${icon}`, (route) =>
-    route.fulfill({ status: 200, contentType: 'image/webp', body: 'not an image' }),
+    route.fulfill({
+      status: 200,
+      contentType: 'image/webp',
+      body: 'not an image',
+    }),
   );
   await page.goto('/ru/lesson/B1');
   const attacker = page.getByTestId('participant-attacker');
