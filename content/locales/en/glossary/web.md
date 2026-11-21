@@ -480,3 +480,43 @@ Forms: open redirect, open redirects, open redirector, open redirectors
 An address on a site that sends the browser wherever a link parameter says, without checking
 where. The link looks like a link to a trusted site but leads to someone else's. The weakness
 class is CWE-601.
+
+## `mass-assignment` Mass assignment
+
+`category` web · `see` allowlist, authorization, privilege-escalation · `lessons` D7
+
+Forms: mass assignment
+
+A flaw in which the server copies every field of a request into an object without picking the
+allowed ones. A visitor adds a field that is not in the form, such as an admin flag, and the
+server saves it. Other names are autobinding and object injection; the weakness class is CWE-915.
+
+## `allowlist` Allowlist
+
+`category` web · `see` mass-assignment, ssrf · `lessons` B4, D7, D8
+
+Forms: allowlist, allowlists, allow list, allow lists
+
+A list of what is allowed: fields, addresses, file extensions. Everything else is forbidden by
+default. More reliable than a blocklist: a new dangerous value is easy to forget on a blocklist,
+while an allowlist simply does not let it through.
+
+## `ssrf` SSRF
+
+`category` web · `see` cloud-metadata, allowlist, trust-boundary · `lessons` D8
+
+Forms: SSRF, server-side request forgery
+
+Server-Side Request Forgery: the attacker makes the server send a request to an address of his
+choosing, for example into an internal network that cannot be reached from the internet. The
+weakness class is CWE-918; in the OWASP Top 10:2021 it is item A10:2021.
+
+## `request-smuggling` HTTP request smuggling
+
+`category` web · `see` reverse-proxy, web-server · `lessons` E1
+
+Forms: HTTP request smuggling, request smuggling, smuggling
+
+A proxy and a server disagree on where one request ends, and the attacker hides a second request
+inside the first. The server glues the hidden request to the next one, which belongs to someone
+else. The weakness class is CWE-444.

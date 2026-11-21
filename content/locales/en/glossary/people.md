@@ -81,3 +81,14 @@ Forms: proxy phishing
 Phishing in which the fake page instantly forwards everything typed into it to the real site and
 shows the real site's answers. This way the attacker gets the password, the one-time code and an
 open session. Login methods bound to the domain, such as passkeys, resist it.
+
+## `user-enumeration` User enumeration
+
+`category` people · `see` attacker, phishing · `lessons` D6
+
+Forms: user enumeration, account enumeration
+
+Reconnaissance in which the attacker finds out which logins or email addresses exist on a site.
+The hints are different answers to "no such user" and "wrong password", the sign-up and password
+recovery forms, and differing response times. The list of real logins then feeds password
+guessing and phishing.
