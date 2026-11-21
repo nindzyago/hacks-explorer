@@ -145,3 +145,70 @@ Forms: threat model, threat models, threat modeling, threat modelling
 An analysis of a system before any attack: a diagram of data flows and trust boundaries,
 then the question "what can go wrong" for each part. It finds weak spots while they are
 cheaper to fix.
+
+## `dependency` Dependency
+
+`category` basics · `see` package-registry, lock-file, typosquatting · `lessons` H6
+
+Forms: dependency, dependencies
+
+Someone else's library that a program relies on. Dependencies have dependencies of their own, so
+an ordinary project has hundreds of them; each one runs with the program's own rights.
+
+## `package-registry` Package registry
+
+`category` basics · `see` dependency, typosquatting · `lessons` H6
+
+Forms: package registry, package registries, public registry, internal registry, own registry
+
+A server developers download libraries from with a command like `npm install`. Any registered
+user can publish to a public registry, so a package name alone does not tell you who wrote it.
+Companies also run an internal registry with vetted packages.
+
+## `lock-file` Lock file
+
+`category` basics · `see` dependency · `lessons` H6
+
+Forms: lock file, lock files
+
+A project file with the exact versions of all dependencies, nested ones included, for example
+`package-lock.json`. Installing from it (`npm ci`) gives everyone the same set and aborts on any
+mismatch.
+
+## `build-server` Build server
+
+`category` basics · `see` reproducible-build, code-signing, supply-chain-attack · `lessons` H5
+
+Forms: build server, build servers
+
+The machine that turns source code into the finished program and often signs it too. Whoever
+takes over the build server can change what every user receives without touching the code in the
+repository.
+
+## `code-signing` Code signing
+
+`category` basics · `see` build-server, reproducible-build · `lessons` H5
+
+Forms: code signing, update signatures
+
+A digital signature on a program made with the vendor's key. It proves who signed the file and
+that it has not changed since, but not that nothing extra was in it before signing.
+
+## `reproducible-build` Reproducible build
+
+`category` basics · `see` build-server, code-signing · `lessons` H5
+
+Forms: reproducible build, reproducible builds, reproducible
+
+A build where the same code and the same inputs always give a bit-for-bit identical result. Two
+independent builds can be compared: a mismatch reveals tampering on one of the machines.
+
+## `sbom` SBOM
+
+`category` basics · `see` dependency, supply-chain-attack · `lessons` H5
+
+Forms: SBOM
+
+Software Bill of Materials: an inventory of a program's components, which libraries and which
+versions it contains. It helps to see quickly whether a program is affected when a vulnerability
+is found in a component.

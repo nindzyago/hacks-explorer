@@ -53,6 +53,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [434, 'Unrestricted Upload of File with Dangerous Type'],
   [444, 'Inconsistent Interpretation of HTTP Requests'],
   [502, 'Deserialization of Untrusted Data'],
+  [506, 'Embedded Malicious Code'],
   [564, 'Use of Hibernate with HQL/SQL Query String Containing External Input'],
   [601, 'URL Redirection to Untrusted Site'],
   [611, 'Improper Restriction of XML External Entity Reference'],
@@ -61,6 +62,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [707, 'Improper Neutralization'],
   [759, 'Use of a One-Way Hash without a Salt'],
   [770, 'Allocation of Resources Without Limits or Throttling'],
+  [829, 'Inclusion of Functionality from Untrusted Control Sphere'],
   [862, 'Missing Authorization'],
   [915, 'Improperly Controlled Modification of Dynamically-Determined Object Attributes'],
   [916, 'Use of Password Hash With Insufficient Computational Effort'],
@@ -84,6 +86,8 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1189', 'Drive-by Compromise'],
   ['T1190', 'Exploit Public-Facing Application'],
   ['T1195', 'Supply Chain Compromise'],
+  ['T1195.001', 'Supply Chain Compromise: Compromise Software Dependencies and Development Tools'],
+  ['T1195.002', 'Supply Chain Compromise: Compromise Software Supply Chain'],
   ['T1204', 'User Execution'],
   ['T1204.002', 'User Execution: Malicious File'],
   ['T1210', 'Exploitation of Remote Services'],
@@ -109,6 +113,9 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1595', 'Active Scanning'],
   ['T1598', 'Phishing for Information'],
   ['T1621', 'Multi-Factor Authentication Request Generation'],
+  ['T1657', 'Financial Theft'],
+  ['T1684', 'Social Engineering'],
+  ['T1684.001', 'Social Engineering: Impersonation'],
 ]);
 
 /** OWASP Top 10:2021 and Top 10 for LLM Applications 2025 → item name. */

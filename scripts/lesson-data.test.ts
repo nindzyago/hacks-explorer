@@ -400,8 +400,9 @@ describe('the glossary', () => {
     if (!catalog.ok) throw new Error(catalog.error.message);
     expect(all.errors).toEqual([]);
     for (const g of all.glossaries) {
-      // As many copies of today's terms as fit under the cap of the checker.
-      const times = Math.max(5, Math.floor(MAX_GLOSSARY_TERMS / g.terms.length));
+      // As many copies of today's terms as fit under the cap of the checker (at least 5 overshot it
+      // once the glossary passed 120 terms).
+      const times = Math.floor(MAX_GLOSSARY_TERMS / g.terms.length);
       const copy = (id: string, k: number) => (k === 0 ? id : `${id.slice(0, 28)}-x${String(k)}`);
       const big: Glossary = {
         ...g,

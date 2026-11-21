@@ -92,3 +92,43 @@ Reconnaissance in which the attacker finds out which logins or email addresses e
 The hints are different answers to "no such user" and "wrong password", the sign-up and password
 recovery forms, and differing response times. The list of real logins then feeds password
 guessing and phishing.
+
+## `spear-phishing` Spear phishing
+
+`category` people · `see` phishing, social-engineering, bec · `lessons` I2
+
+Forms: spear phishing, spearphishing
+
+Phishing prepared for a particular person or company, with real names, job titles and business
+gathered from open sources. That makes it more convincing than a mass mailing. In MITRE ATT&CK
+phishing is technique T1566, and the targeted variant is called spearphishing.
+
+## `bec` BEC
+
+`category` people · `see` spear-phishing, lookalike-domain, out-of-band · `lessons` I2
+
+Forms: BEC, Business Email Compromise
+
+Business Email Compromise: payment fraud through correspondence. The attacker writes as an
+executive or a supplier from a compromised or fake mailbox and asks for money to be sent to their
+own account. The main defence is confirming any change of bank details by calling a known number.
+
+## `lookalike-domain` Lookalike domain
+
+`category` people · `see` domain, bec, dmarc · `lessons` I2
+
+Forms: lookalike domain, lookalike domains
+
+A domain that differs from the real one by a letter or a hyphen: `acme-example.example` instead of
+`acme.example`. It is a real domain owned by the attacker and passes SPF, DKIM and DMARC checks, so
+look at the address itself.
+
+## `out-of-band` Second channel
+
+`category` people · `see` bec, social-engineering · `lessons` I2
+
+Forms: second channel, independent channel
+
+Checking a request through a different way of reaching someone that the attacker does not
+control: a call to a number from the directory or the contract, meeting in person. A reply in the
+same thread does not count as a second channel.
