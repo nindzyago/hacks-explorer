@@ -37,19 +37,19 @@
 ### `publish` A package with a lookalike name
 
 `attacker → registry` · `attack` · `icon:document`
-Message: acme-utlis 1.0.0 · Result: published
+Message: fake · Result: published
 
 ```json
 {
-  "name": "⟦acme-utlis⟧",
+  "name": "⟦acme-example-utlis⟧",
   "scripts": { "postinstall": "⟦node collect.js⟧" }
 }
 ```
 
 #### Simple
 
-There is a popular library called `acme-utils`. The attacker publishes a package named
-`acme-utlis` in the public registry: two letters swapped. It looks like an ordinary library, with
+There is a popular library called `acme-example-utils`. The attacker publishes a package named
+`acme-example-utlis` in the public registry: two letters swapped. It looks like an ordinary library, with
 harmful code inside.
 
 #### Step by step
@@ -67,15 +67,15 @@ newer variant: package names an AI assistant makes up, which the attacker regist
 ### `typo` The developer's typo
 
 `dev → mirror` · `legit`
-Message: acme-utlis · Result: request sent
+Message: typo · Result: request sent
 
 ```text
-$ npm install ⟦acme-utlis⟧
+$ npm install ⟦acme-example-utlis⟧
 ```
 
 #### Simple
 
-The developer wants to add `acme-utils` to the project, but is in a hurry and types the name with
+The developer wants to add `acme-example-utils` to the project, but is in a hurry and types the name with
 a typo. The command does not complain: a package with that name exists.
 
 #### Step by step
@@ -92,7 +92,7 @@ knowing the versions of all components you use, nested dependencies included.
 ### `deliver` The registry hands over the fake
 
 `registry → mirror` · `attack` · `without-defence`
-Message: acme-utlis · Result: passed through
+Message: fake · Result: passed through
 
 #### Simple
 
@@ -115,10 +115,10 @@ registry, and placeholder packages with the same names in the public registry.
 ### `install` The install script
 
 `mirror → dev` · `attack` · `without-defence`
-Message: acme-utlis · Result: script runs
+Message: fake · Result: script runs
 
 ```text
-> acme-utlis 1.0.0, postinstall
+> acme-example-utlis 1.0.0, postinstall
 > ⟦node collect.js⟧
 ```
 
@@ -136,8 +136,8 @@ they see the developer's files, environment variables and network.
 
 The OWASP npm cheat sheet advises not running install scripts by default: the `--ignore-scripts`
 flag or the line `ignore-scripts=true` in `.npmrc`, with an allowlist for the packages that need
-them. It adds a caveat: this only postpones them, since `npm test` and `npm start` still run
-scripts. And the library's own code will run as soon as the project calls it.
+them. The flag only stops install scripts: the library's own code will run as soon as the
+project calls it.
 
 ### `steal` Tokens go to the attacker
 
@@ -169,17 +169,17 @@ token turns an attack on one developer into a supply chain attack.
 ### `vet` The package is not on the vetted list
 
 `registry → mirror` · `attack` · `with-defence` · `stopped`
-Message: acme-utlis · Result: stopped
+Message: fake · Result: stopped
 
 ```text
-acme-utlis   ⟦not on the approved list⟧ → refused
-acme-utils   approved, version 3.2.0
+acme-example-utlis   ⟦not on the approved list⟧ → refused
+acme-example-utils   approved, version 3.2.0
 ```
 
 #### Simple
 
 Now the company's own registry serves only packages the company has checked and approved.
-`acme-utlis` is not on that list, so it never reaches the developer.
+`acme-example-utlis` is not on that list, so it never reaches the developer.
 
 #### Step by step
 
@@ -195,11 +195,11 @@ sources over secure links, prefer signed packages, and remove unused dependencie
 ### `right` Installing with a lock file
 
 `mirror → dev` · `safe` · `with-defence`
-Message: acme-utils · Result: installed
+Message: real one · Result: installed
 
 ```text
-$ npm install acme-utils --ignore-scripts
-acme-utils 3.2.0  recorded in package-lock.json
+$ npm install acme-example-utils --ignore-scripts
+acme-example-utils 3.2.0  recorded in package-lock.json
 ```
 
 #### Simple

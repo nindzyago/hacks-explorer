@@ -100,7 +100,7 @@ Message: urgent, new bank details · Result: the accountant believed it
 From: I. Petrov <ceo@⟦acme-example.example⟧>
 Subject: Urgent: payment to Supplier
 Supplier has changed banks. Pay invoice no. 318 today
-to the ⟦new account 40702…9917⟧. I'm at the fair, don't call, write.
+to the ⟦new account 40702…9917⟧. I'm at the fair, don't call, just email.
 ```
 
 #### Simple
@@ -118,8 +118,8 @@ differs by a few letters. The urgency and the "don't call" cut the accountant of
 
 Posing as an executive, a colleague or a supplier is MITRE ATT&CK sub-technique T1684.001, Social
 Engineering: Impersonation; the page notes that such emails push with words like "payment" and
-"urgent". A lookalike domain passes SPF, DKIM and DMARC: it is the attacker's real domain, and
-those checks only confirm the email came from it. Sometimes the attacker writes from a real
+"urgent". A lookalike domain can pass SPF, DKIM and DMARC: it is the attacker's real domain,
+and if they have set up the records, those checks only confirm the email came from it. Sometimes the attacker writes from a real
 compromised mailbox, and then the address does not differ at all.
 
 ### `pay` Payment to someone else's account
@@ -140,7 +140,7 @@ it is an ordinary transfer made by the customer.
 #### Step by step
 
 No computer was hacked, no password was stolen. The payment was made by a real employee from the
-company's real bank, so security systems notice nothing.
+company's own account, so security systems often notice nothing.
 
 #### Deeper
 

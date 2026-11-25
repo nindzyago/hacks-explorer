@@ -120,7 +120,7 @@ own account. The main defence is confirming any change of bank details by callin
 Forms: lookalike domain, lookalike domains
 
 A domain that differs from the real one by a letter or a hyphen: `acme-example.example` instead of
-`acme.example`. It is a real domain owned by the attacker and passes SPF, DKIM and DMARC checks, so
+`acme.example`. It is a real domain owned by the attacker and can pass SPF, DKIM and DMARC checks, so
 look at the address itself.
 
 ## `out-of-band` Second channel

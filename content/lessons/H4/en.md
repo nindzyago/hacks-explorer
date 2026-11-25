@@ -69,7 +69,6 @@ Message: port 445? · Result: neighbour found
 ```text
 sweep 192.0.2.0/24, port 445
 192.0.2.22  ⟦open⟧
-192.0.2.10  ⟦open⟧
 ```
 
 #### Simple
@@ -80,7 +79,7 @@ whether the service it needs is running. That is how it finds neighbours.
 #### Step by step
 
 Inside the office, computers can reach each other. The worm knocks on the file sharing port at
-each address in turn and notes who answers. PC 2 and the server answer.
+each address in turn and notes who answers. PC 2 answers.
 
 #### Deeper
 
@@ -102,7 +101,7 @@ Message: SMB packet · Result: PC 2 infected
 #### Simple
 
 PC 2 is missing an update, and its service has a **vulnerability**. The worm sends a specially
-broken request, the service fails and starts a copy of the worm.
+crafted request, the service fails and starts a copy of the worm.
 
 #### Step by step
 
@@ -140,7 +139,7 @@ and one missing patch on many machines turn one infection into an infection of t
 organisation. RFC 4949 mentions the Morris Worm, which flooded the ARPANET in November 1988 and
 caused problems for thousands of hosts.
 
-### `payload` The blow
+### `payload` The payload hits
 
 `server → server` · `attack` · `without-defence`
 Message: payload · Result: server down
@@ -213,7 +212,7 @@ when the hole is not yet known.
 ## How to defend
 
 - **Install updates quickly.** Especially for services that accept connections from the network:
-  worms use known vulnerabilities that have already been fixed.
+  worms most often use known vulnerabilities that already have a fix.
 - **Split the network into segments.** Workstations should not see every server service or each
   other; a firewall lets through only the connections that are needed.
 - **Turn off what you do not need.** Old protocols such as SMBv1 and unused services are extra

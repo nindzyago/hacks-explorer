@@ -207,8 +207,8 @@ compares the results. They do not match, and the release does not go out to cust
 
 #### Step by step
 
-The build is **reproducible**: the same code always gives a file that is identical down to the
-bit. The attacker altered only one build, so its fingerprint differs from the other one.
+The build is **reproducible**: the same code and the same inputs always give a file that is
+identical down to the bit. The attacker altered only one build, so its fingerprint differs from the other one.
 
 #### Deeper
 
