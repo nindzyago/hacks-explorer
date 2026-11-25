@@ -63,7 +63,7 @@ The network numbers in this lesson come from the range reserved for documentatio
 the addresses from RFC 5737. BGP does not check that a network really holds the addresses it
 announces: RFC 4272 names this as one of the protocol's fundamental weaknesses.
 
-### `hijack` "No, they're mine, and more precisely"
+### `hijack` "No, they're mine, and more specifically"
 
 `attacker → isp` · `attack` · `without-defence`
 Message: /25 at AS64511 · Result: accepted, it is more specific
@@ -183,8 +183,8 @@ instead of the bank.
 
 #### Deeper
 
-TLS protects against a fake site: the attacker does not have the private key for bank.example's
-certificate, and the browser will show an error. But TLS does not save availability: the traffic
+TLS protects against a fake site as long as the attacker cannot get a certificate for
+bank.example: without its private key the browser shows an error. But TLS does not save availability: the traffic
 still never reaches the bank. That is why routes are protected in the network itself.
 
 ### `deliver` The packet arrives
@@ -204,8 +204,8 @@ that route.
 
 #### Deeper
 
-RPKI origin validation only checks who stands at the start of the path, that is, whose addresses
-these are. It does not catch a forged path as a whole. Other mechanisms exist for that, and until
+RPKI origin validation only checks the origin: the last network in the path, the one that
+claims the addresses. It does not catch a forged path as a whole. Other mechanisms exist for that, and until
 they are everywhere, providers add filters on top of RPKI: they accept from each neighbour only
 the addresses that neighbour should announce.
 

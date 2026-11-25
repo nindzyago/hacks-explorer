@@ -1,4 +1,4 @@
-# Trojans and command and control
+# Trojans and command-and-control channels
 
 `lesson` H3 · `section` H · `wave` 3 · `format` 1
 
@@ -174,8 +174,9 @@ useless.
 
 #### Deeper
 
-MITRE ATT&CK advises restricting and monitoring outbound web traffic so it goes only to approved
-destinations (mitigation M1037 "Filter Network Traffic"), and running intrusion detection and
+MITRE ATT&CK advises restricting and monitoring outbound web traffic from critical servers so it
+goes only to approved destinations (mitigation M1037 "Filter Network Traffic"); the same idea
+works for office computers through a gateway. It also advises running intrusion detection and
 prevention systems with signatures for malware (M1031). A strict allowlist suits servers best,
 since they barely need to go anywhere.
 

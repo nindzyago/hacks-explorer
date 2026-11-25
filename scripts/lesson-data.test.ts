@@ -401,7 +401,7 @@ describe('the glossary', () => {
     expect(all.errors).toEqual([]);
     for (const g of all.glossaries) {
       // As many copies of today's terms as fit under the cap of the checker.
-      const times = Math.max(5, Math.floor(MAX_GLOSSARY_TERMS / g.terms.length));
+      const times = Math.max(1, Math.floor(MAX_GLOSSARY_TERMS / g.terms.length));
       const copy = (id: string, k: number) => (k === 0 ? id : `${id.slice(0, 28)}-x${String(k)}`);
       const big: Glossary = {
         ...g,

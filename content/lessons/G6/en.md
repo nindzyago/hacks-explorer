@@ -88,7 +88,7 @@ wall, the twin knows it too.
 ### `kick` "Disconnect"
 
 `attacker → user` · `attack` · `without-defence`
-Message: "disconnect" in the AP's name · Result: laptop disconnected
+Message: "disconnect", posing as the AP · Result: laptop disconnected
 
 ```text
 from:   00-00-5E-00-53-01 (forged)
@@ -109,7 +109,8 @@ deauthentication frame, drops the connection and immediately looks for CafeNet a
 
 #### Deeper
 
-On older Wi-Fi networks, management frames such as "disconnect" are not protected at all. Anyone
+On networks without PMF (most WPA2 networks), management frames such as "disconnect" are not
+protected at all. Anyone
 who knows the access point's address can forge them, and that address is in every beacon. One
 guest or everyone at once can be kicked off this way.
 
@@ -184,7 +185,7 @@ into a Wi-Fi login page.
 ### `kick-pmf` The forgery fails
 
 `attacker → user` · `attack` · `with-defence` · `stopped`
-Message: forged "disconnect" · Result: check failed, frame dropped
+Message: "disconnect", posing as the AP · Result: check failed, frame dropped
 
 ```text
 frame:  deauthentication from 00-00-5E-00-53-01
@@ -237,8 +238,8 @@ the laptop will join any access point with the right name.
 - **WPA3 and PMF.** Access points and devices with WPA3 and management frame protection set to
   required. A forged "disconnect" then does nothing.
 - **Corporate Wi-Fi with certificate checks.** Staff devices check the sign-in server's
-  certificate and the name it was issued for. Without that check, an evil twin collects staff
-  passwords.
+  certificate and the name it was issued for. Without that check, on networks where staff sign in
+  with a password, an evil twin collects their passwords.
 - **HTTPS and a VPN on other people's networks.** Even if a guest ends up on the twin, it cannot
   read encrypted traffic. Do not click past certificate errors.
 - **Never type passwords into a Wi-Fi login page.** A real café network does not need your email

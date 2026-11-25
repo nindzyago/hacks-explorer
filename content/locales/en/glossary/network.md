@@ -119,7 +119,8 @@ sub-technique T1557.004 "Evil Twin".
 Forms: PMF, protected management frames, management frame protection
 
 Protected Management Frames, the IEEE 802.11w amendment to Wi-Fi. Control messages such as
-"disconnect" are protected with the network key, and a device throws forged ones away. Mandatory
+"disconnect" are protected with the key of the connection between the device and its access
+point, and a device throws forged ones away. Mandatory
 on WPA3 networks.
 
 ## `bgp` BGP

@@ -154,7 +154,7 @@ Forms: buffer overflow, buffer overflows, overflow, overflows
 
 A bug where a program writes data past the end of the memory slot set aside for it and damages
 the data next to it. On the stack this overwrites the return address and makes the program run
-foreign code (CWE-121). Languages that check bounds by themselves are protected from it.
+foreign code (CWE-121). Languages that check bounds by themselves largely rule it out.
 
 ## `stack-canary` Stack canary
 
