@@ -31,7 +31,7 @@ zone.
 
 ## `data-breach` Data breach
 
-`category` basics · `see` database, hash · `lessons` F1
+`category` basics · `see` database, hash · `lessons` F1, F2, F3
 
 Forms: data breach, data breaches, database leak, database leaks
 

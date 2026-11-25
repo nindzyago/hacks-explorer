@@ -131,6 +131,10 @@ Magnific, поэтому они **не** под CC BY-SA — все права �
 | `public/cards/D8.ru.png` | карточка урока D8, ru | `npm run cards` из текста урока, иконок (server, attacker, db) и шрифтов сайта |
 | `public/cards/E1.ru.png` | карточка урока E1, ru | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/F1.ru.png` | карточка урока F1, ru | `npm run cards` из текста урока, иконок (user, server, db) и шрифтов сайта |
+| `public/cards/F2.ru.png` | карточка урока F2, ru | `npm run cards` из текста урока, иконок (user, server, attacker) и шрифтов сайта |
+| `public/cards/F3.ru.png` | карточка урока F3, ru | `npm run cards` из текста урока, иконок (db, backup, attacker) и шрифтов сайта |
+| `public/cards/F6.ru.png` | карточка урока F6, ru | `npm run cards` из текста урока, иконок (user, browser, bank) и шрифтов сайта |
+| `public/cards/F7.ru.png` | карточка урока F7, ru | `npm run cards` из текста урока, иконок (attacker, user, browser) и шрифтов сайта |
 | `public/cards/G1.ru.png` | карточка урока G1, ru | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/G6.ru.png` | карточка урока G6, ru | `npm run cards` из текста урока, иконок (router, user, attacker) и шрифтов сайта |
 | `public/cards/G7.ru.png` | карточка урока G7, ru | `npm run cards` из текста урока, иконок (user, router, attacker) и шрифтов сайта |
@@ -178,6 +182,10 @@ Magnific, поэтому они **не** под CC BY-SA — все права �
 | `public/cards/D8.en.png` | карточка урока D8, en | `npm run cards` из текста урока, иконок (server, attacker, db) и шрифтов сайта |
 | `public/cards/E1.en.png` | карточка урока E1, en | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/F1.en.png` | карточка урока F1, en | `npm run cards` из текста урока, иконок (user, server, db) и шрифтов сайта |
+| `public/cards/F2.en.png` | карточка урока F2, en | `npm run cards` из текста урока, иконок (user, server, attacker) и шрифтов сайта |
+| `public/cards/F3.en.png` | карточка урока F3, en | `npm run cards` из текста урока, иконок (db, backup, attacker) и шрифтов сайта |
+| `public/cards/F6.en.png` | карточка урока F6, en | `npm run cards` из текста урока, иконок (user, browser, bank) и шрифтов сайта |
+| `public/cards/F7.en.png` | карточка урока F7, en | `npm run cards` из текста урока, иконок (attacker, user, browser) и шрифтов сайта |
 | `public/cards/G1.en.png` | карточка урока G1, en | `npm run cards` из текста урока, иконок (user, attacker, router) и шрифтов сайта |
 | `public/cards/G6.en.png` | карточка урока G6, en | `npm run cards` из текста урока, иконок (router, user, attacker) и шрифтов сайта |
 | `public/cards/G7.en.png` | карточка урока G7, en | `npm run cards` из текста урока, иконок (user, router, attacker) и шрифтов сайта |

@@ -81,7 +81,7 @@ this is used to cut off the rest of the query, for example the password check.
 
 ## `hash` Hash
 
-`category` web · `see` database · `lessons` B1
+`category` web · `see` database · `lessons` B1, F3
 
 Forms: hash, hashes
 
@@ -294,7 +294,7 @@ apps and recommends it for the rest.
 
 ## `salt` Salt
 
-`category` web · `see` hash, password-hashing · `lessons` F1
+`category` web · `see` hash, password-hashing · `lessons` F1, F3
 
 Forms: salt, salts, salted
 
@@ -304,13 +304,23 @@ hashes, and tables of hashes computed in advance are useless.
 
 ## `password-hashing` Password hashing function
 
-`category` web · `see` hash, salt · `lessons` F1
+`category` web · `see` hash, salt · `lessons` F1, F3
 
 Forms: password hashing function, password hashing functions, slow hash function, slow hash, slow hashes
 
 A hash function that deliberately spends noticeable time, and sometimes memory, on every hash:
 Argon2id, scrypt, bcrypt, PBKDF2. For one login this goes unnoticed, while guessing millions of
 passwords against a leaked database becomes very expensive.
+
+## `rainbow-table` Rainbow table
+
+`category` web · `see` hash, salt, password-hashing · `lessons` F3
+
+Forms: rainbow table, rainbow tables
+
+A table computed in advance that quickly turns a hash back into a password. It stores not every
+“password, hash” pair but chains, of which only the start and the end are written down: that makes
+it many times smaller. It works only against fast hashes without a salt.
 
 ## `jndi` JNDI
 

@@ -30,7 +30,7 @@
 
 ## `data-breach` Утечка данных
 
-`category` basics · `see` database, hash · `lessons` F1
+`category` basics · `see` database, hash · `lessons` F1, F2, F3
 
 Формы: утечка данных, утечки данных, утечке данных, утечку данных, утечкой данных, утечка базы, утечки базы, утечку базы
 
