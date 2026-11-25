@@ -48,11 +48,15 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [306, 'Missing Authentication for Critical Functionality'],
   [307, 'Improper Restriction of Excessive Authentication Attempts'],
   [308, 'Use of Single-factor Authentication'],
+  [319, 'Cleartext Transmission of Sensitive Information'],
+  [331, 'Insufficient Entropy'],
+  [345, 'Insufficient Verification of Data Authenticity'],
   [347, 'Improper Verification of Cryptographic Signature'],
   [352, 'Cross-Site Request Forgery'],
   [362, 'Concurrent Execution using Shared Resource with Improper Synchronization'],
   [367, 'Time-of-check Time-of-use (TOCTOU) Race Condition'],
   [384, 'Session Fixation'],
+  [406, 'Insufficient Control of Network Message Volume (Network Amplification)'],
   [434, 'Unrestricted Upload of File with Dangerous Type'],
   [444, 'Inconsistent Interpretation of HTTP Requests'],
   [502, 'Deserialization of Untrusted Data'],
@@ -63,6 +67,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [639, 'Authorization Bypass Through User-Controlled Key'],
   [640, 'Weak Password Recovery Mechanism for Forgotten Password'],
   [707, 'Improper Neutralization'],
+  [757, 'Selection of Less-Secure Algorithm During Negotiation'],
   [759, 'Use of a One-Way Hash without a Salt'],
   [770, 'Allocation of Resources Without Limits or Throttling'],
   [829, 'Inclusion of Functionality from Untrusted Control Sphere'],
@@ -99,7 +104,10 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1204.002', 'User Execution: Malicious File'],
   ['T1210', 'Exploitation of Remote Services'],
   ['T1486', 'Data Encrypted for Impact'],
+  ['T1498', 'Network Denial of Service'],
+  ['T1498.002', 'Network Denial of Service: Reflection Amplification'],
   ['T1499', 'Endpoint Denial of Service'],
+  ['T1499.001', 'Endpoint Denial of Service: OS Exhaustion Flood'],
   ['T1499.003', 'Endpoint Denial of Service: Application Exhaustion Flood'],
   ['T1505', 'Server Software Component'],
   ['T1505.003', 'Server Software Component: Web Shell'],
@@ -124,6 +132,7 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1657', 'Financial Theft'],
   ['T1684', 'Social Engineering'],
   ['T1684.001', 'Social Engineering: Impersonation'],
+  ['T1689', 'Downgrade Attack'],
 ]);
 
 /** OWASP Top 10:2021 and Top 10 for LLM Applications 2025 → item name. */
@@ -152,6 +161,7 @@ export const OWASP_ITEMS: ReadonlyMap<string, string> = new Map([
 
 /** CVE id → date NVD published the record. */
 export const CVE_RECORDS: ReadonlyMap<string, string> = new Map([
+  ['CVE-2008-1447', '2008-07-08'],
   ['CVE-2014-0160', '2014-04-07'],
   ['CVE-2014-6271', '2014-09-24'],
   ['CVE-2017-0144', '2017-03-17'],
