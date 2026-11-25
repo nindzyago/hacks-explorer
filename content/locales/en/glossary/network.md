@@ -101,3 +101,62 @@ A service inside a cloud that tells a virtual machine what machine it is and han
 keys for the cloud. It is reachable only from the machine itself, at a special address. Through
 SSRF the attacker makes the server ask it and takes the keys; in MITRE ATT&CK this is
 sub-technique T1552.005.
+
+## `evil-twin` Evil twin
+
+`category` network · `see` mitm, pmf · `lessons` G6
+
+Forms: evil twin, evil twins
+
+A fake Wi-Fi access point with the same name as a real network, often with a stronger signal.
+Devices connect to it, and the attacker ends up in the middle. In MITRE ATT&CK it is
+sub-technique T1557.004 "Evil Twin".
+
+## `pmf` PMF
+
+`category` network · `see` evil-twin · `lessons` G6
+
+Forms: PMF, protected management frames, management frame protection
+
+Protected Management Frames, the IEEE 802.11w amendment to Wi-Fi. Control messages such as
+"disconnect" are protected with the key of the connection between the device and its access
+point, and a device throws forged ones away. Mandatory
+on WPA3 networks.
+
+## `bgp` BGP
+
+`category` network · `see` autonomous-system, rpki, router · `lessons` G7
+
+Forms: BGP, BGP-4
+
+Border Gateway Protocol (RFC 4271): the protocol internet networks use to tell each other which
+addresses are where and which way to reach them. BGP itself does not check that a network holds
+the addresses it announces.
+
+## `autonomous-system` Autonomous system
+
+`category` network · `see` bgp · `lessons` G7
+
+Forms: autonomous system, autonomous systems
+
+A network under one administration, such as a provider or a large company, with its own number
+(ASN). Such networks exchange routes over BGP.
+
+## `rpki` RPKI
+
+`category` network · `see` bgp, certificate · `lessons` G7
+
+Forms: RPKI, ROA, ROAs
+
+Resource Public Key Infrastructure (RFC 6480): a registry of signed records about who holds
+which addresses. A ROA record says which network number may announce a range. Providers check BGP
+announcements against it and drop the ones that do not match (RFC 6811).
+
+## `egress-filtering` Egress filtering
+
+`category` network · `see` c2, network-segmentation · `lessons` H3
+
+Forms: egress filtering, outbound traffic, outbound connections
+
+Rules at the way out of a network: computers and servers may connect only to the destinations
+their work needs. A captured machine then cannot reach the attacker's server.

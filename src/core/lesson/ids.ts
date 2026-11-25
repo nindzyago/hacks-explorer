@@ -40,6 +40,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [79, 'Improper Neutralization of Input During Web Page Generation'],
   [89, 'Improper Neutralization of Special Elements used in an SQL Command'],
   [94, 'Improper Control of Generation of Code'],
+  [120, "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')"],
   [121, 'Stack-based Buffer Overflow'],
   [204, 'Observable Response Discrepancy'],
   [208, 'Observable Timing Discrepancy'],
@@ -76,8 +77,10 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
 
 /** ATT&CK Enterprise technique or sub-technique → name as on its page. */
 export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
+  ['T1041', 'Exfiltration Over C2 Channel'],
   ['T1046', 'Network Service Discovery'],
   ['T1071', 'Application Layer Protocol'],
+  ['T1071.001', 'Application Layer Protocol: Web Protocols'],
   ['T1110', 'Brute Force'],
   ['T1110.002', 'Brute Force: Password Cracking'],
   ['T1110.004', 'Brute Force: Credential Stuffing'],
@@ -98,6 +101,7 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1552', 'Unsecured Credentials'],
   ['T1552.005', 'Unsecured Credentials: Cloud Instance Metadata API'],
   ['T1557', 'Adversary-in-the-Middle'],
+  ['T1557.004', 'Adversary-in-the-Middle: Evil Twin'],
   ['T1565', 'Data Manipulation'],
   ['T1565.001', 'Data Manipulation: Stored Data Manipulation'],
   ['T1566', 'Phishing'],

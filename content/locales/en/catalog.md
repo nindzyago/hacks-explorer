@@ -81,7 +81,7 @@ The short name of a section, on its button in the lessons column, follows « · 
 
 - `H1` Buffer overflow
 - `H2` Ransomware
-- `H3` Trojans and command and control
+- `H3` Trojans and command-and-control channels
 - `H4` Worms
 - `H5` Supply chain attacks
 - `H6` Dangerous dependencies and typosquatting

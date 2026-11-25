@@ -17,3 +17,4 @@ request: одна строка — домен в обратных кавычка
 - `logging.apache.org` Apache Logging Services: бюллетени безопасности Log4j
 - `cve.org` CVE Program: записи CVE, словарь и порядок работы программы
 - `csrc.nist.gov` NIST Computer Security Resource Center: словарь терминов
+- `wi-fi.org` Wi-Fi Alliance: программы сертификации Wi-Fi (WPA3, защищённые служебные кадры)
