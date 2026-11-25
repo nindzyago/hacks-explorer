@@ -120,8 +120,9 @@ second factor is the best defence. In MITRE ATT&CK it is sub-technique T1110.004
 Forms: rate limiting, rate limit, rate limits, throttling
 
 A rule by which a site counts failed logins for each account, makes each next try wait longer and
-switches login off past a limit. Per NIST, no more than 100 consecutive failed attempts. It makes
-guessing passwords through the login form pointless.
+switches login off past a limit. Per NIST, no more than 100 consecutive failed attempts. It leaves
+an attacker at most a hundred guesses per account instead of millions, and it hardly notices
+credential stuffing.
 
 ## `otp` One-time code
 
@@ -129,9 +130,9 @@ guessing passwords through the login form pointless.
 
 Forms: one-time code, one-time codes, one-time password, one-time passwords, TOTP
 
-A short code, usually six digits, that works once or for a few seconds: it arrives by SMS or is
-computed by an app (TOTP, a new one every 30 seconds). It serves as a second factor. People type it
-by hand, so a fake page can lure it out and relay it.
+A short code, usually six digits, that works once and only for a short time: it arrives by SMS or
+is computed by an app (TOTP, usually a new one every 30 seconds). It serves as a second factor.
+People type it by hand, so a fake page can lure it out and relay it.
 
 ## `mfa-fatigue` MFA fatigue
 
@@ -140,7 +141,7 @@ by hand, so a fake page can lure it out and relay it.
 Forms: MFA fatigue, push fatigue, push bombing
 
 A way around a second factor in which an attacker with a valid password starts a login again and
-again until the person taps «Yes» on the prompt just to make it stop. Number matching and a limit
+again until the person taps “Yes” on the prompt just to make it stop. Number matching and a limit
 on prompts help. In MITRE ATT&CK it is technique T1621.
 
 ## `sim-swap` SIM swap
@@ -150,8 +151,8 @@ on prompts help. In MITRE ATT&CK it is technique T1621.
 Forms: SIM swap, SIM swaps, SIM swapping
 
 Tricking a mobile carrier: a fraudster gets the victim's number moved to his own SIM card and
-receives the victim's texts and calls, sign-in codes included. That is why SMS codes are the
-weakest second factor.
+receives the victim's texts and calls, sign-in codes included. That is why NIST SP 800-63B treats
+codes over the phone network as a restricted method, and SMS is among the weakest second factors.
 
 ## `webauthn` WebAuthn
 

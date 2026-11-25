@@ -53,16 +53,16 @@ hashes passwords with the same function and no salt.
 
 #### Step by step
 
-Writing down every «password, hash» pair is out of the question: there are far too many. So the
+Writing down every “password, hash” pair is out of the question: there are far too many. So the
 table stores chains. Take a password, compute its hash, turn the hash into a new candidate
 password, hash that, and so on a thousand times. Only the first and the last password of each
 chain go into the table.
 
 #### Deeper
 
-The «hash to password» step is done by a reduction function (R in the picture). It does not
+The “hash to password” step is done by a reduction function (R in the picture). It does not
 reverse the hash; it just turns a hash into a string of the right shape. Each link of the chain
-uses its own reduction function, hence the word «rainbow»: this way chains merge with each other
+uses its own reduction function, hence the word “rainbow”: this way chains merge with each other
 less often. It is a trade-off between time and memory: the table is many times smaller than the
 full list, and looking things up in it takes computation.
 
@@ -108,9 +108,9 @@ not years of guessing.
 
 #### Step by step
 
-Starting from the hash, he builds the tail of a chain: reduce, hash, reduce, hash. After each link
-he checks whether the resulting password is among the chain ends in the table. A match means the
-hash is somewhere inside that chain.
+First he assumes the hash is in the last link: he applies the last reduction and checks whether the
+result is among the chain ends. If not, he assumes the next-to-last link and computes from there to
+the end of the chain, and so on. A match means the hash is somewhere inside that chain.
 
 #### Deeper
 
@@ -140,7 +140,7 @@ hashes of different people give away a shared password at once.
 
 #### Deeper
 
-In MITRE ATT&CK this is sub-technique T1110.002 «Password Cracking»: its description names both
+In MITRE ATT&CK this is sub-technique T1110.002 “Password Cracking”: its description names both
 systematic guessing and a pre-computed rainbow table. The cracking happens on the attacker's own
 computers, so the site never learns about it and can no longer interfere.
 
@@ -162,7 +162,7 @@ database leaks just the same, but the hashes in it are different now.
 #### Step by step
 
 The salt is stored next to the hash and isn't a secret. Its job is to make every password's hash
-unique: the same `sunny2024` for Alice and for Bob gives different records.
+unique: even if Bob also chose `sunny2024`, his record would not match Alice's.
 
 #### Deeper
 
@@ -214,7 +214,7 @@ ready-made work done in advance any more.
 
 A truly simple password from the top of a dictionary will still be found. That is why the site
 also refuses passwords from a list of common and leaked ones, and a secret key outside the
-database (a «pepper») makes a copy of the database alone useless.
+database (a “pepper”) makes a copy of the database alone useless.
 
 ## How to defend
 
@@ -225,4 +225,4 @@ database (a «pepper») makes a copy of the database alone useless.
 - **A pepper.** An extra secret key kept outside the database: one database leak is not enough.
 - **A list of banned passwords.** The most common and already leaked passwords can't be chosen.
 - **Rehashing old hashes.** If the database still has fast unsalted hashes, they are recomputed with
-  a new function (details in the lesson «Hashes and salt»).
+  a new function (details in the lesson “Hashes and salt”).

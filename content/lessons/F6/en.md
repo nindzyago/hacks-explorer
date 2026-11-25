@@ -55,16 +55,16 @@ that second step is passed, there is no session. A stolen password alone gets hi
 
 #### Deeper
 
-Second factors come in different kinds. A code by SMS, a code from an app (TOTP: a new one every 30
-seconds under RFC 6238), a «confirm this login» notification, a hardware key or a passkey. An SMS
-code can be taken even without Alice: in a SIM swap, a fraudster talks the mobile carrier into
-moving her number to his SIM card. NIST SP 800-63B treats delivering codes over the phone network
-as a restricted method. Next the hacker tries to get around the second factor.
+Second factors come in different kinds. A code by SMS, a code from an app (TOTP: usually a new one
+every 30 seconds, the default RFC 6238 recommends), a “confirm this login” notification, a hardware
+key or a passkey. An SMS code can be taken even without Alice: in a SIM swap, a fraudster talks the
+mobile carrier into moving her number to his SIM card. NIST SP 800-63B treats delivering codes over
+the phone network as a restricted method. Next the hacker tries to get around the second factor.
 
 ### `fatigue` A flood of prompts
 
 `bank → user` · `attack` · `without-defence`
-Message: «Is it you?» ×20 · Result: Alice tapped «Yes»
+Message: “Is it you?” ×20 · Result: Alice tapped “Yes”
 
 ```text
 Bank: Confirm sign-in   [Yes] [No]
@@ -74,15 +74,15 @@ Bank: Confirm sign-in   [Yes] [No]
 
 #### Simple
 
-The hacker signs in with Alice's password again and again, and each time the bank sends «Confirm
-sign-in» to her phone. At night the twentieth prompt arrives, and Alice, just to make it stop,
-**taps «Yes»**.
+The hacker signs in with Alice's password again and again, and each time the bank sends “Confirm
+sign-in” to her phone. At night the twentieth prompt arrives, and Alice, just to make it stop,
+**taps “Yes”**.
 
 #### Step by step
 
-The prompt doesn't say who is signing in or from where, and there is just one button. The bank
-doesn't limit the number of requests. Sometimes the hacker also calls, posing as support: «tap it
-so we can block the access».
+The prompt doesn't say who is signing in or from where, and a single tap on “Yes” approves it. The
+bank doesn't limit the number of requests. Sometimes the hacker also calls, posing as support: “tap
+it so we can block the access”.
 
 #### Deeper
 
@@ -137,7 +137,7 @@ was formally passed.
 
 #### Step by step
 
-The fake shows Alice an «error» or lets her carry on, and keeps the cookie. With it the hacker
+The fake shows Alice an “error” or lets her carry on, and keeps the cookie. With it the hacker
 moves around the bank's site with no password and no code, for as long as the session lives.
 
 #### Deeper
@@ -149,7 +149,7 @@ multi-factor authentication.
 ### `match` The number on the login screen
 
 `bank → user` · `attack` · `with-defence` · `stopped`
-Message: «Enter the number» · Result: login refused
+Message: “Enter the number” · Result: login refused
 
 ```text
 Bank: Sign-in from a new device. Enter the number: [ __ ]
@@ -158,8 +158,8 @@ Alice isn't signing in and ⟦sees no number⟧
 
 #### Simple
 
-Now the prompt asks not for «Yes» but for the **number** shown on the sign-in screen. Alice isn't
-signing in, so there is no screen with a number. Tapping «Yes» without looking is no longer
+Now the prompt asks not for “Yes” but for the **number** shown on the sign-in screen. Alice isn't
+signing in, so there is no screen with a number. Tapping “Yes” without looking is no longer
 possible.
 
 #### Step by step
@@ -204,7 +204,7 @@ and prompt floods.
 ### `report` Alice tells the bank
 
 `user → bank` · `safe` · `with-defence`
-Message: «It wasn’t me» · Result: password changed
+Message: “It wasn’t me” · Result: password changed
 
 #### Simple
 
@@ -213,14 +213,15 @@ attempts came from.
 
 #### Step by step
 
-A failed second factor after a correct password means strangers know the password. It gets
-changed, and the login attempts get checked.
+A correct password followed by a failed second factor, when Alice wasn't signing in, means
+strangers know the password. It gets changed, and the login attempts get checked.
 
 #### Deeper
 
-In this case OWASP advises notifying the person, suggesting a password change, and watching for
-unusual events: a login from an unfamiliar network, «impossible travel» (two logins from far-apart
-places in a row), a sudden change of second-factor method.
+For a failed second factor OWASP advises notifying the person with the time, browser and location,
+and suggesting a password change. Against proxy phishing it also advises watching for unusual
+events: a login from an unfamiliar network, “impossible travel” (two logins from far-apart places
+in a row), a sudden change of second-factor method.
 
 ## How to defend
 

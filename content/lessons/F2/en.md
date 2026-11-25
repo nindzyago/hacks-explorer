@@ -62,9 +62,10 @@ on another site**.
 
 #### Deeper
 
-An account is only as safe as every other place that holds the same password. The shop can't see
-that a password is reused unless it checks it against a list of leaked passwords. NIST SP 800-63B
-requires such a check when a password is chosen.
+An account is only as safe as every other place that holds the same password. The shop can't tell
+that a password is reused elsewhere. NIST SP 800-63B requires checking a new password against a
+list of common and already leaked ones, but that catches only passwords that leaked earlier:
+Alice's will leak later.
 
 ### `leak` The forum leaks
 
@@ -85,7 +86,7 @@ downloads a ready-made list: an email and a password, line after line.
 #### Step by step
 
 The forum stored passwords with a fast hash and no salt, so most of them have already been cracked
-(the lesson «Hashes and salt» shows how). Now the hacker has pairs that **definitely worked** for
+(the lesson “Hashes and salt” shows how). Now the hacker has pairs that **definitely worked** for
 real people.
 
 #### Deeper
@@ -109,7 +110,7 @@ alice@mail.example  qwerty     ✗
 #### Simple
 
 First the hacker tries the easy way: popular passwords for Alice's email, one after another. The
-shop answers «wrong password» and lets him try again, **forever**.
+shop answers “wrong password” and lets him try again, **forever**.
 
 #### Step by step
 
@@ -119,8 +120,8 @@ nothing to stop it: no delay, no lockout.
 
 #### Deeper
 
-This is password guessing through the login form, MITRE ATT&CK sub-technique T1110.001 «Password
-Guessing». A site that doesn't limit failed attempts has weakness CWE-307. There is also the
+This is password guessing through the login form, MITRE ATT&CK sub-technique T1110.001 “Password
+Guessing”. A site that doesn't limit failed attempts has weakness CWE-307. There is also the
 reverse, password spraying (T1110.003): one common password is tried against many accounts, so
 that no single account hits its limit.
 
@@ -147,9 +148,9 @@ The attempts come from many addresses, so a limit per IP does little too.
 #### Deeper
 
 This is credential stuffing: OWASP describes it as testing username and password pairs obtained
-from the breach of another site. The password is correct, so the site sees a normal login. That
-is why OWASP advises counting failed attempts per account rather than per address, and not
-relying on blocking addresses alone: it is easy to get around.
+from the breach of another site. The password is correct, so the site sees a normal login. OWASP
+warns that blocking addresses can't be the main defence: stuffing tools spread requests over many
+IPs, so each address sends only a few.
 
 ### `inside` Logged in as Alice
 
@@ -169,8 +170,8 @@ password, decides everything.
 #### Deeper
 
 Logging in with only a password where more than one factor is needed is weakness CWE-308. The
-OWASP Top 10 places credential stuffing and brute force under A07:2021 «Identification and
-Authentication Failures».
+OWASP Top 10 places credential stuffing and brute force under A07:2021 “Identification and
+Authentication Failures”.
 
 ### `throttle` Limited attempts
 
@@ -191,8 +192,8 @@ to a halt**.
 #### Step by step
 
 The counter belongs to the account, not to an address: switching IPs doesn't help. The delay grows
-after each failure, so only a handful of guesses get through before the limit instead of
-thousands.
+after each failure, and after at most 100 failures password login is switched off: a hundred
+guesses instead of millions.
 
 #### Deeper
 
@@ -220,8 +221,9 @@ created, and Alice gets a notice about the attempt.
 #### Deeper
 
 OWASP calls multi-factor authentication the best defence against most password attacks, including
-credential stuffing and password spraying. A site can act even earlier: check the password against
-breach lists and refuse it at sign-up.
+credential stuffing and password spraying. Checking passwords against breach lists helps too, but
+only for passwords that leaked before they were chosen. When a password leaks later, the second
+factor is what holds.
 
 ### `alert` A notice to Alice
 

@@ -86,8 +86,8 @@ miss.
 
 #### Deeper
 
-A phishing email with a link is MITRE ATT&CK sub-technique T1566.002 «Spearphishing Link». The
-lesson «Phishing» covers this part in detail. What matters here is what comes next: what Alice
+A phishing email with a link is MITRE ATT&CK sub-technique T1566.002 “Spearphishing Link”. The
+lesson “Phishing” covers this part in detail. What matters here is what comes next: what Alice
 signs in with.
 
 ### `type` A password on the fake
@@ -123,7 +123,7 @@ Message: alice / password · Result: stolen
 
 #### Simple
 
-The fake passes the password to the hacker and shows Alice «please try again later».
+The fake passes the password to the hacker and shows Alice “please try again later”.
 
 #### Step by step
 

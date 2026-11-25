@@ -319,7 +319,7 @@ passwords against a leaked database becomes very expensive.
 Forms: rainbow table, rainbow tables
 
 A table computed in advance that quickly turns a hash back into a password. It stores not every
-«password, hash» pair but chains, of which only the start and the end are written down: that makes
+“password, hash” pair but chains, of which only the start and the end are written down: that makes
 it many times smaller. It works only against fast hashes without a salt.
 
 ## `jndi` JNDI
