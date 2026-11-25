@@ -4,6 +4,11 @@ Thank you for helping. This file is for people; the rules every change follows, 
 for coding agents alike, are in [AGENTS.md](AGENTS.md) (in Russian). Where this file and
 AGENTS.md disagree, AGENTS.md wins. How a task is done step by step: [docs/workflow.md](docs/workflow.md).
 
+The repository is public: https://github.com/nindzyago/hacks-explorer. Anyone can open an
+issue; to change something, fork the repository, make the change on a branch of your fork and
+open a pull request against `main`. Lessons, translations and new languages are especially
+welcome.
+
 By taking part you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Ways to help

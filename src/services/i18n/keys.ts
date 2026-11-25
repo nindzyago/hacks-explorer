@@ -15,6 +15,8 @@ export const UI_KEYS = [
   'page.home',
   'nav.about',
   'nav.lessons',
+  'nav.github',
+  'nav.githubLabel',
   'about.title',
   'about.description',
   'about.lead',

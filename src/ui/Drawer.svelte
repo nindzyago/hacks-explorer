@@ -6,6 +6,7 @@
   // open the player takes no keys (`data-dialog-keys`) and the rest of the page is inert.
   import { tick } from 'svelte';
   import type { AppContext } from '../commands/app';
+  import { PROJECT } from '../core/project';
   import type { GlossaryLoader } from '../services/glossary/glossary';
   import type { Translate } from '../services/i18n/i18n';
   import { formatAddress } from '../services/router/address';
@@ -237,6 +238,17 @@
         />
       {/if}
     </div>
+    <!-- OPEN1: the public repository, a plain link (L6); on a phone the top bar has no room. -->
+    <div class="foot">
+      <a
+        class="github"
+        href={PROJECT.repository}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={t('nav.githubLabel')}
+        data-testid="drawer-github">{t('nav.github')}</a
+      >
+    </div>
   </div>
 </dialog>
 
@@ -328,6 +340,32 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: var(--space-3);
+  }
+
+  .foot {
+    flex: none;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 var(--space-3);
+    border-top: var(--line-width) solid var(--line);
+  }
+
+  .github {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 var(--space-1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .github:hover {
+    color: var(--legit);
   }
 
   .visually-hidden {

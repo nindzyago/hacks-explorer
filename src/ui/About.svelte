@@ -4,6 +4,8 @@
   // (content/locales/<lang>/ui.md, K105); the ready lessons come from the topics of the page's
   // language (data/topics/<lang>.json, K112): ready = the lesson has a file in that language.
   import type { SiteTopics } from '../core/topics/site';
+  import { aroundPlaceholder } from '../core/i18n/say';
+  import { PROJECT, shownAddress } from '../core/project';
   import { readyCount } from '../core/topics/search';
   import type { Translate } from '../services/i18n/i18n';
   import { formatAddress } from '../services/router/address';
@@ -95,6 +97,24 @@
   ] as const;
 </script>
 
+<!-- OPEN1: a sentence with an outside link in place of its `{link}`. A plain link the reader
+     follows, never a request (L6); no referrer and no opener go with it. -->
+{#snippet withLink(text: string, href: string, label: string, testid: string)}
+  {@const parts = aroundPlaceholder(text, 'link')}
+  {#if parts === null}
+    {text}
+    <a class="out" {href} target="_blank" rel="noopener noreferrer" data-testid={testid}>{label}</a>
+  {:else}
+    {parts.before}<a
+      class="out"
+      {href}
+      target="_blank"
+      rel="noopener noreferrer"
+      data-testid={testid}>{label}</a
+    >{parts.after}
+  {/if}
+{/snippet}
+
 <!-- M6.1: the page in the same blueprint panel as the lesson screen. -->
 <article class="bp-panel about" data-testid="about" aria-labelledby="about-title">
   <div class="bp-head">
@@ -110,7 +130,14 @@
   </div>
   <div class="body">
     <p class="lead">{t('about.lead')}</p>
-    <p>{t('about.genre')}</p>
+    <p data-testid="about-genre">
+      {@render withLink(
+        t('about.genre'),
+        PROJECT.genre.url,
+        PROJECT.genre.name,
+        'about-genre-link',
+      )}
+    </p>
 
     <section aria-labelledby="about-read">
       <h3 id="about-read">{t('about.read.title')}</h3>
@@ -176,7 +203,14 @@
 
     <section aria-labelledby="about-help">
       <h3 id="about-help">{t('about.help.title')}</h3>
-      <p>{t('about.help.text')}</p>
+      <p data-testid="about-help">
+        {@render withLink(
+          t('about.help.text'),
+          PROJECT.repository,
+          shownAddress(PROJECT.repository),
+          'about-repo-link',
+        )}
+      </p>
     </section>
   </div>
 </article>
@@ -212,6 +246,14 @@
 
   .lead {
     font-size: var(--text-lg);
+  }
+  /* OPEN1: a link inside a sentence, underlined so it is told apart without colour (WCAG 1.4.1);
+     an inline link is exempt from the target size (2.5.8). */
+  .out {
+    color: var(--legit);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
 
   ul {

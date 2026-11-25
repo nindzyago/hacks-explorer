@@ -24,10 +24,12 @@ in. Keep the same keys and the same `{names}`.
 
 - `nav.about` About
 - `nav.lessons` Back to lessons
+- `nav.github` GitHub
+- `nav.githubLabel` GitHub: the source code of the site
 - `about.title` About
 - `about.description` What Hacks Explorer is, how to read a lesson, the ready lessons, principles, licences and how to help.
 - `about.lead` Hacks Explorer is an open interactive explainer for beginners: how attacks work and how to stop them. Every attack is shown step by step on a diagram of a fictional system.
-- `about.genre` The idea of the genre — a protocol on one diagram, step by step — comes from Protocol Explorer. The texts, diagrams and code here are our own.
+- `about.genre` The idea of the genre — {link}: a protocol on one diagram, step by step. The texts, diagrams and code here are our own.
 - `about.read.title` How to read a lesson
 - `about.read.scene` The diagram: the participants and the messages between them. Press a participant or a zone to see what it is.
 - `about.read.steps` Attack flow: the table of steps under the diagram. A row of the table opens its step.
@@ -46,9 +48,9 @@ in. Keep the same keys and the same `{names}`.
 - `about.licences.code` The code is under the MIT licence.
 - `about.licences.lessons` The texts and diagrams of the lessons are under CC BY-SA 4.0.
 - `about.licences.fonts` The Onest and JetBrains Mono fonts are under the SIL Open Font License 1.1.
-- `about.licences.icons` The participant icons were made for the project; their licence terms are still being checked. Where each file comes from is in ATTRIBUTION.md.
+- `about.licences.icons` The participant icons and the social cards were made with Magnific and are not under CC BY-SA: all rights reserved, they may be used only as part of this site. Where each file comes from is in ATTRIBUTION.md.
 - `about.help.title` How to help
-- `about.help.text` New lessons, translations and languages are welcome as pull requests. The repository is not public yet — soon.
+- `about.help.text` The code and the lessons are in the open repository {link}. Send pull requests with new lessons, translations and languages.
 
 ## Lesson screen
 

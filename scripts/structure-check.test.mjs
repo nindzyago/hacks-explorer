@@ -90,6 +90,32 @@ describe('checkFiles', () => {
     ]);
   });
 
+  it('lets src/core/project.ts name exactly the two outside links, nothing more (OPEN1)', () => {
+    const repo = 'https://github.com/nindzyago/hacks-explorer';
+    const genre = 'https://protocol-explorer-alpha.vercel.app/';
+    expect(
+      checkFiles([file('src/core/project.ts', `const a = '${repo}';\nconst b = '${genre}';`)]),
+    ).toEqual([]);
+    const bad = [
+      // The same address anywhere else in site code.
+      file('src/ui/About.svelte', `<a href="${repo}">x</a>`),
+      file('index.html', `<a href="${genre}">x</a>`),
+      // Anything but the exact two strings in the one file.
+      file('src/core/project.ts', `const c = '${repo}/archive/main.zip';`),
+      file('src/core/project.ts', "const d = 'https://github.com/someone/else';"),
+      file('src/core/project.ts', "const e = 'https://protocol-explorer-alpha.vercel.app/x.js';"),
+      file('src/core/project.ts', "const f = 'http://github.com/nindzyago/hacks-explorer';"),
+    ];
+    expect(checkFiles(bad).map((p) => `${p.rule} ${p.path}`)).toEqual([
+      'no-external-urls src/ui/About.svelte',
+      'no-external-urls index.html',
+      'no-external-urls src/core/project.ts',
+      'no-external-urls src/core/project.ts',
+      'no-external-urls src/core/project.ts',
+      'no-external-urls src/core/project.ts',
+    ]);
+  });
+
   it('lets test files quote links as data, but not the code next to them', () => {
     const problems = checkFiles([
       file('src/core/lesson/lesson.test.ts', "const url = 'https://owasp.org';"),

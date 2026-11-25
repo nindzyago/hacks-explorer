@@ -349,6 +349,17 @@
     {:else}
       <div class="spacer"></div>
     {/if}
+    <!-- OPEN1: a quiet «GitHub» text link to the public repository, a plain link (L6). On a
+         phone the bar has no room left in its second row, so there it lives in the lessons
+         panel's footer and on «About». -->
+    <a
+      class="github"
+      href={PROJECT.repository}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={t('nav.githubLabel')}
+      data-testid="nav-github">{t('nav.github')}</a
+    >
     <!-- M3.9: «О проекте» / «К урокам». -->
     {#if $about}
       <a
@@ -742,6 +753,26 @@
     display: flex;
   }
 
+  /* OPEN1: a text link, quieter than the buttons, as tall as a button for the pointer. */
+  .github {
+    box-sizing: border-box;
+    flex: none;
+    min-height: var(--target);
+    padding: 0 var(--space-1);
+    display: inline-flex;
+    align-items: center;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    white-space: nowrap;
+  }
+
+  .github:hover {
+    color: var(--legit);
+  }
+
   .languages .bp-btn {
     min-width: 44px;
     border-radius: 0;
@@ -999,6 +1030,10 @@
 
     .nav {
       margin-left: auto;
+    }
+
+    .github {
+      display: none;
     }
 
     .scene-head {

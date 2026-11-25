@@ -8,10 +8,12 @@ are teaching material about other systems; they are not vulnerabilities of this 
 
 Please do not open a public issue or pull request for a vulnerability.
 
-Report it privately through GitHub's private vulnerability reporting: the "Security" tab of this
-repository, then "Report a vulnerability". If that button is not available, write to the owner
-of this repository through the contact on their GitHub profile and ask for a private channel;
-do not put the details in the first message.
+The repository is public: https://github.com/nindzyago/hacks-explorer. Report a vulnerability
+privately through GitHub's private vulnerability reporting: open the "Security" tab of the
+repository, then "Report a vulnerability". Only you and the maintainers see the report until a
+fix is published. If that button is ever missing, write to the owner of the repository through
+the contact on their GitHub profile and ask for a private channel; do not put the details in the
+first message.
 
 Please include:
 

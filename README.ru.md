@@ -1,5 +1,10 @@
 # Hacks Explorer
 
+- Сайт: https://hacks.antipic.com
+- Репозиторий: https://github.com/nindzyago/hacks-explorer (pull request с уроками и языками
+  приветствуются, см. [CONTRIBUTING.md](CONTRIBUTING.md))
+- Идея жанра: [Protocol Explorer](https://protocol-explorer-alpha.vercel.app/)
+
 Как устроены атаки и как от них защититься: интерактивный справочник по компьютерной
 безопасности для новичков. Каждый урок — одна атака на вымышленную систему, показанная по шагам
 на схеме. Включите защиту и посмотрите, как та же атака не проходит. Каждый шаг объяснён на трёх
@@ -7,11 +12,9 @@
 
 [English version](README.md)
 
-Сайт: https://hacks.antipic.com
-
 ## Откуда идея
 
-Жанр взят у [Protocol Explorer](https://protocol-explorer-alpha.vercel.app): один экран со
+Жанр взят у [Protocol Explorer](https://protocol-explorer-alpha.vercel.app/): один экран со
 схемой, списком шагов, панелью объяснения, кнопками пуска и шага. Hacks Explorer применяет эту
 идею к атакам и защите. Дизайн, код, уроки и картинки свои; из Protocol Explorer и других
 закрытых ресурсов ничего не копируется (см. «Что мы не принимаем» в
@@ -71,4 +74,7 @@ Markdown-файл на язык, `content/lessons/<id>/<язык>.md`. Сбор�
 - Код: MIT.
 - Тексты и схемы уроков: CC BY-SA 4.0.
 - Шрифты: SIL Open Font License 1.1.
+- Иконки участников (`content/icons/`) и карточки для соцсетей (`public/cards/`), сделанные в
+  Magnific: **не** под CC BY-SA, все права защищены; использовать их можно только как часть этого
+  сайта. Лицензии кода и текстов выше от этого не меняются.
 - Остальные ассеты, их источники и лицензии: [ATTRIBUTION.md](ATTRIBUTION.md).

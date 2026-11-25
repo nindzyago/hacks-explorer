@@ -1,5 +1,10 @@
 # Hacks Explorer
 
+- Site: https://hacks.antipic.com
+- Repository: https://github.com/nindzyago/hacks-explorer (pull requests with lessons and
+  languages are welcome, see [CONTRIBUTING.md](CONTRIBUTING.md))
+- Idea of the genre: [Protocol Explorer](https://protocol-explorer-alpha.vercel.app/)
+
 How attacks work and how to stop them: an interactive reference on computer security for
 beginners. Every lesson is one attack on a made-up system, shown step by step on a diagram. Turn
 the defence on and watch the same attack fail. Each step is explained at three depths: Simple,
@@ -7,11 +12,9 @@ Step by step, Deeper.
 
 [Русская версия](README.ru.md)
 
-Site: https://hacks.antipic.com
-
 ## Where the idea comes from
 
-The genre is borrowed from [Protocol Explorer](https://protocol-explorer-alpha.vercel.app): one
+The genre is borrowed from [Protocol Explorer](https://protocol-explorer-alpha.vercel.app/): one
 screen with a diagram, a list of steps, an explanation panel, and play and step buttons. Hacks
 Explorer applies that idea to attacks and defences. Its design, code, lessons and pictures are
 its own; nothing is copied from Protocol Explorer or from any other closed resource (see "What
@@ -71,4 +74,7 @@ Found a security problem in the site itself? See [SECURITY.md](SECURITY.md).
 - Code: MIT.
 - Lesson texts and diagrams: CC BY-SA 4.0.
 - Fonts: SIL Open Font License 1.1.
+- Participant icons (`content/icons/`) and social cards (`public/cards/`), made with Magnific:
+  **not** under CC BY-SA, all rights reserved; they may be used only as part of this site. The
+  licences of the code and texts above do not change.
 - Every other asset and its source and licence: [ATTRIBUTION.md](ATTRIBUTION.md).

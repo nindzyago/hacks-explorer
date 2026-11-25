@@ -8,6 +8,8 @@
 //                     lessons are checked by the lesson checker (src/core/lesson), not here.
 //   no-external-urls  site code never points at another server. Test files (*.test.ts) are not
 //                     site code: they never reach the reader and may quote links as data.
+//                     OPEN1: src/core/project.ts may name exactly two addresses, the public
+//                     repository and Protocol Explorer, which the site shows as plain links.
 //   no-literal-colours  colours come from tokens (design M1.2 E3): in site code no hex colour,
 //                     no rgb()/hsl()/oklch()/color(space …), no named colour as the value of a
 //                     colour property, custom property or attribute (also a Svelte expression
@@ -70,6 +72,15 @@ const TEST = /\.test\.(ts|js)$/;
 const IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)(['"])([^'"\n]+)\1/g;
 const URL = /https?:\/\/[^\s'"`<>)]+/g;
 const ALLOWED_URL = /^http:\/\/www\.w3\.org\//;
+/**
+ * OPEN1: the two outside links the site names (the public repository and the idea of the genre),
+ * plain `<a href>` a reader follows, never a request (L6). Exactly these strings, in this one file.
+ */
+const LINKS_FILE = 'src/core/project.ts';
+const ALLOWED_LINKS = new Set([
+  'https://github.com/nindzyago/hacks-explorer',
+  'https://protocol-explorer-alpha.vercel.app/',
+]);
 const TOKENS_FILE = 'src/ui/tokens.css';
 const CYRILLIC = /\p{Script=Cyrillic}/u;
 /** Files of src/ that may hold Cyrillic letters in code, and why. */
@@ -203,6 +214,7 @@ export function checkFiles(files) {
     if ((path === 'index.html' || path.startsWith('src/')) && SITE.test(path) && !TEST.test(path)) {
       for (const match of text.matchAll(URL)) {
         if (ALLOWED_URL.test(match[0])) continue;
+        if (path === LINKS_FILE && ALLOWED_LINKS.has(match[0])) continue;
         problems.push({
           rule: 'no-external-urls',
           path,

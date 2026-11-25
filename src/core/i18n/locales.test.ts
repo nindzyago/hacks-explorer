@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { formatError } from '../lesson/check';
 import { parseLanguages } from './languages-file';
 import { checkLocales } from './locales';
-import { fill } from './say';
+import { aroundPlaceholder, fill } from './say';
 import { MAX_UI_FILE_BYTES, parseUiFile, placeholdersOf, uiPath } from './ui-file';
 
 const file = (lang: string) =>
@@ -217,5 +217,36 @@ describe('checkLocales (S9, K94)', () => {
         (e) => e.code,
       ),
     ).toEqual(['missing-ui']);
+  });
+});
+
+describe('aroundPlaceholder (OPEN1)', () => {
+  it('splits a sentence around the first {name}', () => {
+    expect(aroundPlaceholder('Idea — {link}: a protocol.', 'link')).toEqual({
+      before: 'Idea — ',
+      after: ': a protocol.',
+    });
+    expect(aroundPlaceholder('{link}', 'link')).toEqual({ before: '', after: '' });
+    expect(aroundPlaceholder('{link} and {link}', 'link')).toEqual({
+      before: '',
+      after: ' and {link}',
+    });
+  });
+
+  it('is null without the placeholder, also for a different name', () => {
+    expect(aroundPlaceholder('No link here.', 'link')).toBeNull();
+    expect(aroundPlaceholder('See {other}.', 'link')).toBeNull();
+    expect(aroundPlaceholder('', 'link')).toBeNull();
+  });
+
+  it('finds {link} in both sentences with a link, in every site language', () => {
+    for (const lang of ['ru', 'en']) {
+      const text = readFileSync(uiPath(lang), 'utf8');
+      for (const key of ['about.genre', 'about.help.text']) {
+        const line = text.split('\n').find((l) => l.startsWith(`- \`${key}\` `));
+        expect(line, `${lang} ${key}`).toBeDefined();
+        expect(aroundPlaceholder(line ?? '', 'link'), `${lang} ${key}`).not.toBeNull();
+      }
+    }
   });
 });

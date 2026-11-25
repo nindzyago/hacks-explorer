@@ -19,3 +19,18 @@ export function fill(text: string, params?: SayParams): string {
     return value === undefined ? whole : String(value);
   });
 }
+
+/**
+ * OPEN1: a sentence with a link in it. The text around the first `{name}`, so the interface can
+ * put an element (a link) in its place and every language keeps its own word order. Null when the
+ * text has no `{name}`: the interface then shows the text and the element after it.
+ */
+export function aroundPlaceholder(
+  text: string,
+  name: string,
+): { readonly before: string; readonly after: string } | null {
+  const mark = `{${name}}`;
+  const at = text.indexOf(mark);
+  if (at < 0) return null;
+  return { before: text.slice(0, at), after: text.slice(at + mark.length) };
+}

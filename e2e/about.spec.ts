@@ -118,6 +118,79 @@ for (const lang of LOCALES) {
   });
 }
 
+// OPEN1: the public repository and the idea of the genre, as plain links (L6: no request).
+const REPO = 'https://github.com/nindzyago/hacks-explorer';
+const GENRE = 'https://protocol-explorer-alpha.vercel.app/';
+const GENRE_LINE = {
+  ru: 'Идея жанра — Protocol Explorer:',
+  en: 'The idea of the genre — Protocol Explorer:',
+} as const;
+const HELP_LINE = {
+  ru: 'в открытом репозитории github.com/nindzyago/hacks-explorer. Присылайте pull request',
+  en: 'in the open repository github.com/nindzyago/hacks-explorer. Send pull requests',
+} as const;
+
+for (const lang of LOCALES) {
+  test(`${lang}: «About» links the repository and Protocol Explorer (OPEN1)`, async ({ page }) => {
+    const outside: string[] = [];
+    page.on('request', (r) => {
+      if (!r.url().startsWith('http://127.0.0.1:')) outside.push(r.url());
+    });
+    await openAbout(page, lang);
+
+    const genre = page.getByTestId('about-genre-link');
+    await expect(genre).toHaveText('Protocol Explorer');
+    await expect(genre).toHaveAttribute('href', GENRE);
+    await expect(genre).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(genre).toHaveAttribute('target', '_blank');
+    await expect(page.getByTestId('about-genre')).toContainText(GENRE_LINE[lang]);
+
+    const repo = page.getByTestId('about-repo-link');
+    await expect(repo).toHaveText('github.com/nindzyago/hacks-explorer');
+    await expect(repo).toHaveAttribute('href', REPO);
+    await expect(repo).toHaveAttribute('rel', 'noopener noreferrer');
+    await expect(repo).toHaveAttribute('target', '_blank');
+    await expect(page.getByTestId('about-help')).toContainText(HELP_LINE[lang]);
+    const help = await page.getByTestId('about-help').innerText();
+    expect(help).not.toMatch(/скоро|soon|закрыт|not public/i);
+
+    // The top bar names the repository too; nothing is fetched from either server.
+    await expect(page.getByTestId('nav-github')).toHaveAttribute('href', REPO);
+    expect(outside.filter((u) => !u.startsWith('data:'))).toEqual([]);
+  });
+}
+
+test('the lesson screen: «GitHub» in the top bar on a laptop, in the panel on a phone', async ({
+  page,
+}) => {
+  await openApp(page, '/en/lesson/I1');
+  const link = page.getByTestId('nav-github');
+  await expect(link).toBeVisible();
+  await expect(link).toHaveText('GitHub');
+  await expect(link).toHaveAttribute('href', REPO);
+  await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(link).toHaveAttribute('target', '_blank');
+  await expect(link).toHaveAccessibleName('GitHub: the source code of the site');
+  const box = await link.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(36);
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(36);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openApp(page, '/ru/lesson/I1');
+  await expect(page.getByTestId('nav-github')).toBeHidden();
+  await page.getByTestId('open-lessons').click();
+  const inPanel = page.getByTestId('drawer-github');
+  await expect(inPanel).toBeVisible();
+  await expect(inPanel).toHaveText('GitHub');
+  await expect(inPanel).toHaveAttribute('href', REPO);
+  await expect(inPanel).toHaveAttribute('rel', 'noopener noreferrer');
+  await expect(inPanel).toHaveAttribute('target', '_blank');
+  await expect(inPanel).toHaveAccessibleName('GitHub: исходный код сайта');
+  const small = await inPanel.boundingBox();
+  expect(small?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(small?.width ?? 0).toBeGreaterThanOrEqual(44);
+});
+
 test('the home page still opens the lesson «Фишинг» (K7), with the way to «About»', async ({
   page,
 }) => {
@@ -253,6 +326,8 @@ for (const screen of SCREENS) {
             const rows = await topBarRows(page);
             expect(rows.tallest, topic).toBeGreaterThan(0);
             expect(rows.bar, topic).toBeLessThanOrEqual(rows.tallest + 0.5);
+            // OPEN1: the «GitHub» link is in that one row.
+            await expect(page.getByTestId('nav-github'), topic).toBeVisible();
           }
         } else {
           await openApp(page, `/${lang}/lesson/I1`);

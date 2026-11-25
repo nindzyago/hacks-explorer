@@ -33,6 +33,22 @@ describe('project documents (M4.1)', () => {
     },
   );
 
+  it.each(['README.md', 'README.ru.md'])(
+    '%s starts with the site, the public repository and a link to Protocol Explorer (OPEN1)',
+    (path) => {
+      const top = read(path).split('\n').slice(0, 8).join('\n');
+      expect(top).toContain('https://hacks.antipic.com');
+      expect(top).toContain('https://github.com/nindzyago/hacks-explorer');
+      expect(top).toContain('[Protocol Explorer](https://protocol-explorer-alpha.vercel.app/)');
+    },
+  );
+
+  it('CONTRIBUTING and SECURITY speak of the public repository (OPEN1)', () => {
+    for (const path of ['CONTRIBUTING.md', 'SECURITY.md']) {
+      expect(read(path), path).toContain('https://github.com/nindzyago/hacks-explorer');
+    }
+  });
+
   it('the Code of Conduct is the Contributor Covenant 2.1, attributed under CC BY 4.0', () => {
     const text = read('CODE_OF_CONDUCT.md');
     expect(text).toContain('Contributor Covenant][homepage], version 2.1');

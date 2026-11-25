@@ -273,16 +273,17 @@ test.describe('passport and sources', () => {
       await expect(link).toHaveAttribute('target', '_blank');
       await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     }
-    // The sources are the only links that leave the site.
-    const external = await page.evaluate(
-      () =>
-        Array.from(document.querySelectorAll('a[href]'))
-          .filter(
-            (a) => new URL(a.getAttribute('href') ?? '', location.href).origin !== location.origin,
-          )
-          .filter((a) => a.closest('[data-testid="sources"]') === null).length,
+    // The sources and (OPEN1) the «GitHub» link to the public repository are the only links
+    // that leave the site.
+    const external = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('a[href]'))
+        .filter(
+          (a) => new URL(a.getAttribute('href') ?? '', location.href).origin !== location.origin,
+        )
+        .filter((a) => a.closest('[data-testid="sources"]') === null)
+        .map((a) => `${a.getAttribute('data-testid') ?? '?'} ${a.getAttribute('href') ?? ''}`),
     );
-    expect(external).toBe(0);
+    expect(external).toEqual(['nav-github https://github.com/nindzyago/hacks-explorer']);
   });
 
   test('I1: the class from the lesson, ATT&CK techniques, severity «высокая»', async ({
