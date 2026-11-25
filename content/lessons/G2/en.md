@@ -218,8 +218,8 @@ The resolver checks the signature and only then puts the answer in its cache.
 
 #### Step by step
 
-The resolver checks the bank's zone key along a chain: from the DNS root to the example zone and
-on to the bank's zone. Without the bank's private key, the signature cannot be forged.
+The resolver checks the bank's zone key along a chain: from the DNS root through the top-level zone
+to the bank's zone. Without the bank's private key, the signature cannot be forged.
 
 #### Deeper
 

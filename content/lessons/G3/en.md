@@ -50,14 +50,15 @@ GET http://bank.example/
 
 #### Simple
 
-The visitor types just bank.example into the browser, without `https://`. The browser starts with
-plain HTTP. The attacker is already in the middle, for example as in the "Man in the middle"
-lesson, and gets this request first.
+The visitor types just bank.example into the browser, without `https://`, or follows an old
+`http://` link. Many browsers try HTTPS first, but if that fails and HTTPS-only mode is off, they
+fall back to plain HTTP. The attacker is already in the middle, for example as in the "Man in the
+middle" lesson, can make the HTTPS attempt fail, and gets the HTTP request first.
 
 #### Step by step
 
-Normally the site answers such a request with a redirect to `https://`, and from then on
-everything is encrypted. The attacker needs that redirect never to reach the visitor.
+Normally the site answers such a request with a redirect to `https://`, and from then on everything
+is encrypted. The attacker has to make sure that redirect never reaches the visitor.
 
 #### Deeper
 
@@ -77,9 +78,9 @@ to the visitor:  http://bank.example/   (no encryption)
 
 #### Simple
 
-The attacker goes to the bank **over HTTPS** himself, like any browser. For the bank everything
-is fine: the connection is encrypted, the certificate is real. Only the other end is the attacker,
-not the visitor.
+The attacker goes to the bank **over HTTPS** himself, like any browser. For the bank everything is
+fine: the connection is encrypted, the certificate is real. It is just that the other end is the
+attacker, not the visitor.
 
 #### Step by step
 
@@ -104,9 +105,9 @@ Message: https → http · Result: the login form will send the password unencry
 
 #### Simple
 
-The attacker takes the bank's page and **changes every `https` to `http`**: in links, in the
-login form, in redirects. The visitor sees a familiar page. Only the padlock in the address bar is
-missing, and few people notice.
+The attacker takes the bank's page and **changes every `https` to `http`**: in links, in the login
+form, in redirects. The visitor sees a familiar page. The address bar shows no sign of a secure
+connection, and some browsers even say "Not secure", but few people notice.
 
 #### Step by step
 
@@ -118,8 +119,8 @@ the browser is concerned there is no error: the site simply opened without encry
 MITRE ATT&CK describes this switch from HTTPS to HTTP in technique T1689 "Downgrade Attack", and
 MITRE CAPEC in pattern CAPEC-620 "Drop Encryption Level". A related attack lowers not the protocol
 but the TLS version: the man in the middle breaks the handshake, and a browser that retries with an
-older version falls back to a weak one. The POODLE attack (CVE-2014-3566, 2014) was built on such
-a fallback to SSL 3.0.
+older version falls back to a weak one. The POODLE attack (CVE-2014-3566, 2014) exploits a flaw in
+SSL 3.0, and attackers reached it by forcing exactly such a fallback.
 
 ### `login` Password in plain text
 
@@ -187,9 +188,9 @@ Location: ⟦http⟧://bank.example/login
 
 #### Simple
 
-The attacker tries to send the browser back to `http`. But the browser remembers the HSTS rule
-for bank.example and **changes `http` to `https` itself**. Stripping the encryption failed; this
-is where the attack stops.
+The attacker tries to send the browser back to `http`, for example with a redirect from a page on
+some other, unprotected site. But the browser remembers the HSTS rule for bank.example and **changes
+`http` to `https` itself**. Stripping the encryption failed; this is where the attack stops.
 
 #### Step by step
 
@@ -266,5 +267,6 @@ cannot reach.
   RFC 8996).
 - **Cookies marked `Secure`.** The browser will not send such cookies over HTTP, even if the
   attacker lures it there.
-- **For visitors: look for the padlock.** If a bank's site suddenly opens without HTTPS,
-  especially on a shared network, do not enter your password.
+- **For visitors: watch the address bar and turn on HTTPS-only mode.** If a bank's site suddenly
+  opens without HTTPS or marked "Not secure", especially on a shared network, do not enter your
+  password.

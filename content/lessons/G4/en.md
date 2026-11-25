@@ -24,7 +24,7 @@
 
 ## Participants
 
-- `bots` **Botnet** — hijacked PCs · `icon:attacker` · `term:botnet`
+- `bots` **Botnet** — thousands of machines · `icon:attacker` · `term:botnet`
 - `dns` **DNS server** — 198.51.100.53 · `icon:server` · `term:amplification`
 - `server` **Shop** — shop.example · `term:dos`
 - `user` **Customer** — 192.0.2.24 · `term:victim`
@@ -124,8 +124,9 @@ question: 60 bytes, asks for the longest answer
 
 #### Simple
 
-The second trick is **amplification**. The bots ask an open DNS server a short question, but
-instead of their own return address they write the shop's. The answer will go to the shop.
+The second trick is **amplification**. The bots ask an open resolver, a DNS server that answers
+anyone, a short question, but instead of their own return address they write the shop's. The answer
+will go to the shop.
 
 #### Step by step
 

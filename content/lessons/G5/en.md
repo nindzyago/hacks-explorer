@@ -23,9 +23,9 @@
 ## Participants
 
 - `attacker` **Attacker** — 203.0.113.66 · `term:attacker`
-- `firewall` **Firewall** · `icon:router` · `term:firewall`
+- `firewall` **Firewall** — at the edge · `icon:router` · `term:firewall`
 - `server` **Server** — 198.51.100.10 · `term:port`
-- `log` **Log** · `term:logging`
+- `log` **Log** — defender's · `term:logging`
 
 ## Zones
 
@@ -88,7 +88,7 @@ connection never opens.
 
 #### Deeper
 
-The protocol itself says so: under RFC 9293 (section 3.5.2), a segment for a connection that does
+The protocol itself says so: under RFC 9293 (sections 3.5.2 and 3.10.7, item 2), a segment for a connection that does
 not exist gets a reset, RST, while a listening port answers a SYN with agreement. So the server
 tells anyone who asks a lot about itself. The open ports are the server's attack surface.
 
@@ -124,8 +124,8 @@ Message: service map · Result: target chosen, nobody noticed
 
 #### Simple
 
-The attacker puts the answers together into a **map**: which doors are open and what is behind
-them. The most dangerous find looks like the database, open straight to the internet. The company
+The attacker puts the answers together into a **map**: which doors are open and what is behind them.
+The most dangerous find seems to be the database, exposed straight to the internet. The company
 noticed nothing.
 
 #### Step by step
@@ -227,7 +227,7 @@ way they see what the attacker sees, and see it first.
   VPN.
 - **Do not announce versions.** Remove version numbers from service greetings and response
   headers.
-- **Keep software updated.** Even if the version is learned, known vulnerabilities in a fresh
-  version are already fixed.
+- **Keep software updated.** Even if someone learns the version, an up-to-date release already has
+  the known vulnerabilities fixed.
 - **Logs and alerts.** Watch for bursts of dropped packets from one address, and scan your own
   network to see it through the attacker's eyes.
