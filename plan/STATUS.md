@@ -1,9 +1,9 @@
 # Status
 
-> Updated: 2026-11-25 by Claude (craftspec orchestrate)
+> Updated: 2026-11-26 by Claude (craftspec orchestrate)
 
-**Current milestone:** M5 — остальные 65 уроков; перед ними UI2 (автопроигрывание, категории) и G17
-**Next task:** волна 4 (M5.4): I3–I5, J2–J4, K2–K7, L1–L5 — 17 уроков, сверка фактов, слияние. Затем иконки, о которых просили рабочие (firewall, botnet, memory, access-point), и пробелы G19, G20
+**Current milestone:** M5 закрыт — все 75 уроков на сайте
+**Next task:** нет обязательных. Можно: иконки, о которых просили рабочие (firewall, botnet, memory, access-point, terminal), пробел G19 (номера разделов вида 3.10.7.2 и версии вида 2.5.10.1 проверка адресов принимает за IPv4), выпуск v0.2.0 по тегу
 **Blockers (need a human):** нет. Сайт: https://hacks.antipic.com · черновик: https://hacks-explorer.mike-antipiev.workers.dev
 **Dashboard:** https://claude.ai/artifact/3yjNxTxsZiRRjuw3jgw1Wp (закрыт, пока владелец не поделится; описывает план до K7–K10)
 
@@ -17,7 +17,7 @@
 | M3 | Первый выпуск: 10 уроков (K120) | done 2026-11-19 (браузерные тесты на все уроки — G18) | 10 / 10 |
 | M4 | Выпуск 0.1 на hacks.antipic.com, репозиторий закрыт (K120) | done 2026-11-19, Release v0.1.1 | 7 / 7 |
 | M6 | Чертёжный интерфейс, вариант A (K129) | done 2026-11-20 | 2 / 2 |
-| M5 | Остальные 65 уроков, волнами (K132) | in progress: на сайте 58 из 75 (волна 3 слита 2026-11-25 после сверки фактов); репозиторий открыт (OPEN1, K137) | 3 / 4 волн |
+| M5 | Остальные 65 уроков, волнами (K132) | done 2026-11-26: 75 из 75 на сайте, все со сверкой фактов; репозиторий открыт (OPEN1, K137) | 4 / 4 волн |
 
 ## Designs
 
