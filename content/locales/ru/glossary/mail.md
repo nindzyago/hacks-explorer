@@ -4,7 +4,7 @@
 
 ## `spf` SPF
 
-`category` mail · `see` dkim, dmarc · `lessons` I1
+`category` mail · `see` dkim, dmarc · `lessons` I1, I3
 
 Формы: SPF
 
@@ -14,7 +14,7 @@ Sender Policy Framework (RFC 7208): запись в DNS домена со спи
 
 ## `dkim` DKIM
 
-`category` mail · `see` spf, dmarc · `lessons` I1
+`category` mail · `see` spf, dmarc · `lessons` I1, I3
 
 Формы: DKIM
 
@@ -25,7 +25,7 @@ DomainKeys Identified Mail (RFC 6376): сервер отправителя по�
 
 ## `dmarc` DMARC
 
-`category` mail · `see` spf, dkim, domain · `lessons` I1
+`category` mail · `see` spf, dkim, domain · `lessons` I1, I3
 
 Формы: DMARC
 
@@ -33,3 +33,14 @@ DomainKeys Identified Mail (RFC 6376): сервер отправителя по�
 поле «От» и говорит получателю, как владелец домена просит обойтись с письмом, не прошедшим
 проверку: без пожеланий (`none`), как с подозрительным, например в спам (`quarantine`), или
 отклонить (`reject`). От писем с похожих доменов не защищает: у них свои записи.
+
+## `domain-alignment` Выравнивание доменов
+
+`category` mail · `see` dmarc, spf, dkim · `lessons` I3
+
+Формы: выравнивание доменов, выравнивания доменов, выравнивание, выравнивания, выравниванию, выравниванием
+
+Требование DMARC: домен из поля «От» должен совпасть с доменом, который подтвердил SPF (адрес
+из «конверта») или DKIM (тег `d=`). Строгое выравнивание — точное совпадение, мягкое — общий
+организационный домен. Без него пройденный SPF или DKIM ничего не говорит о поле «От»: свои
+записи может опубликовать кто угодно.

@@ -126,7 +126,7 @@ credential stuffing.
 
 ## `otp` One-time code
 
-`category` people · `see` second-factor, proxy-phishing, sim-swap · `lessons` F6
+`category` people · `see` second-factor, proxy-phishing, sim-swap · `lessons` F6, I4
 
 Forms: one-time code, one-time codes, one-time password, one-time passwords, TOTP
 
@@ -213,3 +213,23 @@ Forms: second channel, independent channel
 Checking a request through a different way of reaching someone that the attacker does not
 control: a call to a number from the directory or the contract, meeting in person. A reply in the
 same thread does not count as a second channel.
+
+## `vishing` Vishing
+
+`category` people · `see` social-engineering, pretexting, otp · `lessons` I4
+
+Forms: vishing, voice phishing
+
+Phishing by phone: the attacker calls, poses as a bank, support or a colleague and coaxes out a
+password, a code or a transfer. The caller's number can be faked, so the check is to hang up and
+call back yourself on a known number. In MITRE ATT&CK it is T1598.004.
+
+## `pretexting` Pretexting
+
+`category` people · `see` social-engineering, vishing · `lessons` I4
+
+Forms: pretexting
+
+A story made up in advance that explains the attacker's odd request: "a transfer is leaving your
+account, read me the code to cancel it". It usually carries urgency, fear and familiar details
+about the victim.

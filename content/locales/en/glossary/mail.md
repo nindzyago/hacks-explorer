@@ -4,7 +4,7 @@
 
 ## `spf` SPF
 
-`category` mail · `see` dkim, dmarc · `lessons` I1
+`category` mail · `see` dkim, dmarc · `lessons` I1, I3
 
 Forms: SPF
 
@@ -15,7 +15,7 @@ What is checked is the address on the email's “envelope”, not the one a pers
 
 ## `dkim` DKIM
 
-`category` mail · `see` spf, dmarc · `lessons` I1
+`category` mail · `see` spf, dmarc · `lessons` I1, I3
 
 Forms: DKIM
 
@@ -27,7 +27,7 @@ compares them.
 
 ## `dmarc` DMARC
 
-`category` mail · `see` spf, dkim, domain · `lessons` I1
+`category` mail · `see` spf, dkim, domain · `lessons` I1, I3
 
 Forms: DMARC
 
@@ -36,3 +36,14 @@ in the “From” field and tells the recipient how the domain owner wants an em
 treated: no preference (`none`), as suspicious, for example sent to spam (`quarantine`), or
 rejected (`reject`). It does not protect against email from look-alike domains:
 they have their own records.
+
+## `domain-alignment` Domain alignment
+
+`category` mail · `see` dmarc, spf, dkim · `lessons` I3
+
+Forms: domain alignment, identifier alignment, alignment
+
+The DMARC requirement that the domain in the "From" field match a domain confirmed by SPF (the
+envelope address) or by DKIM (the `d=` tag). Strict alignment is an exact match; relaxed alignment
+is the same organizational domain. Without it a passed SPF or DKIM check says nothing about the
+"From" field: anyone can publish records for their own domain.

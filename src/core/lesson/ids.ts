@@ -124,14 +124,18 @@ export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
   ['T1566.001', 'Phishing: Spearphishing Attachment'],
   ['T1566.002', 'Phishing: Spearphishing Link'],
   ['T1566.003', 'Phishing: Spearphishing via Service'],
+  ['T1583', 'Acquire Infrastructure'],
+  ['T1583.008', 'Acquire Infrastructure: Malvertising'],
   ['T1589', 'Gather Victim Identity Information'],
   ['T1589.002', 'Gather Victim Identity Information: Email Addresses'],
   ['T1595', 'Active Scanning'],
   ['T1598', 'Phishing for Information'],
+  ['T1598.004', 'Phishing for Information: Spearphishing Voice'],
   ['T1621', 'Multi-Factor Authentication Request Generation'],
   ['T1657', 'Financial Theft'],
   ['T1684', 'Social Engineering'],
   ['T1684.001', 'Social Engineering: Impersonation'],
+  ['T1684.002', 'Social Engineering: Email Spoofing'],
   ['T1689', 'Downgrade Attack'],
 ]);
 

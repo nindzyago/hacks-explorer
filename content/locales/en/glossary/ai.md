@@ -4,7 +4,7 @@
 
 ## `llm` Language model
 
-`category` ai · `see` prompt-injection, system-prompt · `lessons` J1
+`category` ai · `see` prompt-injection, system-prompt · `lessons` J1, J2
 
 Forms: language model, language models, large language model, large language models, LLM, LLMs
 
@@ -14,7 +14,7 @@ them as one more piece of the text.
 
 ## `prompt-injection` Prompt injection
 
-`category` ai · `see` llm, system-prompt, injection, owasp · `lessons` J1
+`category` ai · `see` llm, system-prompt, injection, owasp · `lessons` J1, J2
 
 Forms: prompt injection, prompt injections
 
@@ -32,3 +32,13 @@ Forms: system prompt, system prompts, system rules
 The text a developer gives a language model before the conversation: who it is, what it may and
 may not do. Visitors do not see it but can coax it out. So it holds no secrets and is not relied
 on as a defence.
+
+## `ai-agent` AI agent
+
+`category` ai · `see` llm, prompt-injection, least-privilege · `lessons` J2
+
+Forms: AI agent, AI agents
+
+A program built on a language model that does not just answer but acts: it calls tools, opens
+websites, and reads and sends email with the user's rights. It is dangerous if text from someone
+else's page can fool it, so it gets minimal rights, and a person confirms dangerous actions.
