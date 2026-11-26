@@ -33,7 +33,7 @@ MAC-адрес. Компьютер спрашивает всех и запоми
 
 ## `tls` TLS
 
-`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3
+`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3, K2
 
 Формы: TLS, HTTPS
 
@@ -308,3 +308,23 @@ Scanning» и T1046 «Network Service Discovery».
 Приветствие, которым сетевая служба встречает подключение. Часто в нём есть название программы и
 её версия, а по версии атакующий ищет известные уязвимости. Поэтому версию из баннера лучше
 убирать.
+
+## `smb` SMB
+
+`category` network · `see` port, worm · `lessons` K3
+
+Формы: SMB, SMBv1
+
+Server Message Block — протокол Windows для общих папок и принтеров в сети, обычно на TCP-порту
+445. Старая версия SMBv1 содержала уязвимость, через которую в 2017 году распространялся
+WannaCry (бюллетень Microsoft MS17-010); её советуют отключать.
+
+## `heartbeat` Heartbeat
+
+`category` network · `see` tls, out-of-bounds-read · `lessons` K2
+
+Формы: heartbeat, пульс, пульса, пульсом
+
+Расширение TLS и DTLS из RFC 6520: одна сторона шлёт короткие данные и их длину, другая
+возвращает те же данные, и так обе убеждаются, что соединение живо. Ошибка в его обработке в
+OpenSSL в 2014 году получила имя Heartbleed.

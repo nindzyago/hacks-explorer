@@ -42,6 +42,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [94, 'Improper Control of Generation of Code'],
   [120, "Buffer Copy without Checking Size of Input ('Classic Buffer Overflow')"],
   [121, 'Stack-based Buffer Overflow'],
+  [125, 'Out-of-bounds Read'],
   [204, 'Observable Response Discrepancy'],
   [208, 'Observable Timing Discrepancy'],
   [269, 'Improper Privilege Management'],

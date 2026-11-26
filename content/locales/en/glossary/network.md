@@ -34,7 +34,7 @@ does not check who answers, so a fake reply can pass the attacker off as the rou
 
 ## `tls` TLS
 
-`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3
+`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3, K2
 
 Forms: TLS, HTTPS
 
@@ -310,3 +310,23 @@ Forms: banner, banners
 The greeting a network service sends when someone connects. It often contains the program's name
 and version, and from the version an attacker looks up known vulnerabilities. That is why it is
 better to remove the version from the banner.
+
+## `smb` SMB
+
+`category` network · `see` port, worm · `lessons` K3
+
+Forms: SMB, SMBv1
+
+Server Message Block: the Windows protocol for shared folders and printers on a network, usually
+on TCP port 445. Its old version, SMBv1, had the vulnerability through which WannaCry spread in
+2017 (Microsoft bulletin MS17-010); turning it off is recommended.
+
+## `heartbeat` Heartbeat
+
+`category` network · `see` tls, out-of-bounds-read · `lessons` K2
+
+Forms: heartbeat, heartbeats
+
+An extension of TLS and DTLS from RFC 6520: one side sends a short piece of data and its length,
+the other returns the same data, and so both know the connection is alive. A bug in how OpenSSL
+handled it got the name Heartbleed in 2014.
