@@ -58,8 +58,7 @@ starts building a new version of Orion.
 
 MITRE calls this implant SUNSPOT and attributes the campaign to the group APT29. According to
 ATT&CK, SUNSPOT was in use since at least February 2020, and the first traces of the campaign go
-back to August 2019. CISA later wrote that the attackers had long-standing covert access to the
-Orion build process, including the source code.
+back to August 2019. According to MITRE, APT29 injected their code into the Orion build process itself, and it then shipped in a normal update.
 
 ### `swap` A file swapped for the build
 
@@ -160,7 +159,7 @@ attackers reach accounts and sign-in services.
 According to the statement of 5 January 2021, of the roughly 18,000 customers a much smaller
 number were hit by the second stage, among them fewer than ten US government agencies. The
 campaign was discovered in mid-December 2020; on 13 December CISA issued directive ED 21-01: cut
-off the affected Orion versions at once. In April 2021 the US and the UK named Russia's Foreign
+off the affected Orion versions at once. In April 2021 the US government named Russia's Foreign
 Intelligence Service (SVR) as responsible.
 
 ### `blocked` The gateway does not let Orion out
@@ -169,13 +168,13 @@ Intelligence Service (SVR) as responsible.
 Message: DNS out · Result: no way out, the attack failed
 
 ```text
-DNS: ⟦a1b2c3⟧.c2.example ?   → denied: Orion may not go out
+DNS: ⟦a1b2c3⟧.c2.example ?   → denied: no internet names for Orion
 ```
 
 #### Simple
 
 The same backdoor tries to call home, but **the gateway does not let it out**: the Orion server
-may only talk to devices in its own network.
+may only talk to devices in its own network, and the company's DNS server does not look up internet names for it.
 
 #### Step by step
 
@@ -184,9 +183,9 @@ cannot give it commands. There will be no second stage.
 
 #### Deeper
 
-This is exactly what ED 21-01 required of agencies that kept running Orion: block all traffic
+This is exactly what ED 21-01 required for hosts with any version of Orion installed: block all traffic
 between hosts with Orion and the outside world. A network management program usually does not
-need the internet, while for the backdoor it is the only line to its masters.
+need the internet, while for the backdoor it is the only line to its masters. A DNS query normally goes through the company's DNS server, so a gateway rule alone is not enough: Orion must not get answers for internet names either.
 
 ### `alert` An alarm from the log
 

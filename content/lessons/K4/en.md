@@ -46,7 +46,7 @@ Message: GET /status · Result: accepted as a normal request
 
 ```http
 GET /cgi-bin/status.cgi
-User-Agent: () { :;}; ⟦echo hacked⟧
+User-Agent: () { :;}; ⟦command⟧
 ```
 
 #### Simple
@@ -73,7 +73,7 @@ It is a common probe: the response shows whether the command in the tail ran.
 Message: run script · Result: header in a variable
 
 ```text
-HTTP_USER_AGENT=() { :;}; ⟦echo hacked⟧
+HTTP_USER_AGENT=() { :;}; ⟦command⟧
 ```
 
 #### Simple
@@ -101,7 +101,7 @@ Message: reading variables · Result: the command in the tail ran
 
 ```text
 () { :;};      ← looks like a function: Bash "imports" it
-⟦echo hacked⟧    ← the tail: Bash runs it too
+⟦command⟧    ← the tail: Bash runs it too
 ```
 
 #### Simple
@@ -132,7 +132,7 @@ Message: reverse connection · Result: server under control
 
 #### Simple
 
-Instead of a harmless `echo`, the attacker could write any command. It runs **with the web
+The tail can be any command. It runs **with the web
 server's rights**: for example, it opens a line to the attacker, and the server itself waits for
 their commands.
 
@@ -155,7 +155,7 @@ KEV catalog on 28 January 2022, more than seven years after the fix came out.
 Message: run script · Result: the tail did not run, the attack failed
 
 ```text
-HTTP_USER_AGENT=() { :;}; ⟦echo hacked⟧
+HTTP_USER_AGENT=() { :;}; ⟦command⟧
 ```
 
 #### Simple
@@ -172,8 +172,7 @@ does not run. The script does its job: it gathers the server's status.
 
 The first fix did not close everything: the rest of the bug got the number CVE-2014-7169, so
 people had to update more than once. But the main lesson is wider: Bash is not needed where a
-server starts programs for requests from the internet. A site without Bash CGI scripts is not
-exposed to this attack at all.
+server starts programs for requests from the internet. If no CGI script is written in Bash or calls a shell (and on many systems `/bin/sh` is Bash), the bug cannot be reached through the site.
 
 ### `output` The script's normal output
 

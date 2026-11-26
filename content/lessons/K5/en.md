@@ -68,7 +68,7 @@ Apache released Struts 2.3.32 and 2.5.10 update 1 (a four-number version) on 7 M
 bulletin S2-045 lists versions
 2.3.5–2.3.31 and 2.5–2.5.10 as affected. NVD published CVE-2017-5638 on 11 March. According to
 the GAO report, on 10 March, 2 days after the US-CERT warning, unknown people were already
-scanning Equifax for vulnerable servers. The gap between the fix and the attack was days.
+scanning Equifax for vulnerable servers. The first attack attempts came within days; the break-in itself, two months later.
 
 ### `missed` The email did not arrive
 
@@ -165,7 +165,7 @@ return personal data.
 
 #### Deeper
 
-According to GAO, the second wave of the attack began on 13 May 2017. Three weaknesses helped:
+According to GAO, the break-in itself began on 13 May 2017. Three weaknesses helped:
 the databases were not separated from each other (no segmentation), the database passwords were
 stored unencrypted, and nobody limited how often the databases could be queried. Normal work
 needs nowhere near that many queries.
@@ -251,5 +251,4 @@ continuous traffic monitoring, and restrictions on traffic between internal serv
 - **Separate the databases.** Network segmentation and separate accounts stop one server from
   reaching every database.
 - **Do not store passwords in plain text**, and limit how often databases can be queried.
-- **Watch your defences.** An expired certificate switched off traffic inspection for 10 months:
-  keep track of certificate expiry dates.
+- **Watch your defences.** A certificate that had expired 10 months before the breach switched off traffic inspection: keep track of certificate expiry dates.

@@ -122,14 +122,12 @@ did not contain the line. The line runs an obfuscated script at the end of `conf
 Message: archive · Result: archive did not match git, the attack failed
 
 ```text
-diff archive ↔ git tag v5.6.0:  ⟦m4/build-to-host.m4⟧ differs
+diff archive ↔ git tag v5.6.0:  ⟦m4/build-to-host.m4⟧ only in archive
 ```
 
 #### Simple
 
-The distribution's packagers **compare** the release archive with the same tag in the repository.
-The extra line shows up at once: there is no such code in the project. They reject the archive and
-build the package from the repository.
+The distribution's packagers **compare** the release archive with the same tag in the repository. The helper file with the extra line is not in the repository, so they do not use the archive: they build the package straight from the repository and generate the helper files themselves.
 
 #### Step by step
 
@@ -138,8 +136,7 @@ dead weight in the tests folder.
 
 #### Deeper
 
-Comparing the archive with the repository and reproducible builds do not protect against a
-backdoor committed to the repository itself, but they force it into the open, where people read
+Comparing the archive with the repository does not protect against a backdoor committed to the repository itself, but it forces it into the open, where people read
 the code. Here the trigger was hidden exactly where nobody looked.
 
 ### `compile` A build with the backdoor
@@ -259,8 +256,7 @@ service would be out of reach from the internet.
 
 - **Compare the release archive with the repository.** Build packages from a verified tag, or check
   that the archive has no code that is missing from the repository.
-- **Reproducible builds.** The same result on different machines reveals tampering in the build
-  process.
+- **Reproducible builds.** The same result on different machines reveals tampering in the build process. But a tampered archive builds the same everywhere, so it still has to be compared with the repository.
 - **Support maintainers.** CISA urges companies that profit from open source to contribute back
   with money or developer time, so that a project does not rest on one exhausted person.
 - **Roll back fast.** Know where the library is installed (SBOM) and be able to return to a verified
