@@ -18,3 +18,5 @@ request: одна строка — домен в обратных кавычка
 - `cve.org` CVE Program: записи CVE, словарь и порядок работы программы
 - `csrc.nist.gov` NIST Computer Security Resource Center: словарь терминов
 - `wi-fi.org` Wi-Fi Alliance: программы сертификации Wi-Fi (WPA3, защищённые служебные кадры)
+- `openssl.org` OpenSSL: бюллетени безопасности библиотеки OpenSSL
+- `learn.microsoft.com` Microsoft Learn: бюллетени безопасности Microsoft (Security Bulletins)

@@ -4,7 +4,7 @@
 
 ## `llm` Language model
 
-`category` ai · `see` prompt-injection, system-prompt · `lessons` J1, J2
+`category` ai · `see` prompt-injection, system-prompt · `lessons` J1, J2, J3, J4
 
 Forms: language model, language models, large language model, large language models, LLM, LLMs
 
@@ -42,3 +42,23 @@ Forms: AI agent, AI agents
 A program built on a language model that does not just answer but acts: it calls tools, opens
 websites, and reads and sends email with the user's rights. It is dangerous if text from someone
 else's page can fool it, so it gets minimal rights, and a person confirms dangerous actions.
+
+## `data-poisoning` Data poisoning
+
+`category` ai · `see` llm, backdoor · `lessons` J3
+
+Forms: data poisoning, poisoned data, poisoning the data
+
+An attack on a model through its training data: the attacker slips in examples from which the
+model learns the wrong behaviour or a secret rule. The model is spoiled before release, so this is
+an attack on integrity. In the OWASP Top 10 for LLM Applications it is LLM04:2025.
+
+## `hallucination` Model hallucination
+
+`category` ai · `see` llm, slopsquatting · `lessons` J4
+
+Forms: hallucination, hallucinations, hallucinated
+
+A confident answer from a language model that sounds plausible but is made up: a link, a quote or
+a package name that does not exist. The model fills gaps with the most likely text and does not
+know it is wrong. OWASP places this under LLM09:2025.

@@ -196,7 +196,7 @@ an ordinary project has hundreds of them; each one runs with the program's own r
 
 ## `package-registry` Package registry
 
-`category` basics · `see` dependency, typosquatting · `lessons` H6
+`category` basics · `see` dependency, typosquatting · `lessons` H6, J4
 
 Forms: package registry, package registries, public registry, internal registry, own registry
 
@@ -251,3 +251,13 @@ Forms: SBOM
 Software Bill of Materials: an inventory of a program's components, which libraries and which
 versions it contains. It helps to see quickly whether a program is affected when a vulnerability
 is found in a component.
+
+## `out-of-bounds-read` Out-of-bounds read
+
+`category` basics · `see` buffer-overflow, heartbeat · `lessons` K2
+
+Forms: out-of-bounds read, reading past the end
+
+A bug where a program reads data past the end of the memory set aside for it and hands out the
+neighbouring data that belongs to others. Nothing gets damaged, but secrets leak. In the CWE
+catalogue it is CWE-125.
