@@ -73,7 +73,7 @@ HTTP Strict Transport Security (RFC 6797): заголовок, которым с
 
 ## `forward-secrecy` Прямая секретность
 
-`category` network · `see` tls, key-pair · `lessons` L3, L5
+`category` network · `see` tls, key-pair · `lessons` K2, L3, L5
 
 Формы: прямая секретность, прямой секретности, прямую секретность, прямой секретностью, forward secrecy
 

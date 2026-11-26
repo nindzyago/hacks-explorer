@@ -221,7 +221,7 @@ the infected machine can see may get encrypted along with everything else.
 
 ## How to defend
 
-- **Install updates quickly.** MS17-010 came out two months before WannaCry. Update services that
+- **Install updates quickly.** MS17-010 came out almost two months before WannaCry. Update services that
   accept connections from the network first.
 - **Drop SMBv1.** Turn off the old protocol version and block port 445 and its related ports at
   the network boundary.

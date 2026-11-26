@@ -74,7 +74,7 @@ issued certificates to along the chain.
 
 ## `forward-secrecy` Forward secrecy
 
-`category` network · `see` tls, key-pair · `lessons` L3, L5
+`category` network · `see` tls, key-pair · `lessons` K2, L3, L5
 
 Forms: forward secrecy
 
