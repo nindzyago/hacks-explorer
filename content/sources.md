@@ -20,3 +20,4 @@ request: одна строка — домен в обратных кавычка
 - `wi-fi.org` Wi-Fi Alliance: программы сертификации Wi-Fi (WPA3, защищённые служебные кадры)
 - `openssl.org` OpenSSL: бюллетени безопасности библиотеки OpenSSL
 - `learn.microsoft.com` Microsoft Learn: бюллетени безопасности Microsoft (Security Bulletins)
+- `signal.org` Signal: спецификации протоколов X3DH и Double Ratchet

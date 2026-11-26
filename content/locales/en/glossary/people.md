@@ -167,12 +167,13 @@ on it.
 
 ## `key-pair` Key pair
 
-`category` people · `see` webauthn, passkey · `lessons` F7
+`category` people · `see` webauthn, passkey · `lessons` F7, L1, L2
 
 Forms: key pair, key pairs, private key, private keys, public key, public keys
 
-Two linked keys. The private one makes signatures and is kept secret. The public one only checks
-signatures and can be given to anyone: it can't be used to forge a signature.
+Two linked keys. The private one is kept secret: it makes signatures and decrypts. The public one
+can be given to anyone: it only checks signatures and encrypts what only the private key's owner
+can open. It can't be used to forge a signature.
 
 ## `spear-phishing` Spear phishing
 

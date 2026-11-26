@@ -233,6 +233,34 @@ Forms: code signing, update signatures
 A digital signature on a program made with the vendor's key. It proves who signed the file and
 that it has not changed since, but not that nothing extra was in it before signing.
 
+## `encryption` Encryption
+
+`category` basics · `see` symmetric-encryption, key-pair, tls · `lessons` L1, L5
+
+Forms: encryption, encrypting
+
+Turning data into ciphertext that can't be read without the right key. The method itself is
+usually public and written down in a standard; only the key is secret.
+
+## `symmetric-encryption` Symmetric encryption
+
+`category` basics · `see` encryption, key-pair · `lessons` L1
+
+Forms: symmetric encryption, symmetric key, symmetric keys, shared key, shared keys
+
+Encryption where the same key both encrypts and decrypts. It is fast (AES, standardised in FIPS
+197, is an example), but the key has to reach the other side somehow, in secret.
+
+## `digital-signature` Digital signature
+
+`category` basics · `see` key-pair, certificate, code-signing · `lessons` L2
+
+Forms: digital signature, digital signatures
+
+A value the owner of a private key computes from the data. Anyone can check it with the public key
+and learn who signed and that the data has not changed. Change a single character and the check
+fails.
+
 ## `reproducible-build` Reproducible build
 
 `category` basics · `see` build-server, code-signing · `lessons` H5

@@ -4,7 +4,7 @@
 
 ## `mitm` Man in the middle
 
-`category` network · `see` arp, tls, attacker · `lessons` G1, G2, G3
+`category` network · `see` arp, tls, attacker · `lessons` G1, G2, G3, L4
 
 Forms: man in the middle, man-in-the-middle, MITM, adversary in the middle, adversary-in-the-middle
 
@@ -34,7 +34,7 @@ does not check who answers, so a fake reply can pass the attacker off as the rou
 
 ## `tls` TLS
 
-`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3, K2
+`category` network · `see` certificate, hsts, mitm · `lessons` G1, G3, K2, L3
 
 Forms: TLS, HTTPS
 
@@ -44,7 +44,7 @@ conversation nor quietly change it. The current version, TLS 1.3, is described i
 
 ## `certificate` Certificate
 
-`category` network · `see` tls, domain · `lessons` G1
+`category` network · `see` tls, domain · `lessons` G1, L2, L3, L4
 
 Forms: certificate, certificates
 
@@ -54,13 +54,51 @@ by someone it trusts. A certificate says whose site it is, not that the site is 
 
 ## `hsts` HSTS
 
-`category` network · `see` tls, certificate · `lessons` G1, G3
+`category` network · `see` tls, certificate · `lessons` G1, G3, L4
 
 Forms: HSTS, Strict-Transport-Security
 
 HTTP Strict Transport Security (RFC 6797): a header with which a site tells the browser to reach it
 over HTTPS only. The browser itself turns `http` into `https` and does not let anyone click past a
 certificate error. The HSTS preload list built into browsers protects the first visit.
+
+## `certificate-authority` Certificate authority
+
+`category` network · `see` certificate, digital-signature · `lessons` L2, L3
+
+Forms: certificate authority, certificate authorities, root authority, root authorities
+
+An organisation that checks that an applicant controls a domain and signs its certificate. The
+browser trusts a few root authorities from its own list, and through them everyone they have
+issued certificates to along the chain.
+
+## `forward-secrecy` Forward secrecy
+
+`category` network · `see` tls, key-pair · `lessons` L3, L5
+
+Forms: forward secrecy
+
+A property of a secure connection: each session key is single-use and erased afterwards. Even if
+the server's long-term key is stolen later, conversations recorded earlier can't be decrypted with
+it. TLS 1.3 always has it (RFC 8446).
+
+## `e2e-encryption` End-to-end encryption
+
+`category` network · `see` encryption, key-fingerprint · `lessons` L5
+
+Forms: end-to-end encryption, end-to-end encrypted, end-to-end
+
+Encryption from the sender's device to the recipient's device. The server passes the message on
+but holds no keys, so it can't read it. Who got a message and when is still known to the server.
+
+## `key-fingerprint` Key fingerprint
+
+`category` network · `see` e2e-encryption, key-pair · `lessons` L5
+
+Forms: key fingerprint, key fingerprints
+
+A short form of a public key: digits or a QR code. Two people compare fingerprints in person and
+so make sure the server has not swapped the other person's key.
 
 ## `network-segmentation` Network segmentation
 
