@@ -27,21 +27,21 @@
 ## Participants
 
 - `ca` **CA** — ca.example · `icon:server` · `term:certificate-authority`
-- `site` **Shop** — shop.example · `icon:server` · `term:domain`
-- `attacker` **Attacker** — 192.0.2.66 · `term:attacker`
 - `user` **Browser** — 192.0.2.24 · `icon:browser` · `term:victim`
+- `attacker` **Attacker** — 192.0.2.66 · `term:attacker`
+- `site` **Shop** — server · `icon:server` · `term:web-server`
 
 ## Zones
 
-- `internet` Internet: `ca`, `site`
-- `cafe` Café Wi-Fi: `attacker`, `user`
+- `cafe` Café Wi-Fi: `user`, `attacker`
+- `internet` Internet: `site`
 
 ## Steps
 
 ### `request` Applying for a certificate
 
 `site → ca` · `legit`
-Message: shop.example + key · Result: the CA checks the domain
+Message: request · Result: the CA checks the domain
 
 ```text
 request: name shop.example
@@ -70,7 +70,7 @@ site is good.
 ### `issue` A signed certificate
 
 `ca → site` · `safe`
-Message: signed certificate · Result: signed with the CA's key
+Message: signed · Result: signed with the CA's key
 
 ```text
 subject:    shop.example
@@ -105,7 +105,7 @@ that a domain owner can notice someone else's certificate in their name.
 ### `genuine` The real certificate
 
 `site → user` · `safe` · `with-defence`
-Message: shop.example certificate · Result: the signature checks out
+Message: real cert · Result: the signature checks out
 
 #### Simple
 
@@ -129,7 +129,7 @@ root by a signature: it is trusted because it arrived earlier by a trustworthy r
 ### `forge` A swapped key
 
 `attacker → user` · `attack` · `without-defence`
-Message: certificate with the attacker's key · Result: signature not checked, accepted
+Message: swapped key · Result: signature not checked, accepted
 
 ```text
 subject:    shop.example
@@ -158,7 +158,7 @@ off "for a while".
 ### `send` The password under the attacker's key
 
 `user → attacker` · `attack` · `without-defence`
-Message: password under attacker's key · Result: the attacker decrypted it
+Message: password · Result: the attacker decrypted it
 
 ```text
 TLS with the key from the certificate → POST /login password=⟦Kot2024⟧
@@ -184,7 +184,7 @@ the server by its certificate.
 ### `verify` The signature doesn't match
 
 `attacker → user` · `attack` · `with-defence` · `stopped`
-Message: certificate with the attacker's key · Result: signature mismatch, connection closed
+Message: swapped key · Result: signature mismatch, connection closed
 
 ```text
 hash of the certificate fields:   ⟦7e21 04aa⟧

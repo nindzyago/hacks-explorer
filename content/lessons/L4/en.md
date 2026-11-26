@@ -40,7 +40,7 @@
 ### `usual` As usual
 
 `user → bank` · `safe`
-Message: https://bank.example · Result: certificate fine
+Message: open the bank · Result: certificate fine
 
 ```text
 certificate: bank.example
@@ -69,7 +69,7 @@ learned from a revocation list (CRL, RFC 5280) or by asking over OCSP (RFC 6960)
 ### `open` Logging in from a hotel
 
 `user → attacker` · `legit`
-Message: https://bank.example · Result: reached the attacker
+Message: open the bank · Result: reached the attacker
 
 #### Simple
 
@@ -89,7 +89,7 @@ needs the browser to accept some other certificate, or the person to allow it th
 ### `selfsigned` A home-made certificate
 
 `attacker → user` · `attack` · `without-defence`
-Message: self-signed certificate · Result: full-screen warning
+Message: fake cert · Result: full-screen warning
 
 ```text
 certificate: bank.example
@@ -118,7 +118,7 @@ someone else's network is a serious reason to be wary.
 ### `proceed` "Proceed anyway"
 
 `user → attacker` · `attack` · `without-defence`
-Message: login after the click · Result: password with the attacker
+Message: password · Result: password with the attacker
 
 ```http
 POST /login
@@ -146,7 +146,7 @@ CWE-295, whose examples include exactly these cases.
 ### `steal` Into someone else's bank
 
 `attacker → bank` · `attack` · `without-defence`
-Message: Anna's login and password · Result: the attacker is in
+Message: Anna's password · Result: the attacker is in
 
 #### Simple
 
@@ -166,7 +166,7 @@ sites turn on HSTS: then the browser simply doesn't show that button.
 ### `warn` A warning, and that's it
 
 `attacker → user` · `attack` · `with-defence` · `stopped`
-Message: self-signed certificate · Result: tab closed, password stayed
+Message: fake cert · Result: tab closed, password stayed
 
 ```text
 certificate: bank.example
@@ -195,7 +195,7 @@ browsers protects the very first one. More on HSTS in the lesson "SSL stripping 
 ### `retry` Over mobile data
 
 `user → bank` · `safe` · `with-defence`
-Message: https://bank.example · Result: certificate fine
+Message: open the bank · Result: certificate fine
 
 #### Simple
 

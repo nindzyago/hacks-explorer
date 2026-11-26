@@ -132,7 +132,7 @@ site's key is ever stolen, conversations recorded earlier can't be decrypted wit
 ### `cafe` The same login from a café
 
 `user → attacker` · `legit`
-Message: ClientHello: shop.example · Result: reached the attacker
+Message: ClientHello · Result: reached the attacker
 
 #### Simple
 
@@ -154,7 +154,7 @@ obtained honestly for his own domain shop-pay.example.
 ### `fake` A certificate for another name
 
 `attacker → user` · `attack` · `without-defence`
-Message: shop-pay.example certificate · Result: name not matched, accepted
+Message: wrong name · Result: name not matched, accepted
 
 ```text
 opened:       shop.example
@@ -181,7 +181,7 @@ scripts and libraries where matching was switched off or written by hand.
 ### `leak` The password to the attacker
 
 `user → attacker` · `attack` · `without-defence`
-Message: password under attacker's key · Result: the attacker read it
+Message: password · Result: the attacker read it
 
 ```http
 POST /login
@@ -206,7 +206,7 @@ itself. OWASP places CWE-297 under A07:2021 Identification and Authentication Fa
 ### `mismatch` The name doesn't match
 
 `attacker → user` · `attack` · `with-defence` · `stopped`
-Message: shop-pay.example certificate · Result: name mismatch, connection closed
+Message: wrong name · Result: name mismatch, connection closed
 
 ```text
 opened:       shop.example

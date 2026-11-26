@@ -131,7 +131,7 @@ Finished
 ### `cafe` Тот же вход в кафе
 
 `user → attacker` · `legit`
-Сообщение: ClientHello: shop.example · Итог: попало к хакеру
+Сообщение: ClientHello · Итог: попало к хакеру
 
 #### Просто
 
@@ -152,7 +152,7 @@ shop.example и ждёт ответа.
 ### `fake` Сертификат на другое имя
 
 `attacker → user` · `attack` · `without-defence`
-Сообщение: сертификат shop-pay.example · Итог: имя не сверено, принят
+Сообщение: чужое имя · Итог: имя не сверено, принят
 
 ```text
 открыт:     shop.example
@@ -179,7 +179,7 @@ shop-pay.example, а не для магазина.
 ### `leak` Пароль хакеру
 
 `user → attacker` · `attack` · `without-defence`
-Сообщение: пароль под ключ хакера · Итог: хакер прочитал
+Сообщение: пароль · Итог: хакер прочитал
 
 ```http
 POST /login
@@ -204,7 +204,7 @@ CWE-297 к пункту A07:2021 «Ошибки идентификации и а
 ### `mismatch` Имя не совпало
 
 `attacker → user` · `attack` · `with-defence` · `stopped`
-Сообщение: сертификат shop-pay.example · Итог: имя не совпало, соединение прервано
+Сообщение: чужое имя · Итог: имя не совпало, соединение прервано
 
 ```text
 открыт:     shop.example

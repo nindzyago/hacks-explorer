@@ -32,7 +32,7 @@
 
 ## Zones
 
-- `service` Messenger: `server`
+- `service` Chat: `server`
 
 ## Steps
 
@@ -67,7 +67,7 @@ secret.
 ### `send` Text to the server
 
 `alice → server` · `legit` · `without-defence`
-Message: message text · Result: the server stores the text
+Message: plain text · Result: the server stores the text
 
 ```text
 TLS to the server → "Meet at the entrance, door code ⟦4815⟧"
@@ -94,7 +94,7 @@ it.
 ### `seal` Ciphertext for Bob
 
 `alice → server` · `safe` · `with-defence`
-Message: ciphertext for Bob · Result: the server sees only ciphertext
+Message: sealed for Bob · Result: the server sees only ciphertext
 
 ```text
 to: Bob   ciphertext: 2f8d 91c0 7a44 e1b3
@@ -140,7 +140,7 @@ holds the keys, it is no longer end-to-end, even if the data is stored on it in 
 ### `break` Breaking into the server
 
 `attacker → server` · `attack`
-Message: login with admin password · Result: access to the database
+Message: admin login · Result: access to the database
 
 #### Simple
 
@@ -185,7 +185,7 @@ or only with the people.
 ### `noise` Ciphertext only
 
 `server → attacker` · `attack` · `with-defence`
-Message: archive: ciphertext only · Result: nothing to read
+Message: only noise · Result: nothing to read
 
 ```text
 Alice → Bob: 2f8d 91c0 7a44 e1b3

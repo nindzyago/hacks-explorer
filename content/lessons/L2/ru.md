@@ -27,21 +27,21 @@
 ## Участники
 
 - `ca` **Центр** — ca.example · `icon:server` · `term:certificate-authority`
-- `site` **Магазин** — shop.example · `icon:server` · `term:domain`
-- `attacker` **Хакер** — 192.0.2.66 · `term:attacker`
 - `user` **Браузер** — 192.0.2.24 · `icon:browser` · `term:victim`
+- `attacker` **Хакер** — 192.0.2.66 · `term:attacker`
+- `site` **Магазин** — сервер · `icon:server` · `term:web-server`
 
 ## Зоны
 
-- `internet` Интернет: `ca`, `site`
-- `cafe` Wi-Fi кафе: `attacker`, `user`
+- `cafe` Wi-Fi кафе: `user`, `attacker`
+- `internet` Интернет: `site`
 
 ## Шаги
 
 ### `request` Заявка на сертификат
 
 `site → ca` · `legit`
-Сообщение: shop.example + ключ · Итог: центр проверяет домен
+Сообщение: заявка · Итог: центр проверяет домен
 
 ```text
 заявка: имя shop.example
@@ -70,7 +70,7 @@
 ### `issue` Сертификат с подписью
 
 `ca → site` · `safe`
-Сообщение: сертификат с подписью · Итог: подписан ключом центра
+Сообщение: с подписью · Итог: подписан ключом центра
 
 ```text
 кому:       shop.example
@@ -103,7 +103,7 @@ dNSName), срок — в полях notBefore и notAfter. Обычно сай�
 ### `genuine` Настоящий сертификат
 
 `site → user` · `safe` · `with-defence`
-Сообщение: сертификат shop.example · Итог: подпись сошлась
+Сообщение: оригинал · Итог: подпись сошлась
 
 #### Просто
 
@@ -127,7 +127,7 @@ dNSName), срок — в полях notBefore и notAfter. Обычно сай�
 ### `forge` Подменённый ключ
 
 `attacker → user` · `attack` · `without-defence`
-Сообщение: сертификат с ключом хакера · Итог: подпись не проверена, принят
+Сообщение: чужой ключ · Итог: подпись не проверена, принят
 
 ```text
 кому:     shop.example
@@ -156,7 +156,7 @@ CWE-295. Браузеры такую проверку делают всегда,
 ### `send` Пароль под ключ хакера
 
 `user → attacker` · `attack` · `without-defence`
-Сообщение: пароль под ключ хакера · Итог: хакер расшифровал
+Сообщение: пароль · Итог: хакер расшифровал
 
 ```text
 TLS с ключом из сертификата → POST /login password=⟦Kot2024⟧
@@ -180,7 +180,7 @@ TLS с ключом из сертификата → POST /login password=⟦Kot2
 ### `verify` Подпись не сходится
 
 `attacker → user` · `attack` · `with-defence` · `stopped`
-Сообщение: сертификат с ключом хакера · Итог: подпись не сошлась, соединение прервано
+Сообщение: чужой ключ · Итог: подпись не сошлась, соединение прервано
 
 ```text
 хеш полей сертификата:      ⟦7e21 04aa⟧
