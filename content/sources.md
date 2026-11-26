@@ -18,3 +18,7 @@ request: одна строка — домен в обратных кавычка
 - `cve.org` CVE Program: записи CVE, словарь и порядок работы программы
 - `csrc.nist.gov` NIST Computer Security Resource Center: словарь терминов
 - `wi-fi.org` Wi-Fi Alliance: программы сертификации Wi-Fi (WPA3, защищённые служебные кадры)
+- `cwiki.apache.org` Apache Software Foundation: бюллетени безопасности Apache Struts (S2-045, S2-046)
+- `struts.apache.org` Apache Struts: объявления о выпусках и документация
+- `gao.gov` U.S. Government Accountability Office: отчёты о расследованиях (GAO-18-559, утечка Equifax)
+- `openwall.com` Рассылка oss-security: первое сообщение об уязвимостях открытых программ (бэкдор в xz, CVE-2024-3094)

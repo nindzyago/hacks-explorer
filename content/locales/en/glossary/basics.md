@@ -31,7 +31,7 @@ zone.
 
 ## `data-breach` Data breach
 
-`category` basics · `see` database, hash · `lessons` F1, F2, F3
+`category` basics · `see` database, hash · `lessons` F1, F2, F3, K5
 
 Forms: data breach, data breaches, database leak, database leaks
 
@@ -81,7 +81,7 @@ not ready-made exploits.
 
 ## `patch` Patch
 
-`category` basics · `see` vulnerability, zero-day · `lessons` A1
+`category` basics · `see` vulnerability, zero-day · `lessons` A1, K5
 
 Forms: patch, patches, security update, security updates
 
@@ -216,7 +216,7 @@ mismatch.
 
 ## `build-server` Build server
 
-`category` basics · `see` reproducible-build, code-signing, supply-chain-attack · `lessons` H5
+`category` basics · `see` reproducible-build, code-signing, supply-chain-attack · `lessons` H5, K6, K7
 
 Forms: build server, build servers
 
@@ -226,7 +226,7 @@ repository.
 
 ## `code-signing` Code signing
 
-`category` basics · `see` build-server, reproducible-build · `lessons` H5
+`category` basics · `see` build-server, reproducible-build · `lessons` H5, K6
 
 Forms: code signing, update signatures
 
@@ -235,7 +235,7 @@ that it has not changed since, but not that nothing extra was in it before signi
 
 ## `reproducible-build` Reproducible build
 
-`category` basics · `see` build-server, code-signing · `lessons` H5
+`category` basics · `see` build-server, code-signing · `lessons` H5, K7
 
 Forms: reproducible build, reproducible builds, reproducible
 
@@ -251,3 +251,23 @@ Forms: SBOM
 Software Bill of Materials: an inventory of a program's components, which libraries and which
 versions it contains. It helps to see quickly whether a program is affected when a vulnerability
 is found in a component.
+
+## `environment-variable` Environment variable
+
+`category` basics · `see` shell, cgi · `lessons` K4
+
+Forms: environment variable, environment variables
+
+A name and value pair that a program receives at start from whoever started it and passes on to
+its own child programs. Variables carry settings such as the language and paths, and in CGI the
+data of the request. A value is just text, but a program may read it carelessly.
+
+## `maintainer` Maintainer
+
+`category` basics · `see` dependency, supply-chain-attack · `lessons` K7
+
+Forms: maintainer, maintainers
+
+A person who runs an open source project: accepts other people's changes, publishes releases and
+answers bug reports. Many important libraries rest on one or two maintainers, often volunteers,
+so their trust and their fatigue become a target.

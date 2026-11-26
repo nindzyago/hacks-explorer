@@ -67,6 +67,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [639, 'Authorization Bypass Through User-Controlled Key'],
   [640, 'Weak Password Recovery Mechanism for Forgotten Password'],
   [707, 'Improper Neutralization'],
+  [755, 'Improper Handling of Exceptional Conditions'],
   [757, 'Selection of Less-Secure Algorithm During Negotiation'],
   [759, 'Use of a One-Way Hash without a Salt'],
   [770, 'Allocation of Resources Without Limits or Throttling'],

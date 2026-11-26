@@ -341,7 +341,7 @@ Lightweight Directory Access Protocol — протокол служб катал
 
 ## `command-injection` Внедрение команд ОС
 
-`category` web · `see` injection, shell, rce, cwe · `lessons` B2
+`category` web · `see` injection, shell, rce, cwe · `lessons` B2, K4
 
 Формы: внедрение команд ОС, внедрения команд ОС, внедрению команд ОС, внедрением команд ОС, внедрение команд, внедрения команд, внедрению команд, внедрением команд, инъекция команд, инъекции команд, инъекцию команд, инъекцией команд
 
@@ -352,7 +352,7 @@ Lightweight Directory Access Protocol — протокол служб катал
 
 ## `shell` Командная оболочка
 
-`category` web · `see` command-injection · `lessons` B2
+`category` web · `see` command-injection · `lessons` B2, K4
 
 Формы: командная оболочка, командной оболочки, командную оболочку, командной оболочкой, оболочка, оболочки, оболочке, оболочку, оболочкой
 
@@ -583,3 +583,24 @@ HTTP request smuggling: прокси и сервер по-разному пон�
 
 Атака на программы на JavaScript: данные посетителя с ключом вроде `__proto__` записывают свойство
 в общий прототип, и оно появляется у всех объектов программы. Класс ошибки — CWE-1321.
+
+## `cgi` CGI
+
+`category` web · `see` web-server, environment-variable, shell · `lessons` K4
+
+Формы: CGI
+
+Common Gateway Interface — старый способ, которым веб-сервер отвечает с помощью внешней
+программы: на каждый запрос он запускает скрипт, кладёт данные запроса в переменные окружения
+(заголовок `User-Agent` — в `HTTP_USER_AGENT`) и отдаёт посетителю то, что скрипт напечатал.
+Описан в RFC 3875.
+
+## `ognl` OGNL
+
+`category` web · `see` injection, template-engine · `lessons` K5
+
+Формы: OGNL
+
+Object Graph Navigation Language — язык выражений, который веб-фреймворк Apache Struts вычисляет,
+чтобы достать данные из объектов программы; в его шаблонах выражения пишутся как `%{…}`. Если
+выражение собрано из чужого ввода, вычисление может выполнить команду атакующего.

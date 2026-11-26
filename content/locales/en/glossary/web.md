@@ -344,7 +344,7 @@ object from a directory, and code along with it.
 
 ## `command-injection` OS command injection
 
-`category` web · `see` injection, shell, rce, cwe · `lessons` B2
+`category` web · `see` injection, shell, rce, cwe · `lessons` B2, K4
 
 Forms: OS command injection, command injection
 
@@ -355,7 +355,7 @@ CWE-78; in the OWASP Top 10:2021 it belongs to A03 Injection.
 
 ## `shell` Shell
 
-`category` web · `see` command-injection · `lessons` B2
+`category` web · `see` command-injection · `lessons` B2, K4
 
 Forms: shell, shells, command shell
 
@@ -591,3 +591,25 @@ Forms: prototype pollution
 An attack on JavaScript programs: visitor data with a key like `__proto__` writes a property into
 the shared prototype, and it shows up on every object in the program. The weakness class is
 CWE-1321.
+
+## `cgi` CGI
+
+`category` web · `see` web-server, environment-variable, shell · `lessons` K4
+
+Forms: CGI
+
+Common Gateway Interface, an old way for a web server to answer with an external program: for
+each request it starts a script, puts the request data into environment variables (the
+`User-Agent` header goes into `HTTP_USER_AGENT`) and sends the visitor whatever the script
+printed. Specified in RFC 3875.
+
+## `ognl` OGNL
+
+`category` web · `see` injection, template-engine · `lessons` K5
+
+Forms: OGNL
+
+Object Graph Navigation Language, an expression language that the Apache Struts web framework
+evaluates to reach data in the program's objects; in its templates expressions are written as
+`%{…}`. If an expression is built from someone else's input, evaluating it can run the
+attacker's command.

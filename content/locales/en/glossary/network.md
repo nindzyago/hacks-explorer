@@ -154,7 +154,7 @@ announcements against it and drop the ones that do not match (RFC 6811).
 
 ## `egress-filtering` Egress filtering
 
-`category` network · `see` c2, network-segmentation · `lessons` H3
+`category` network · `see` c2, network-segmentation · `lessons` H3, K6
 
 Forms: egress filtering, outbound traffic, outbound connections
 
@@ -310,3 +310,13 @@ Forms: banner, banners
 The greeting a network service sends when someone connects. It often contains the program's name
 and version, and from the version an attacker looks up known vulnerabilities. That is why it is
 better to remove the version from the banner.
+
+## `ssh` SSH
+
+`category` network · `see` key-pair, backdoor · `lessons` K7
+
+Forms: SSH, sshd
+
+A protocol for signing in to a remote computer securely and managing it. On a server the `sshd`
+service accepts it: it checks a password or key and only then gives a command line. That is why
+code that tampers with this check opens a door around the passwords.
