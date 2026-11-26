@@ -16,7 +16,7 @@
 - [RFC 7208: Sender Policy Framework (SPF) for Authorizing Use of Domains in Email, Version 1](https://www.rfc-editor.org/rfc/rfc7208)
 - [RFC 6376: DomainKeys Identified Mail (DKIM) Signatures](https://www.rfc-editor.org/rfc/rfc6376)
 - [RFC 9989: Domain-Based Message Authentication, Reporting, and Conformance (DMARC)](https://www.rfc-editor.org/rfc/rfc9989)
-- [RFC 7489: DMARC (previous version, obsoleted by RFC 9989)](https://www.rfc-editor.org/rfc/rfc7489)
+- [RFC 7489: DMARC (previous version, obsoleted by RFC 9989, 9990 and 9991)](https://www.rfc-editor.org/rfc/rfc7489)
 - [MITRE ATT&CK T1684.002: Social Engineering: Email Spoofing](https://attack.mitre.org/techniques/T1684/002/)
 - [MITRE ATT&CK T1566: Phishing](https://attack.mitre.org/techniques/T1566/)
 - [MITRE CWE-345: Insufficient Verification of Data Authenticity](https://cwe.mitre.org/data/definitions/345.html)
@@ -44,7 +44,7 @@ Message: TXT records · Result: rules visible to all
 ```text
 bank.example              TXT "v=spf1 ip4:198.51.100.0/24 -all"
 s1._domainkey.bank.example TXT "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0B"
-_dmarc.bank.example       TXT "v=DMARC1; p=reject"
+_dmarc.bank.example       TXT "v=DMARC1; p=reject; rua=mailto:dmarc@bank.example"
 ```
 
 #### Simple
@@ -109,7 +109,7 @@ Confirm it was you: ⟦https://bank-login.example/⟧
 
 #### Simple
 
-The receiving mail server compares nothing and puts the email in the inbox. The client sees the
+The receiving mail server does not compare the domains and puts the email in the inbox. The client sees the
 bank's address and has no doubts.
 
 #### Step by step

@@ -218,7 +218,7 @@ be read out, such as confirmation in the bank's app.
 - **Hang up and call back yourself** on the number from the card or the official website, not the
   number in the message or on the incoming call screen.
 - **Urgency, fear and "one minute left" are signs of a scammer**, not a reason to hurry.
-- **Got a code you did not request?** Change your password: someone else already knows it.
+- **Got a code you did not request?** Change your password: someone else most likely knows it.
 - **A different password for every site**, so someone else's leak does not open your bank.
 - **Tell your family**, especially older relatives: being asked for a code over the phone is a sure
   sign of a scammer.

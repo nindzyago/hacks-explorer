@@ -112,7 +112,7 @@ Anna's rights, so the mail service sees an ordinary message sent on her behalf.
 
 #### Deeper
 
-OWASP describes exactly this case: an assistant was given mailbox access to summarise email, but
+OWASP walks through exactly this example: an assistant is given mailbox access to summarise email, but
 the extension could also send; malicious text made the agent forward the user's email. The damage
 is set not by what the model says but by which tools and rights it was given.
 
@@ -196,12 +196,12 @@ Message: summary · Result: Anna is warned
 
 ```text
 Agent: This is a recipe for apple pie.
-Warning: the page contained hidden text with instructions. I did not follow them.
+Program: you declined sending 3 emails to drop@attacker.example. The request appeared after reading recipes.example/pie.
 ```
 
 #### Simple
 
-Anna gets the summary and a warning about a suspicious page. Her emails stayed with her.
+Anna gets the summary and a note that the agent tried to send her emails after reading this page. Her emails stayed with her.
 
 #### Step by step
 
@@ -223,5 +223,5 @@ unnoticed.
 - **External text is data, not commands**: separate pages, emails and files and mark them as
   untrusted.
 - **An action log for the agent**: people should see what the agent did, not just the result.
-- **Remember the limits**: there is no reliable defence against prompt injection inside the model,
+- **Remember the limits**: no reliable defence against prompt injection inside the model is known,
   so limit what the model can do.
