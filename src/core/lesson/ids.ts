@@ -45,10 +45,14 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
   [204, 'Observable Response Discrepancy'],
   [208, 'Observable Timing Discrepancy'],
   [269, 'Improper Privilege Management'],
+  [295, 'Improper Certificate Validation'],
+  [297, 'Improper Validation of Certificate with Host Mismatch'],
   [306, 'Missing Authentication for Critical Functionality'],
   [307, 'Improper Restriction of Excessive Authentication Attempts'],
   [308, 'Use of Single-factor Authentication'],
+  [311, 'Missing Encryption of Sensitive Data'],
   [319, 'Cleartext Transmission of Sensitive Information'],
+  [322, 'Key Exchange without Entity Authentication'],
   [331, 'Insufficient Entropy'],
   [345, 'Insufficient Verification of Data Authenticity'],
   [347, 'Improper Verification of Cryptographic Signature'],
@@ -86,6 +90,7 @@ export const CWE_ENTRIES: ReadonlyMap<number, string> = new Map([
 
 /** ATT&CK Enterprise technique or sub-technique → name as on its page. */
 export const ATTACK_TECHNIQUES: ReadonlyMap<string, string> = new Map([
+  ['T1040', 'Network Sniffing'],
   ['T1041', 'Exfiltration Over C2 Channel'],
   ['T1046', 'Network Service Discovery'],
   ['T1071', 'Application Layer Protocol'],

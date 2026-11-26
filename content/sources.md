@@ -18,3 +18,4 @@ request: одна строка — домен в обратных кавычка
 - `cve.org` CVE Program: записи CVE, словарь и порядок работы программы
 - `csrc.nist.gov` NIST Computer Security Resource Center: словарь терминов
 - `wi-fi.org` Wi-Fi Alliance: программы сертификации Wi-Fi (WPA3, защищённые служебные кадры)
+- `signal.org` Signal: спецификации протоколов X3DH и Double Ratchet
