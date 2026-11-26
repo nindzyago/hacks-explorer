@@ -192,7 +192,7 @@ announcements against it and drop the ones that do not match (RFC 6811).
 
 ## `egress-filtering` Egress filtering
 
-`category` network · `see` c2, network-segmentation · `lessons` H3
+`category` network · `see` c2, network-segmentation · `lessons` H3, K6
 
 Forms: egress filtering, outbound traffic, outbound connections
 
@@ -368,3 +368,13 @@ Forms: heartbeat, heartbeats
 An extension of TLS and DTLS from RFC 6520: one side sends a short piece of data and its length,
 the other returns the same data, and so both know the connection is alive. A bug in how OpenSSL
 handled it got the name Heartbleed in 2014.
+
+## `ssh` SSH
+
+`category` network · `see` key-pair, backdoor · `lessons` K7
+
+Forms: SSH, sshd
+
+A protocol for signing in to a remote computer securely and managing it. On a server the `sshd`
+service accepts it: it checks a password or key and only then gives a command line. That is why
+code that tampers with this check opens a door around the passwords.

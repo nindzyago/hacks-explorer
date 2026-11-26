@@ -177,6 +177,10 @@ Magnific, поэтому они **не** под CC BY-SA — все права �
 | `public/cards/L3.ru.png` | карточка урока L3, ru | `npm run cards` из текста урока, иконок (browser, attacker, server) и шрифтов сайта |
 | `public/cards/L4.ru.png` | карточка урока L4, ru | `npm run cards` из текста урока, иконок (browser, attacker, bank) и шрифтов сайта |
 | `public/cards/L5.ru.png` | карточка урока L5, ru | `npm run cards` из текста урока, иконок (phone, server, attacker) и шрифтов сайта |
+| `public/cards/K4.ru.png` | карточка урока K4, ru | `npm run cards` из текста урока, иконок (attacker, server, document) и шрифтов сайта |
+| `public/cards/K5.ru.png` | карточка урока K5, ru | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/K6.ru.png` | карточка урока K6, ru | `npm run cards` из текста урока, иконок (server, router, attacker) и шрифтов сайта |
+| `public/cards/K7.ru.png` | карточка урока K7, ru | `npm run cards` из текста урока, иконок (attacker, user, server) и шрифтов сайта |
 | `public/cards/about.en.png` | карточка сайта и «О проекте», en | `npm run cards` из текста урока, иконок (user, workstation, server) и шрифтов сайта |
 | `public/cards/A1.en.png` | карточка урока A1, en | `npm run cards` из текста урока, иконок (user, workstation, server) и шрифтов сайта |
 | `public/cards/A2.en.png` | карточка урока A2, en | `npm run cards` из текста урока, иконок (workstation, document, db) и шрифтов сайта |
@@ -249,6 +253,10 @@ Magnific, поэтому они **не** под CC BY-SA — все права �
 | `public/cards/L3.en.png` | карточка урока L3, en | `npm run cards` из текста урока, иконок (browser, attacker, server) и шрифтов сайта |
 | `public/cards/L4.en.png` | карточка урока L4, en | `npm run cards` из текста урока, иконок (browser, attacker, bank) и шрифтов сайта |
 | `public/cards/L5.en.png` | карточка урока L5, en | `npm run cards` из текста урока, иконок (phone, server, attacker) и шрифтов сайта |
+| `public/cards/K4.en.png` | карточка урока K4, en | `npm run cards` из текста урока, иконок (attacker, server, document) и шрифтов сайта |
+| `public/cards/K5.en.png` | карточка урока K5, en | `npm run cards` из текста урока, иконок (attacker, server, db) и шрифтов сайта |
+| `public/cards/K6.en.png` | карточка урока K6, en | `npm run cards` из текста урока, иконок (server, router, attacker) и шрифтов сайта |
+| `public/cards/K7.en.png` | карточка урока K7, en | `npm run cards` из текста урока, иконок (attacker, user, server) и шрифтов сайта |
 
 ## Шрифты
 

@@ -21,3 +21,7 @@ request: одна строка — домен в обратных кавычка
 - `openssl.org` OpenSSL: бюллетени безопасности библиотеки OpenSSL
 - `learn.microsoft.com` Microsoft Learn: бюллетени безопасности Microsoft (Security Bulletins)
 - `signal.org` Signal: спецификации протоколов X3DH и Double Ratchet
+- `cwiki.apache.org` Apache Software Foundation: бюллетени безопасности Apache Struts (S2-045, S2-046)
+- `struts.apache.org` Apache Struts: объявления о выпусках и документация
+- `gao.gov` U.S. Government Accountability Office: отчёты о расследованиях (GAO-18-559, утечка Equifax)
+- `openwall.com` Рассылка oss-security: первое сообщение об уязвимостях открытых программ (бэкдор в xz, CVE-2024-3094)
