@@ -29,7 +29,7 @@
 
 - `home` Дома: `browser`
 - `web` Обычные сайты: `site`, `ads`
-- `internet` Сервер атакующего: `attacker`
+- `internet` Хакер: `attacker`
 
 ## Шаги
 
@@ -114,7 +114,7 @@ https://⟦browser-update.example⟧/
 ### `download` Скачан «файл обновления»
 
 `attacker → browser` · `attack` · `without-defence`
-Сообщение: browser-update.exe · Итог: файл запущен
+Сообщение: файл · Итог: файл запущен
 
 ```text
 Загрузки: ⟦browser-update.exe⟧
@@ -164,7 +164,7 @@ Malicious File». Атакующий маскирует файл под прив
 ### `blocked` Запуск запрещён
 
 `attacker → browser` · `attack` · `with-defence` · `stopped`
-Сообщение: browser-update.exe · Итог: остановлено
+Сообщение: файл · Итог: остановлено
 
 ```text
 browser-update.exe: издатель не в списке разрешённых

@@ -29,7 +29,7 @@
 
 - `home` At home: `browser`
 - `web` Ordinary sites: `site`, `ads`
-- `internet` Attacker's server: `attacker`
+- `internet` Attacker: `attacker`
 
 ## Steps
 
@@ -114,7 +114,7 @@ emails.
 ### `download` The "update file" is downloaded
 
 `attacker → browser` · `attack` · `without-defence`
-Message: browser-update.exe · Result: file run
+Message: file · Result: file run
 
 ```text
 Downloads: ⟦browser-update.exe⟧
@@ -165,7 +165,7 @@ but best of all is not letting the trojan run in the first place.
 ### `blocked` Not allowed to run
 
 `attacker → browser` · `attack` · `with-defence` · `stopped`
-Message: browser-update.exe · Result: stopped
+Message: file · Result: stopped
 
 ```text
 browser-update.exe: publisher is not on the allowed list

@@ -154,7 +154,7 @@ test.describe('the lessons column at 1280 and wider', () => {
       await expect(b.getByTestId('side-count')).toHaveText(/^готово \d+ из \d+$/);
       // Ready lessons are links, first in their section; the rest are grey «скоро» after them.
       await expect(side.getByTestId('side-lesson')).toHaveCount(LESSONS.length);
-      expect(await side.getByTestId('side-soon').count()).toBeGreaterThan(0);
+      const soonCount = await side.getByTestId('side-soon').count();
       for (const group of await groups.all()) {
         const kinds = await group
           .locator('ul > li')
@@ -164,7 +164,8 @@ test.describe('the lessons column at 1280 and wider', () => {
         if (firstSoon >= 0)
           expect(kinds.slice(firstSoon).every((k) => k === 'side-soon')).toBe(true);
       }
-      await expect(side.getByTestId('side-soon').first().locator('a')).toHaveCount(0);
+      if (soonCount > 0)
+        await expect(side.getByTestId('side-soon').first().locator('a')).toHaveCount(0);
 
       const inC = LESSONS.filter((id) => id.startsWith('C'));
       await side.getByTestId('side-section-C').click();

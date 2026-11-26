@@ -55,13 +55,12 @@ function readyCount(language: string, section = ''): number {
  * The first topic of the catalog that has no lesson in this language yet, from the source files,
  * so the «скоро» checks keep working as lessons are written.
  */
-function firstNotReady(language: string): string {
+/** The first topic without a lesson in this language, or undefined once the catalog is complete. */
+function firstNotReady(language: string): string | undefined {
   const root = fileURLToPath(new URL('../content', import.meta.url));
   const catalog = readFileSync(join(root, 'locales', language, 'catalog.md'), 'utf8');
   const ids = [...catalog.matchAll(/^- `([A-Z]\d+)`/gm)].map((m) => m[1] ?? '');
-  const id = ids.find((i) => i !== '' && !existsSync(join(root, 'lessons', i, `${language}.md`)));
-  if (id === undefined) throw new Error(`every topic has a ${language} lesson`);
-  return id;
+  return ids.find((i) => i !== '' && !existsSync(join(root, 'lessons', i, `${language}.md`)));
 }
 
 async function openLessons(page: Page): Promise<void> {
@@ -116,10 +115,16 @@ test.describe('S7: the lessons panel', () => {
     const b1 = page.locator('[data-topic="B1"] a');
     await expect(b1).toHaveAttribute('href', '/ru/lesson/B1');
     await expect(b1).toHaveAttribute('aria-current', 'page');
-    const soon = page.locator(`[data-topic="${firstNotReady('ru')}"]`);
-    await expect(soon).toHaveAttribute('data-ready', 'false');
-    await expect(soon).toContainText('скоро');
-    await expect(soon.locator('a, button, [tabindex]')).toHaveCount(0);
+    // While the catalog is incomplete, a topic without a lesson says «скоро» and takes no focus.
+    const notReady = firstNotReady('ru');
+    if (notReady !== undefined) {
+      const soon = page.locator(`[data-topic="${notReady}"]`);
+      await expect(soon).toHaveAttribute('data-ready', 'false');
+      await expect(soon).toContainText('скоро');
+      await expect(soon.locator('a, button, [tabindex]')).toHaveCount(0);
+    } else {
+      await expect(page.locator('[data-ready="false"]')).toHaveCount(0);
+    }
     // Focus starts in the search field.
     await expect(page.getByTestId('catalog-search')).toBeFocused();
     await keep(page, testInfo, 'drawer-lessons-1024x768');
@@ -519,8 +524,11 @@ test.describe('in English (M2.3, K105)', () => {
     await page.getByTestId('catalog-search').fill('sql');
     expect(await topics(page)).toEqual(['B1', 'B8']);
     await expect(page.locator('[data-topic="B1"] a')).toHaveAttribute('href', '/en/lesson/B1');
-    await page.getByTestId('catalog-search').fill(firstNotReady('en'));
-    await expect(page.locator(`[data-topic="${firstNotReady('en')}"]`)).toContainText('soon');
+    const notReady = firstNotReady('en');
+    if (notReady !== undefined) {
+      await page.getByTestId('catalog-search').fill(notReady);
+      await expect(page.locator(`[data-topic="${notReady}"]`)).toContainText('soon');
+    }
     await page.getByTestId('catalog-search').fill('');
     await page.getByTestId('catalog-section').selectOption({ label: 'G. Network' });
     expect(await topics(page)).toEqual(['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7']);
