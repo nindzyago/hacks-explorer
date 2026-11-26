@@ -132,7 +132,7 @@ key can make such a ciphertext.
 
 #### Deeper
 
-A shared key protects both secrecy and integrity only while just two people know it. Once a third
+A shared key, in a mode with an integrity check such as AES-GCM, protects both secrecy and integrity only while just two people know it. Once a third
 person knows it, they can both read and forge: the protection is gone entirely.
 
 ### `pub` Bob's public key

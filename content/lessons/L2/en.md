@@ -214,7 +214,7 @@ notice the second.
 
 - **Don't switch off certificate checks.** In your own programs and libraries, checking the
   signature, chain, dates and name must always be on, "for tests" included.
-- **Get your certificate from a public authority.** For internet sites, from a well-known
+- **Get your certificate from a trusted authority.** For internet sites, from a well-known
   authority; for internal systems, from your own, whose root is installed on staff devices.
 - **Guard the site's private key like a password.** Only the server that uses the key file should
   have access to it.

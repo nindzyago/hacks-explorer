@@ -80,7 +80,7 @@ Forms: forward secrecy
 
 A property of a secure connection: each session key is single-use and erased afterwards. Even if
 the server's long-term key is stolen later, conversations recorded earlier can't be decrypted with
-it. TLS 1.3 always has it (RFC 8446).
+it. In TLS 1.3 every key exchange with public keys has it; resuming with a pre-shared key alone doesn't (RFC 8446).
 
 ## `e2e-encryption` End-to-end encryption
 

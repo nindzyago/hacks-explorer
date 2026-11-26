@@ -257,8 +257,7 @@ Encryption where the same key both encrypts and decrypts. It is fast (AES, stand
 
 Forms: digital signature, digital signatures
 
-A value the owner of a private key computes from the data. Anyone can check it with the public key
-and learn who signed and that the data has not changed. Change a single character and the check
+A value the owner of a private key computes from the data. Anyone can check it with the public key and learn that the holder of the matching private key signed it and that the data has not changed; whose key it is, a certificate tells. Change a single character and the check
 fails.
 
 ## `reproducible-build` Reproducible build

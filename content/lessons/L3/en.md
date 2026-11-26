@@ -75,7 +75,7 @@ Message: key, certificate, signature · Result: the browser checks
 ServerHello          site's key share: X25519, 3a7e 90c4 12bd
 --- everything below is encrypted ---
 Certificate          shop.example certificate and chain
-CertificateVerify    signature over the whole handshake with the site's key
+CertificateVerify    signature over the handshake so far with the site's key
 Finished
 ```
 
@@ -94,7 +94,7 @@ certificate along.
 #### Deeper
 
 Per RFC 8446, the server in TLS is always authenticated, the client only optionally.
-CertificateVerify is a signature over the whole handshake made with the certificate's private key.
+CertificateVerify is a signature over the handshake so far made with the certificate's private key.
 It ties the certificate to this conversation and to the key shares exchanged, so an old signature
 can't be replayed in another connection.
 
@@ -126,7 +126,7 @@ mean is the subject of the next lesson.
 The name is matched per RFC 9525: the name from the address is compared with the dNSName entries in
 the certificate, the old Common Name field must not be used for this, and a wildcard is allowed
 only as the whole left-most label (`*.shop.example`). The session key in TLS 1.3 is single-use:
-RFC 8446 removed static RSA key exchange, and every exchange provides **forward secrecy**. If the
+RFC 8446 removed static RSA key exchange, and every key exchange with public keys provides **forward secrecy**. If the
 site's key is ever stolen, conversations recorded earlier can't be decrypted with it.
 
 ### `cafe` The same login from a café

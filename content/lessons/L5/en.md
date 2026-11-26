@@ -113,9 +113,8 @@ Only Bob's phone has the key to decrypt it. The server works like a postman with
 #### Deeper
 
 After the first message the phones carry on with the Double Ratchet algorithm: a new key for every
-message. One leaked key opens neither past messages nor, after a few more messages, future ones;
-the specification calls these forward security and break-in recovery. End-to-end encryption can't
-hide who writes to whom and when: otherwise the server couldn't deliver the message.
+message. Even if the keys stored on a phone are stolen at some moment, earlier messages stay closed, and after the next exchange of replies new ones become closed again;
+the specification calls these forward security and break-in recovery. End-to-end encryption doesn't hide the recipient and the time: otherwise the server couldn't deliver the message. Usually the server also sees the sender, though some messengers can hide it.
 
 ### `deliver` Delivery to Bob
 
@@ -244,5 +243,4 @@ guarantee of who they are talking to. A key exchange without checking the other 
 - **The other person's key changed? Ask again.** Over another channel: a call or in person.
 - **Look after the phone itself.** End-to-end encryption protects the road and the server, but not
   an unlocked phone: screen lock, updates, no unknown apps.
-- **Remember what the server sees.** Who writes to whom and when is known to the server even with
-  end-to-end encryption.
+- **Remember what the server sees.** Who writes to whom and when is usually known to the server even with end-to-end encryption.
